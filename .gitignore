@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+.private/
+logs/
+lab-dist/
+artifacts/
+.DS_Store
