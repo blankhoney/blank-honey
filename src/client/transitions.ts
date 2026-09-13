@@ -283,9 +283,10 @@ export function initTransitions() {
             const duration = light ? 1200 : 1700;
             const surface = await renderCloud(duration, token);
             if (!surface || token !== version) return;
-            // The assembled surface stays visible. There is no DOM cross-fade underneath it.
+            // Native content fades independently; the external particle ink stays visible.
             await Promise.all([
-              play(ghost, [{ opacity: 1 }, { opacity: 0 }], duration * 0.25),
+              play(ghost, [{ opacity: 1 }, { opacity: 0 }], duration * 0.45),
+              play(content, [{ opacity: 0 }, { opacity: 1 }], duration * 0.75),
               surface.finished,
             ]);
           } else {

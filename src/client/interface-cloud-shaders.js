@@ -72,25 +72,9 @@ void main(){
   float pointSize=aInfo.y;
   float gather=1.;
   if(uMorph>.5){
-    // Old interface points release into depth, then become the destination ink.
-    // Source geometry is carried over from the previous live surface, not a logo.
-    float seed=aSeedInfo.y;
-    float release=smoothstep(order*.10,.34+order*.10,uProgress);
-    gather=smoothstep(.45+order*.12,.88+order*.10,uProgress);
-    float scale=1.-uLight*.40;
-    float a=seed*6.2831853;
-    vec2 center=uViewport*vec2(.55,.43);
-    vec2 radius=aOrigin.xy-center;
-    float twist=(seed-.5)*.75*scale;
-    vec2 turned=vec2(cos(twist)*radius.x-sin(twist)*radius.y,
-    sin(twist)*radius.x+cos(twist)*radius.y);
-    vec3 loose=vec3(center+turned,aOrigin.z);
-    loose.xy+=vec2(cos(a*3.7),sin(a*2.3))*vec2(min(185.,uViewport.x*.23),105.)*scale;
-    loose.z+=(sin(a*1.71)*190.+cos(a*3.2)*70.)*scale;
-    p=mix(aOrigin,loose,release);
-    p=mix(p,target+vec3(uPointer*vec2(.50,.35)*(-target.z),0.),gather);
-    p.xy+=vec2(sin(a+release*2.5),cos(a*1.9+release*2.))*sin(release*3.14159265)*(1.-gather)*vec2(35.,22.)*scale;
-    p.z+=sin(release*3.14159265)*cos(a*1.3)*65.*scale*(1.-gather);
+    // Existing ink moves straight to destination ink, without a dispersed intermediate pose.
+    gather=smoothstep(0.,1.,uProgress);
+    p=mix(aOrigin,target+vec3(uPointer*vec2(.50,.35)*(-target.z),0.),gather);
     pointSize=mix(aSeedInfo.x,aInfo.y,gather);
   }
   float perspective=1.-p.z/focal;
@@ -106,7 +90,7 @@ void main(){
   if(uMorph>.5){
     float appear=smoothstep(.08,.40,uProgress);
     float sourceAlpha=aSeedTint.a;
-    // Extra destination samples emerge while dispersed; surplus source samples
+    // Extra destination samples emerge during migration; surplus source samples
     // retire only during reconstruction. At t=0 every old sample is drawn once.
     if(sourceAlpha<.001)sourceAlpha=targetAlpha*appear;
     vAlpha=mix(sourceAlpha,targetAlpha,gather);

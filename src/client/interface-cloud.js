@@ -97,9 +97,10 @@ export const interfaceCloud = (() => {
       return effect.target.id === 'main' && effect.getKeyframes().some((frame) => 'width' in frame);
     });
   }
+  // Main opacity belongs to the native-content cross-fade, not the external particle surface.
   function opacity(el) {
     let value = 1;
-    for (let n = el; n && n !== document.body; n = n.parentElement)
+    for (let n = el; n && n !== document.body && n.id !== 'main'; n = n.parentElement)
       value *= Number(getComputedStyle(n).opacity);
     return value;
   }
@@ -583,7 +584,7 @@ export const interfaceCloud = (() => {
         }
       }
       stats.progress = progress;
-      if (morphing && !settled) stats.phase = progress < 0.46 ? 'scattering' : 'reforming';
+      if (morphing && !settled) stats.phase = 'migrating';
       if (shellMoving) resampleAfterLayout = true;
       if (resampleAfterLayout && !shellMoving) {
         resampleAfterLayout = false;
