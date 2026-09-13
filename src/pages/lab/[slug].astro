@@ -35,6 +35,22 @@ const generatedDate = new Intl.DateTimeFormat('zh-CN', {
       </a>
     )}
   </div>
+  <section class="benchmark-section" id="prompt">
+    <div class="benchmark-prompt-heading">
+      <h2>完整提示词</h2>
+      <button type="button" data-copy-prompt>
+        复制提示词
+      </button>
+    </div>
+    <p class="benchmark-copy-status" role="status" aria-live="polite"></p>
+    <pre class="benchmark-prompt" tabindex="0">{experiment.prompt}</pre>
+    <script
+      is:inline
+      type="application/json"
+      data-prompt-source
+      set:html={JSON.stringify(experiment.prompt).replace(/</g, '\\u003c')}
+    ></script>
+  </section>
   {experiment.preview && (
     <a class="benchmark-preview" href={effectUrl} target="_blank" rel="noopener noreferrer">
       <img
@@ -91,22 +107,6 @@ const generatedDate = new Intl.DateTimeFormat('zh-CN', {
       <dd>{experiment.run.selfCheck}</dd>
     </div>
   </dl>
-  <section class="benchmark-section">
-    <div class="benchmark-prompt-heading">
-      <h2>完整提示词</h2>
-      <button type="button" data-copy-prompt>
-        复制提示词
-      </button>
-    </div>
-    <p class="benchmark-copy-status" role="status" aria-live="polite"></p>
-    <pre class="benchmark-prompt" tabindex="0">{experiment.prompt}</pre>
-    <script
-      is:inline
-      type="application/json"
-      data-prompt-source
-      set:html={JSON.stringify(experiment.prompt).replace(/</g, '\\u003c')}
-    ></script>
-  </section>
   <section class="benchmark-section">
     <h2>附加交付指令</h2>
     {experiment.run.additionalInstructions ? (

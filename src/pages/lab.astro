@@ -8,6 +8,9 @@ const experiments = destinations('experiments');
 ---
 
 <Terminal title="实验室" en="LABORATORY" description="把提示词、模型和它实际生成的东西放在一起。">
+  <p class="benchmark-actions">
+    <a href="/blog/lab-2026-09-14-prompts-and-original-results/">如何查看、下载和复现这些实验 →</a>
+  </p>
   {benchmarks.length > 0 && (
     <section class="benchmark-list" aria-label="生成实验">
       {benchmarks.map((item) => (
@@ -34,6 +37,10 @@ const experiments = destinations('experiments');
           </p>
           <h2>{item.title}</h2>
           <p>{item.description}</p>
+          <a class="benchmark-prompt-link" href={`/lab/${item.slug}/#prompt`}>
+            <span>一句话生成 · 原始提示词 →</span>
+            <p class="benchmark-prompt-excerpt">{item.prompt}</p>
+          </a>
           <div class="benchmark-actions">
             <a
               href={new URL(`benchmarks/${item.slug}/${item.entry}`, labOrigin).href}
@@ -42,7 +49,7 @@ const experiments = destinations('experiments');
             >
               查看原始效果 ↗
             </a>
-            <a href={`/lab/${item.slug}/`}>提示词与运行记录 →</a>
+            <a href={`/lab/${item.slug}/`}>运行记录 →</a>
           </div>
         </article>
       ))}
