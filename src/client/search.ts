@@ -9,6 +9,7 @@ type Pagefind = {
 let engine: Promise<Pagefind> | undefined;
 export function initSearch(open: () => void) {
   const input = document.querySelector<HTMLInputElement>('#search')!;
+  if (input.readOnly) return;
   const category = document.querySelector<HTMLSelectElement>('#filter-category')!;
   const tag = document.querySelector<HTMLSelectElement>('#filter-tag')!;
   const output = document.querySelector<HTMLElement>('#search-results')!;

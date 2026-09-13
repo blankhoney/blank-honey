@@ -22,7 +22,13 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
     <label class="search-label" for="search">
       搜索文章 <span>SEARCH</span>
     </label>
-    <input id="search" type="search" placeholder="寻找一个词，一段记忆…" autocomplete="off" />
+    <input
+      id="search"
+      type="search"
+      placeholder={articles.length ? '寻找一个词，一段记忆…' : '暂无已发布文章'}
+      readonly={!articles.length}
+      autocomplete="off"
+    />
     <div id="search-filters" hidden>
       <label>
         分类

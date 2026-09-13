@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync } from 'node:fs';
 try {
   try {
     process.loadEnvFile('.env');
@@ -10,8 +10,21 @@ try {
     [process.execPath, ['--import', 'tsx', 'scripts/build-radio.ts']],
     [process.execPath, ['--import', 'tsx', 'scripts/build-lab.ts']],
     ['npm', ['run', 'build:site']],
+    [
+      'npx',
+      [
+        'pagefind',
+        '--site',
+        'dist',
+        '--force-language',
+        'zh-CN',
+        '--root-selector',
+        '[data-pagefind-body]',
+      ],
+    ],
     [process.execPath, ['--import', 'tsx', 'scripts/pictures.ts']],
   ]) {
+    if (command === 'npx' && !existsSync('dist/blog')) continue;
     const result = spawnSync(command, args, { stdio: 'inherit', env: process.env });
     if (result.error || result.status !== 0)
       throw new Error(
