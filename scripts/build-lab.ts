@@ -2,6 +2,7 @@ import { mkdir, readFile, realpath, rm, writeFile, copyFile } from 'node:fs/prom
 import { dirname, relative, resolve, sep } from 'node:path';
 import { config } from '../src/config';
 import { httpUrl } from './build-radio';
+import { experiments, experimentFiles } from '../src/application/experiments';
 const root = await realpath('.');
 const output = resolve('lab-dist');
 const site = new URL(httpUrl(process.env.SITE_URL || 'http://localhost:8080'));
@@ -63,4 +64,24 @@ for (const kind of ['tools', 'experiments'] as const) {
     }
     await copy(source, resolve(target, 'index.html'));
   }
+}
+
+// Benchmark outputs are immutable artifacts: copy the whole vetted tree, without substitutions.
+for (const experiment of await experiments(root)) {
+  const files = await experimentFiles(experiment, root);
+  const source = resolve(root, experiment.directory);
+  const target = resolve(output, 'benchmarks', experiment.slug);
+  const downloads = resolve(output, 'benchmark-sources', experiment.slug);
+  for (const file of files) {
+    const destination = resolve(target, file.path);
+    const download = resolve(
+      downloads,
+      file.path === 'source.zip' ? file.path : `${file.path}.txt`,
+    );
+    await mkdir(dirname(destination), { recursive: true });
+    await mkdir(dirname(download), { recursive: true });
+    await copyFile(resolve(source, file.path), destination);
+    await copyFile(resolve(source, file.path), download);
+  }
+  await writeFile(resolve(downloads, 'files.json'), JSON.stringify(files, null, 2) + '\n');
 }

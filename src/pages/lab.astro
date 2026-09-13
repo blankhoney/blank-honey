@@ -1,10 +1,53 @@
 ---
 import Terminal from '../components/Terminal.astro';
-import { destinations } from '../application/destinations';
+import { destinations, labOrigin } from '../application/destinations';
+import { experiments as loadBenchmarks } from '../application/experiments';
+import '../styles/lab.css';
+const benchmarks = await loadBenchmarks();
 const experiments = destinations('experiments');
 ---
 
-<Terminal title="实验室" en="LABORATORY" description="给没有用途的小东西，一间自己的房间。">
+<Terminal title="实验室" en="LABORATORY" description="把提示词、模型和它实际生成的东西放在一起。">
+  {benchmarks.length > 0 && (
+    <section class="benchmark-list" aria-label="生成实验">
+      {benchmarks.map((item) => (
+        <article class="benchmark-card">
+          {item.preview && (
+            <a
+              class="benchmark-preview"
+              href={new URL(`benchmarks/${item.slug}/${item.entry}`, labOrigin).href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={item.preview}
+                alt={item.title}
+                width="1600"
+                height="900"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+          )}
+          <p class="benchmark-kicker">
+            {item.modelId} · {item.reasoningEffort}
+          </p>
+          <h2>{item.title}</h2>
+          <p>{item.description}</p>
+          <div class="benchmark-actions">
+            <a
+              href={new URL(`benchmarks/${item.slug}/${item.entry}`, labOrigin).href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              查看原始效果 ↗
+            </a>
+            <a href={`/lab/${item.slug}/`}>提示词与运行记录 →</a>
+          </div>
+        </article>
+      ))}
+    </section>
+  )}
   <div class="directory" data-cohort="frame">
     {experiments.map((t, i) => (
       <a class="directory-row" href={t.url} target="_blank" rel="noopener noreferrer">

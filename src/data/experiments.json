@@ -1,0 +1,89 @@
+[
+  {
+    "slug": "chinese-architecture",
+    "title": "3D 体素中国建筑群",
+    "description": "中轴院落、飞檐和宝塔：一次原始提示词的建筑场景生成。",
+    "directory": "examples/benchmarks/chinese-architecture",
+    "entry": "qingque.html",
+    "prompt": "【任务】\r\n请创建一个可运行的 3D 体素（Voxel）风格中国古典建筑群场景，用 Three.js 实现，\r\n浏览器打开即可观看，风格类似 Minecraft 体素块拼接。\r\n\r\n【场景要求】\r\n1. 建筑群至少 5 座建筑，主次关系明确：\r\n   - 主殿：体量最大，位于中轴线核心位置\r\n   - 配殿：对称分布于主殿两侧\r\n   - 山门：位于场地前端入口\r\n   - 宝塔或钟鼓楼 1-2 座\r\n2. 空间布局：\r\n   - 建筑间距合理（体素比例下足以容纳道路与庭院）\r\n   - 有明确的道路动线连接：山门 → 庭院 → 主殿\r\n   - 整体呈中轴对称的院落布局\r\n3. 建筑风格（中式古典）：\r\n   - 屋顶：飞檐翘角，含歇山顶/庑殿顶/攒尖顶等中式形制\r\n   - 结构：斗拱、立柱、台阶\r\n   - 色彩：红墙、琉璃瓦或青瓦、木色构件\r\n   - 细节：门窗、灯笼、石狮等酌情添加\r\n4. 环境与光影：\r\n   - 地面有铺装/草地处理，建筑与地面自然衔接\r\n   - 有明确光源与阴影，建筑群呈现光影层次与氛围\r\n   - 可选：晨昏色调\r\n\r\n【技术要求】\r\n- 使用 Three.js（React 或纯原生均可），无需后端\r\n- 在工作区中创建完整项目（Vite 等构建工具可用），确保可直接构建运行\r\n- 画面流畅：体素数量合理，旋转视角时帧率稳定（≥30fps）\r\n- 页面打开即进入场景，无需操作即可看到全貌\r\n\r\n【交付要求】\r\n- 项目结构完整，说明运行方式（安装与启动命令）\r\n- 如已实际运行，请说明运行结果\r\n",
+    "modelId": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "generatedAt": "2026-09-13T18:51:34+00:00",
+    "author": {
+      "name": "无机酸-_- / Atmeplz",
+      "sourceUrl": "https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip"
+    },
+    "promptVersion": "TC-01 v1 · 0903 公开题面包",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型在同一用户任务中使用了命令行、依赖安装、资料查询与浏览器，自行构建并检查桌面/窄屏与持续环绕帧率；没有追加用户修正提示。",
+      "environment": "Codex 本地独立新任务；未继承博客聊天及项目文件；平台默认系统指令与工具可用。",
+      "additionalInstructions": ""
+    },
+    "observations": [
+      "原始离线 HTML 与工程 ZIP 均保留，集成没有修改场景。画面包含主殿、对称配殿、山门及钟鼓楼，共六座建筑；中轴道路、庭院、飞檐与光影可辨。",
+      "独立 Chrome 检查中环绕、标注、晨昏切换可用，390px 模拟窄屏无横向溢出。浏览器记录到扩展通信报错，但场景仍可操作。",
+      "模型自检报告约 60 FPS；主施工桌面环绕的 60 帧短采样约 22 FPS。不同窗口与运行负载下结果有差异，本记录不据此确认稳定达到题面 30 FPS。"
+    ],
+    "preview": "/benchmarks/chinese-architecture.webp"
+  },
+  {
+    "slug": "voxel-mountain",
+    "title": "体素山 · 瀑布 · 穿云",
+    "description": "观察体素山峰、水流与云层之间的空间关系。",
+    "directory": "examples/benchmarks/voxel-mountain",
+    "entry": "standalone.html",
+    "prompt": "【任务】\r\n请创建一个可运行的 3D 体素（Voxel）风格自然景观场景：山 + 瀑布 + 穿云效果，\r\n用 Three.js 实现，浏览器打开即可观看，风格类似 Minecraft 体素块拼接。\r\n\r\n【场景要求】\r\n1. 山体：体素构成的山脉，含主峰与若干次峰，山体轮廓有自然的峰谷起伏，\r\n   坡度过渡自然\r\n2. 瀑布：一道或数道瀑布，从山体高处倾泻而下，水流沿山体表面顺势而下，\r\n   落向山脚\r\n3. 穿云：云雾缭绕于山腰，部分山峰穿出云层，山体与云层有前后遮挡关系\r\n4. 环境：山脚可点缀植被，整体光影氛围自然（可含晨昏色调）\r\n\r\n【技术要求】\r\n- Three.js，工作区完整项目，可直接构建运行\r\n- 画面流畅：体素数量合理，旋转视角帧率稳定（≥30fps）\r\n- 页面打开即进入场景，无需操作即可看到全貌\r\n\r\n【交付要求】\r\n- 项目结构完整，说明运行方式（安装与启动命令）\r\n- 如已实际运行，请说明运行结果\r\n",
+    "modelId": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "generatedAt": "2026-09-13T18:45:28+00:00",
+    "author": {
+      "name": "无机酸-_- / Atmeplz",
+      "sourceUrl": "https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip"
+    },
+    "promptVersion": "TC-02 v1 · 0903 公开题面包",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型在同一用户任务中使用了命令行、依赖安装和浏览器，自行构建并检查桌面/窄屏、控制按钮和帧率；没有追加用户修正提示。",
+      "environment": "Codex 本地独立新任务；未继承博客聊天及项目文件；平台默认系统指令与工具可用。",
+      "additionalInstructions": ""
+    },
+    "observations": [
+      "展示文件为模型自行生成的离线 HTML；原始工程 ZIP 与 HTML 逐字节保留，集成时没有修改场景代码。",
+      "独立 Chrome 检查可见山峰、瀑布、山脚湖泊及有前后遮挡的体素云层；自动环绕、晨昏、云层开关可用，控制台未见错误。",
+      "本机桌面检查中界面帧率约 57–60 FPS，切换光照时短暂下降；这是该设备的观察值，不代表所有设备或正式跨模型评分。"
+    ],
+    "preview": "/benchmarks/voxel-mountain.webp"
+  },
+  {
+    "slug": "blackhole",
+    "title": "黑洞与光线弯曲",
+    "description": "要求使用物理公式的黑洞可视化，保留模型的原始实现。",
+    "directory": "examples/benchmarks/blackhole",
+    "entry": "index.html",
+    "prompt": "【任务】\r\n\r\n请使用 HTML 创建一个黑洞（Black Hole）模拟。\r\n\r\n【要求】\r\n\r\n1. 使用 Three.js 或任何你擅长的库，我均允许\r\n2. 需要**真实物理模拟**——必须使用物理公式（如广义相对论光线追踪、Schwarzschild 度规、测地线方程等）\r\n3. 力求**最保真**（保真度优先，视觉效果与物理准确性都要）\r\n4. 必须加入 **OrbitControls**（支持旋转、缩放视角）\r\n5. 浏览器打开即可运行，无需额外操作即可观看\r\n\r\n【交付要求】\r\n\r\n- 项目结构完整，说明运行方式（安装与启动命令）\r\n- 如已实际运行，请说明运行结果\r\n",
+    "modelId": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "generatedAt": "2026-09-13T18:51:16+00:00",
+    "author": {
+      "name": "无机酸-_- / Atmeplz",
+      "sourceUrl": "https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip"
+    },
+    "promptVersion": "TC-08 v1 · 0903 公开题面包",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型在同一用户任务中使用命令行、资料查询与浏览器，自行构建离线文件并做解析/数值物理测试与GPU捕获边界检查；没有追加用户修正提示。",
+      "environment": "Codex 本地独立新任务；未继承博客聊天及项目文件；平台默认系统指令与工具可用。",
+      "additionalInstructions": ""
+    },
+    "observations": [
+      "原始离线 HTML 与工程 ZIP 均原样保留；独立 Chrome 检查中拖拽旋转、滚轮缩放及频移模式可用，控制台未见错误。",
+      "实现限定为 Schwarzschild 无自旋黑洞与稳态薄吸积盘，未包含 Kerr 自旋或磁流体演化。主施工复跑原工程的 8 项解析/数值测试通过，不等同完整物理模型验证。",
+      "本机桌面精细模式观察到约 24–27 FPS；390px 模拟窄屏无横向溢出。控制面板需要滚动查看全部选项，保留原始布局，没有追加优化。"
+    ],
+    "preview": "/benchmarks/blackhole.webp"
+  }
+]

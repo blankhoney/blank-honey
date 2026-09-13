@@ -39,6 +39,11 @@
 :8081 {
   root * /srv/lab
   encode zstd gzip
+  # Cross-origin links cannot rely on the HTML download attribute.
+  @benchmarkSource path_regexp sourcefile ^/benchmark-sources/[^/]+/(?:.*/)?([^/]+)\.txt$
+  header @benchmarkSource Content-Disposition "attachment; filename=\"{re.sourcefile.1}\""
+  @benchmarkArchive path /benchmarks/*/source.zip
+  header @benchmarkArchive Content-Disposition "attachment; filename=\"source.zip\""
   header {
     X-Content-Type-Options nosniff
     Referrer-Policy no-referrer

@@ -1,0 +1,172 @@
+---
+import Terminal from '../../components/Terminal.astro';
+import { experiments, experimentFiles } from '../../application/experiments';
+import { labOrigin } from '../../application/destinations';
+import '../../styles/lab.css';
+export async function getStaticPaths() {
+  return (await experiments()).map((experiment) => ({
+    params: { slug: experiment.slug },
+    props: { experiment },
+  }));
+}
+const { experiment } = Astro.props;
+const files = await experimentFiles(experiment);
+const effectUrl = new URL(`benchmarks/${experiment.slug}/${experiment.entry}`, labOrigin).href;
+const sourceBase = new URL(`benchmark-sources/${experiment.slug}/`, labOrigin);
+const sourceZip = files.some((file) => file.path === 'source.zip')
+  ? new URL(`benchmarks/${experiment.slug}/source.zip`, labOrigin).href
+  : undefined;
+const generatedDate = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Taipei',
+  dateStyle: 'long',
+  timeStyle: 'short',
+}).format(new Date(experiment.generatedAt));
+---
+
+<Terminal title={experiment.title} en="BENCHMARK" description={experiment.description}>
+  <div class="benchmark-actions">
+    <a href="/lab/">← 实验室</a>
+    <a href={effectUrl} target="_blank" rel="noopener noreferrer">
+      查看原始效果 ↗
+    </a>
+    {sourceZip && (
+      <a class="benchmark-download" href={sourceZip} download="source.zip">
+        下载原始工程 ↓
+      </a>
+    )}
+  </div>
+  {experiment.preview && (
+    <a class="benchmark-preview" href={effectUrl} target="_blank" rel="noopener noreferrer">
+      <img
+        src={experiment.preview}
+        alt={experiment.title}
+        width="1600"
+        height="900"
+        loading="lazy"
+        decoding="async"
+      />
+    </a>
+  )}
+  <dl class="benchmark-metadata">
+    <div>
+      <dt>实际模型</dt>
+      <dd>{experiment.modelId}</dd>
+    </div>
+    <div>
+      <dt>推理强度</dt>
+      <dd>{experiment.reasoningEffort}</dd>
+    </div>
+    <div>
+      <dt>生成日期</dt>
+      <dd>
+        <time datetime={experiment.generatedAt}>{generatedDate}（台北时间）</time>
+      </dd>
+    </div>
+    <div>
+      <dt>提示词版本</dt>
+      <dd>{experiment.promptVersion}</dd>
+    </div>
+    <div>
+      <dt>作者与来源</dt>
+      <dd>
+        <a href={experiment.author.sourceUrl} target="_blank" rel="noopener noreferrer">
+          {experiment.author.name} ↗
+        </a>
+      </dd>
+    </div>
+    <div>
+      <dt>单次用户任务</dt>
+      <dd>{experiment.run.singleUserTask ? '是' : '否'}</dd>
+    </div>
+    <div>
+      <dt>Agent 工具使用</dt>
+      <dd>{experiment.run.agentTools ? '使用' : '未使用'}</dd>
+    </div>
+    <div>
+      <dt>运行环境</dt>
+      <dd>{experiment.run.environment || '未记录'}</dd>
+    </div>
+    <div>
+      <dt>工具与自检声明</dt>
+      <dd>{experiment.run.selfCheck}</dd>
+    </div>
+  </dl>
+  <section class="benchmark-section">
+    <div class="benchmark-prompt-heading">
+      <h2>完整提示词</h2>
+      <button type="button" data-copy-prompt>
+        复制提示词
+      </button>
+    </div>
+    <p class="benchmark-copy-status" role="status" aria-live="polite"></p>
+    <pre class="benchmark-prompt" tabindex="0">{experiment.prompt}</pre>
+    <script
+      is:inline
+      type="application/json"
+      data-prompt-source
+      set:html={JSON.stringify(experiment.prompt).replace(/</g, '\\u003c')}
+    ></script>
+  </section>
+  <section class="benchmark-section">
+    <h2>附加交付指令</h2>
+    {experiment.run.additionalInstructions ? (
+      <pre class="benchmark-prompt">{experiment.run.additionalInstructions}</pre>
+    ) : (
+      <p>无。</p>
+    )}
+  </section>
+  <section class="benchmark-section">
+    <h2>观察记录</h2>
+    {experiment.observations.length ? (
+      <ul>
+        {experiment.observations.map((note) => (
+          <li>{note}</li>
+        ))}
+      </ul>
+    ) : (
+      <p>尚未记录观察结果。</p>
+    )}
+  </section>
+  <section class="benchmark-section">
+    <h2>文件与生成记录 · {files.length} 项</h2>
+    <p>HTML 与工程 ZIP 保留模型原始交付；prompt.txt 为题面，generation.json 为集成记录。下载文件保留原始字节。</p>
+    <ul class="benchmark-files">
+      {files.map((file) => (
+        <li>
+          <a
+            href={
+              file.path === 'source.zip' ? sourceZip : new URL(`${file.path}.txt`, sourceBase).href
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            download={file.path}
+          >
+            {file.path} ↗
+          </a>
+          <span>{file.bytes.toLocaleString('en-US')} B</span>
+        </li>
+      ))}
+    </ul>
+    <a href={new URL('files.json', sourceBase).href} target="_blank" rel="noopener noreferrer">
+      完整文件清单 ↗
+    </a>
+  </section>
+</Terminal>
+
+<script>
+  // Astro processes this script once; delegation also serves later client-side visits.
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>('[data-copy-prompt]');
+    if (!button) return;
+    const section = button.closest('section')!;
+    const status = section.querySelector<HTMLElement>('.benchmark-copy-status')!;
+    const source = section.querySelector('[data-prompt-source]')!;
+    try {
+      await navigator.clipboard.writeText(JSON.parse(source.textContent!));
+      status.textContent = '提示词已复制。';
+    } catch {
+      status.textContent = '无法自动复制，请选择下方完整提示词后手动复制。';
+      section.querySelector<HTMLElement>('pre')?.focus();
+    }
+  });
+</script>
