@@ -58,3 +58,31 @@ restic restore latest --target /path/to/restore-review
 在已提交且干净的工作区运行 `node scripts/template.mjs`。脚本使用临时 worktree 创建没有父提交的 `template` 分支，不切换当前工作区，不自动发布。它清除文章、图片、地点、关系、电台、主机清单和私人参考文档，并生成新的通用 `STATE.md`。
 
 脚本不是秘密扫描器。发布前检查后续自行添加的代码常量、第三方账号和部署配置；无历史分支只能避免把原分支历史带入模板，不能替代凭证管理。
+
+## 当前生产回滚
+
+以下命令在生产服务器以 root 执行。新版 release 的镜像与解析后的 Compose 文件均保留；回滚前确认目标文件存在：
+
+```sh
+release=$(readlink -f /srv/blank-honey/previous)
+docker compose --project-name blank-honey -f "$release/compose.yaml" up -d --no-build
+ln -sfn "$release" /srv/blank-honey/current
+curl --fail http://127.0.0.1:18080/api/probe
+```
+
+若需要完整退回旧博客，先启动保留的旧应用和数据库，等待 `docker inspect brianstorm-web --format '{{.State.Health.Status}}'` 显示 `healthy`，再恢复切换前代理片段：
+
+```sh
+docker start brianstorm-postgres brianstorm-web
+docker inspect brianstorm-web --format '{{.State.Health.Status}}'
+```
+
+确认返回 `healthy` 后，再执行：
+
+```sh
+cp /srv/blank-honey/backups/old-blog-20260913T002127Z/pre-cutover-blog.caddy /srv/caddy-conf.d/blog.caddy
+docker exec myrss-edge-caddy-1 caddy validate --config /etc/caddy/Caddyfile
+docker exec myrss-edge-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+```
+
+旧容器、数据卷、完整 PostgreSQL 归档与原始源码均保留。不要删除 `/srv/blank-honey/releases`、旧数据卷或回滚镜像。加密备份位于服务器 `/srv/blank-honey/restic`，每日 timer 自动运行；本机另留忽略目录中的加密副本与独立恢复密码。
