@@ -1,0 +1,12 @@
+[Unit]
+Description=Encrypted Blank Honey local backup
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/blank-honey-backup
+User=root
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/srv/blank-honey /root/.cache/restic

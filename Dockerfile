@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+ARG SITE_CONFIG_VERSION=local
 RUN --mount=type=secret,id=site_env,target=/app/.env npm run build
 
 FROM node:24-alpine AS worker

@@ -26,3 +26,13 @@ Run `deploy/backup.sh` with private `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FIL
 - [OTel Prometheus exporter timestamp and metric expiry settings](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/prometheusexporter)
 - [node_exporter Docker host collection](https://github.com/prometheus/node_exporter#docker)
 - [Prometheus releases](https://prometheus.io/download/)
+
+## Production release workflow
+
+`production.compose.yaml` overlays the local stack with loopback ports 18080/18081, private host and Collector files, a read-only Linux host root for node_exporter, and a shared TLS proxy network. Only the frontend joins that proxy network. Set `STATE_DIR`, `EDGE_NETWORK`, `WEB_IMAGE` and `WORKER_IMAGE`; keep real values in private deployment state. Five container memory limits total 768 MiB.
+
+The production host keeps source in `/srv/blank-honey/app`, private configuration and logs in `shared`, and release manifests in `releases/<commit>`. Install `remote-deploy.sh` root-owned at `/usr/local/sbin/blank-honey-deploy`. A dedicated SSH account uses a separate deploy key with `restrict` and a forced command that passes only `SSH_ORIGINAL_COMMAND` to this script through its single sudoers allowance. The script accepts exactly `deploy <40-character Git commit>`, requires that commit to equal fetched `origin/main`, serializes execution with `flock`, and never reads a caller-provided path or command.
+
+Builds complete before the isolated stack is updated. Each successful release retains a resolved Compose manifest and tagged images. A failed activation or health check restores the preceding manifest when available. To roll back manually, run `docker compose --project-name blank-honey -f /srv/blank-honey/previous/compose.yaml up -d --no-build`; do not remove image tags or volumes needed by retained releases. The old site's proxy fragment, source, private environment, durable files and database dump are backed up separately before the first cutover. Restoring that proxy fragment returns traffic to the still-running old site without a database restore.
+
+The deployment script does not edit the edge proxy. The first main-domain cutover remains a separate step after the new service is accepted. A DNS-configurable, independent lab origin must point to the lab listener; production never publishes lab content on the main origin.

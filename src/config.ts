@@ -4,7 +4,7 @@ export const config = {
   description: '记录一些值得停留的瞬间。代码、远行，以及日常的缝隙。',
   about: '写代码，也写一些没有用途的句子。记录远行，和日常的缝隙。',
   githubUrl: 'https://github.com/blankhoney',
-  demoContent: true,
+  demoContent: false,
   sayings: ['Tempus fugit', 'Labor omnia vincit', 'Ars longa, vita brevis', 'Per aspera ad astra'],
   navigation: [
     { href: '/articles/', label: '文章', en: 'ARTICLES' },
@@ -17,6 +17,8 @@ export const config = {
   categories: [
     { slug: 'daily', name: '日常' },
     { slug: 'engineering', name: '工程' },
+    { slug: 'papers', name: '论文笔记' },
+    { slug: 'tutorials', name: '教程' },
     { slug: 'travel', name: '旅行' },
     { slug: 'design', name: '设计' },
     { slug: 'thoughts', name: '感悟' },

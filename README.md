@@ -31,7 +31,7 @@ Docker 默认使用 `.env.example` 构建演示站。需要使用个人配置时
 - `.env` 配置真实域名、电台来源、Giscus 和服务地址，不提交 Git。变量名参考 `.env.example`。
 - 文章放在 `src/content/blog/*.md`，图片放在 `src/assets/`。Frontmatter 包含 `title`、`description`、`date`、`category`，可选 `tags`、`places`、`draft`。草稿不进入公开文章、搜索或关系图。
 - 地点放在 `src/data/places.json`，关系放在 `src/data/relations.json`。关系两端是文章 slug，只有 `definite` 且两端已发布的关系公开展示。
-- 当前文章与图片为演示内容，不代表真实经历。换入个人内容后将 `demoContent` 设为 `false`。
+- 当前内容迁移自原博客的 50 篇已发布文章，保留发布日期、正文和图片。新增内容直接提交 Markdown。
 
 新增工具或实验时，在 `config.tools` 或 `config.experiments` 增加一条记录即可。`html` 指向项目内 HTML；关联 CSS、图片等使用相对路径，并放在该 HTML 目录之内。HTML 中的 `__SITE_RETURN__` 在构建时替换为主站工具页或实验页地址。不要放置密钥或私人文件。
 
