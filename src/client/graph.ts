@@ -23,6 +23,7 @@ export async function mountGraph(signal: AbortSignal) {
           'background-color': accent,
           color,
           'font-size': 16,
+          'line-height': 1.3,
           'font-family': 'monospace',
           'text-wrap': 'wrap',
           'text-max-width': '120px',
