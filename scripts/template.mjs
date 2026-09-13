@@ -66,7 +66,7 @@ try {
         if (item.name !== '.git') neutralize(file);
         continue;
       }
-      if (!/\.(?:ts|mjs|astro|md|html|json)$/.test(file)) continue;
+      if (!/\.(?:ts|mjs|astro|md|html|json|ya?ml|sh)$/.test(file)) continue;
       let text = readFileSync(file, 'utf8')
         .replaceAll('Blank<em>Honey.</em>', 'Your<em>Name.</em>')
         .replaceAll('Blank <em>Honey.</em>', 'Your <em>Name.</em>')
