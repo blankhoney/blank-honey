@@ -1,192 +1,147 @@
 ---
-title: 教程（二）：安装 Hexo 并部署到 GitHub Pages
+title: '教程（二）hexo框架的搭建及部署'
 slug: 教程（二）hexo框架的搭建及部署
-description: 从早期 Hexo 文章重建，整理 Node.js、npm、Hexo 初始化、本地预览和 GitHub Pages 部署。
+description: 2022 年个人博客与 Hexo 搭建旧文，保留早期表达；工具和平台说明以当时版本为背景。
 date: 2022-06-28
 category: tutorials
 tags:
-  - Hexo
-  - GitHub Pages
-  - Node.js
-  - Legacy
-  - 教程
+  - 博客
 draft: false
 places: []
 ---
+## 部署配置hexo
 
-上一篇文章把 GitHub Pages 仓库准备好了。这一步继续往下走：在本地安装 Hexo，把博客跑起来，再把生成后的静态页面部署到 GitHub Pages。
+### 1.从哪下载安装hexo
 
-原文写于 2022 年，当时我把很多前端概念揉在一起讲，尤其是把 webpack 放进了 Hexo 前置步骤里。现在回头看，这一步并不必要。搭建 Hexo 的核心依赖只有 Node.js、npm、Git 和 Hexo CLI；webpack 是打包工具，不是创建 Hexo 博客必须先安装的东西。
+使用hexo框架我们需要node.js，那么什么事node.js呢。
 
-## 准备 Node.js 和 npm
+我们要是不想浏览器事必躬亲，那就**把活扔给服务器干**；当服务器一下子服务很多浏览器时就**不能认死理非要串行操作，**要灵活统筹，**同时开始几件事，哪件完事关闭哪件。**
 
-Hexo 是基于 Node.js 的静态博客框架。可以把 Node.js 理解成一个能在浏览器之外运行 JavaScript 的环境，Hexo 则借它完成依赖安装、主题处理、静态页面生成等工作。
+这三个特征用江湖切口说就叫：
 
-安装 Node.js 后，npm 通常会一起安装。先在终端里确认环境是否可用：
+- **服务器端JavaScript处理：**server-side JavaScript execution
+- **非阻断/异步I/O**：non-blocking or asynchronous I/O
+- **事件驱动**：Event-driven
 
-```bash
-node --version
-npm --version
-git --version
-```
+`Node.js`就是这样一个服务器端的、非阻断式I/O的、事件驱动的`JavaScript`运行环境，重要的是，他是开源的。
 
-如果这些命令都能输出版本号，说明基础环境已经准备好。早期文章里引用过菜鸟教程的 Node.js 安装说明，它依然可以作为入门参考；但实际安装时更建议使用 Node.js 官网安装包，或者用 `nvm` 这类版本管理工具，避免以后遇到版本切换问题。
+首先我们需要安装`node.js`，可以参考以下教程：
 
-## 安装 Hexo CLI
+[安装node.js教程](https://www.runoob.com/nodejs/nodejs-install-setup.html)
 
-Hexo 的命令行工具可以全局安装：
+上述菜鸟教程中除了`node.js`的安装教程意外还有`node.js`的介绍以及其常用开发功能介绍，有兴趣的小伙伴可以自行了解
 
-```bash
-npm install -g hexo-cli
-```
+安装完成`node.js`以后我们怎么使用它呢，这里就要提到其独特的安装包管理软件`npm`了。
 
-安装完成后检查：
+NPM是随同NodeJS一起安装的包管理工具，能解决NodeJS代码部署上的很多问题，常见的使用场景有以下几种：
 
-```bash
-hexo version
-```
+- 允许用户从NPM服务器下载别人编写的第三方包到本地使用。
+- 允许用户从NPM服务器下载并安装别人编写的命令行程序到本地使用。
+- 允许用户将自己编写的包或命令行程序上传到NPM服务器供别人使用。
 
-这里不需要先执行 `npm install webpack -g`。如果某个主题或插件后来需要 webpack，它会在自己的依赖里声明；博客初始化阶段不用提前把它装成全局工具。
+部署hexo框架就需要用到npm来下载hexo的第三方安装包，这将会节约我们大量的时间。
 
-## 初始化博客目录
+### 2.怎么下载hexo
 
-找一个你希望存放博客源码的目录，创建并初始化 Hexo 项目。比如目录名叫 `blog`：
-
-```bash
-hexo init blog
-cd blog
-npm install
-```
-
-初始化完成后，目录里会出现 `_config.yml`、`package.json`、`source`、`themes` 等文件和文件夹。原文中的截图展示了初始化后的目录状态，里面还多了一个 Butterfly 主题配置文件；这个文件不是 Hexo 默认生成的，而是后续配置主题时才会出现。
-
-![初始化后的 Hexo 项目文件结构](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628232853869.png)
-
-*初始化后，目录中应能看到 Hexo 的基础配置与源码结构；主题配置文件是否存在取决于你是否已经安装主题。*
-
-## 本地生成和预览
-
-进入 Hexo 项目根目录后，先生成静态文件：
-
-```bash
-hexo generate
-```
-
-也可以使用缩写：
-
-```bash
-hexo g
-```
-
-然后启动本地服务器：
-
-```bash
-hexo server
-```
-
-或者：
-
-```bash
-hexo s
-```
-
-启动成功后，终端会提示本地访问地址，默认通常是 `http://localhost:4000/`。
-
-![Hexo 本地服务器启动成功提示](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233324039.png)
-
-*看到本地服务器地址，说明 Hexo 已经把博客临时跑起来了。*
-
-在浏览器打开：
+首先我们需要在终端（或者说是cmd命令下执行也行）执行命令安装`webpack`：
 
 ```text
-http://localhost:4000/
+npm install webpack -g
+
 ```
 
-如果能看到默认博客页面，说明本地预览已经成功。
+WebPack可以看做是**模块打包机**：它做的事情是，分析你的项目结构，找到`JavaScript`模块以及其它的一些浏览器不能直接运行的拓展语言（`Scss`，`TypeScript`等），并将其打包为合适的格式以供浏览器使用。
 
-![Hexo 默认博客首页](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233525630.png)
+安装完成后我们进入到我们选择好的git仓库，与github创建好`github pages`关联的仓库，**准备一个空的文件夹**，可以命名为`blog`或者任何你喜欢的名称，在终端中进入该目录下进行以下操作：
 
-*默认首页能打开，就先不要急着改主题；先确认生成和预览链路是通的。*
+输入命令下载hexo，并进行初始化
 
-## 配置 GitHub Pages 部署
+```text
+npm install -g hexo-cli
+hexo init
 
-本地能跑之后，再配置发布。Hexo 的主配置文件是项目根目录下的 `_config.yml`：
+```
 
-![Hexo 项目中的 _config.yml 文件](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233840874.png)
+我选择的文件夹命名为`blog`，在目录下运行上述命令后，文件夹中应该有下图中除了主题配置文件_config.butterfly.yml之外的的所有文件
 
-*部署配置写在 Hexo 项目根目录的 `_config.yml` 底部。*
+![image-20220628232853869](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628232853869.png)
 
-在文件底部补充 deploy 配置。仓库地址换成你自己的 GitHub Pages 仓库：
+如果你也看到相同画面，恭喜你，你的hexo已经部署在你的主机上了，此时我们只需要稍微配置hexo，就可以开始运行我们的博客网站了。
 
-```yaml
+### 3. 部署并配置运行我们的博客网站
+
+接下来我们继续在终端的该目录下输入以下命令：
+
+首先是静态部署命令
+
+```text
+hexo g
+
+```
+
+其次是启动本地服务器命令，该命令也可以用于后期调试使用：
+
+```text
+hexo s
+
+```
+
+接下来我们的终端应该会提示以下信息：
+
+![image-20220628233324039](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233324039.png)
+
+提示该信息证明服务器启动成功，我们可以通过端口号为`4000`的端口访问我们的静态网页，在浏览器输入 `http://localhost:4000/`，进入该网页后我们可以看到如下画面：
+
+![image-20220628233525630](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233525630.png)
+
+此时我们的博客其实已经设置好了，已经可以在本地使用了，现在我们要做的是将我们的hexo部署到我们的github上去。
+
+首先我们需要找到位于hexo框架目录下的配置文件 _config.yml：
+
+![image-20220628233840874](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233840874.png)
+
+打开文件，我们将文件底部的信息补充完整：
+
+```text
 deploy:
   type: git
-  repository: https://github.com/username/username.github.io.git
+  repository: https://github.com/blankhoney/blankhoney.github.io.git  #你的仓库地址
   branch: main
+
 ```
 
-早期很多教程还写 `master`，现在新建仓库默认分支通常是 `main`。实际应该以你 GitHub 仓库里显示的默认分支为准，不要机械照抄。
+**这里注意，github的主分支之前已经修改为`main`，如果继续使用`master`可能会在接下来的步骤中报错。**
 
-仓库地址可以从 GitHub 仓库的 Code 按钮里复制：
+其中我们需要填写的仓库地址位于github仓库的下述位置：
 
-![从 GitHub 仓库复制地址](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628234205144.png)
+![image-20220628234205144](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628234205144.png)
 
-*复制 HTTPS 或 SSH 地址都可以，但要和你本机的 Git 认证方式匹配。*
-
-## 安装部署插件并发布
-
-Hexo 通过 Git 发布到仓库时，需要安装部署插件：
-
-```bash
-npm install hexo-deployer-git --save
-```
-
-安装完成后，在 Hexo 项目根目录执行：
-
-```bash
-hexo clean
-hexo generate
-hexo deploy
-```
-
-缩写写法也可以：
-
-```bash
-hexo clean
-hexo g
-hexo d
-```
-
-这三步分别对应：清理旧的生成文件、重新生成静态页面、把结果推送到配置好的 GitHub 仓库。
-
-如果命令没有报错，稍等 GitHub Pages 完成发布后，就可以访问：
+配置文件修改完成后，我们下载`git`部署插件，终端根目录（hexo框架目录，以后简称根目录）下运行下述命令：
 
 ```text
-https://username.github.io/
+npm install hexo-deployer-git --save
+
 ```
 
-原文用当时的博客截图作为部署成功后的效果图。需要注意的是，截图里已经配置过 Butterfly 主题；如果你刚初始化 Hexo，线上看到的仍然会是默认主题页面，这并不代表部署失败。
+安装成功后依次输入下述命令：
 
-![部署后的博客页面示例](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628234636295.png)
+```text
+hexo clean   #清除缓存文件 db.json 和已生成的静态文件 public
+hexo g       #生成网站静态文件到默认设置的 public 文件夹(hexo generate 的缩写)
+hexo d       #自动生成网站静态文件，并部署到设定的仓库(hexo deploy 的缩写)
 
-*这是配置主题后的博客效果；刚完成基础部署时，页面样式可能更接近默认首页。*
+```
 
-![Hexo 默认页面也可以作为部署成功的判断](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233525630.png)
+如无报错，部署成功，报错请查看报错位置以及报错信息修改错误。
 
-*默认页面在线上能打开，也说明 GitHub Pages 已经跑通。*
+此项操作完成后，打开浏览器，输入 [https://xxx.github.io](https://link.zhihu.com/?target=https://fengye97.github.io/) 就可以打开你的网页了：
 
-## 收尾检查
+![](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628234636295.png)
 
-这篇教程真正要确认的不是主题好不好看，而是链路是否闭合：
+当然我这个是配置完成主题后才会拥有的画面，你会看到的依然是最初的博客画面，但是这也意味着你的博客部署已经成功，现在你已经可以开始编写上传你的博客了，当然如果你需要美化自己的博客的话，可以参考我的下一个教程。
 
-- Node.js、npm、Git 能正常使用；
-- `hexo init` 能初始化项目；
-- `hexo s` 能在本地打开博客；
-- `_config.yml` 里的 deploy 仓库和分支正确；
-- `hexo-deployer-git` 已安装；
-- `hexo d` 能把静态页面推送到 GitHub Pages 仓库；
-- `https://username.github.io/` 能访问到页面。
+![](../../assets/legacy/教程（二）hexo框架的搭建及部署/image-20220628233525630.png)
 
-这些都完成后，再去折腾主题、美化、评论、搜索和图片路径，会更容易定位问题。Butterfly 主题的官方文档可以作为下一步参考：
+我使用的butterfly主题博客美化教程的官方链接如下：
 
-[Butterfly 官方文档](https://butterfly.js.org/posts/21cfbf15/)
+[博客主题美化butterfly](https://butterfly.js.org/posts/21cfbf15/)

@@ -1,63 +1,42 @@
 ---
-title: ADAS：让一个 Agent 去设计更好的 Agent
+title: ADAS 生成的 Teacher、Student、Verifier 都做了什么
 slug: paper-2026-03-18-adas-meta-agent-search
-description: 读 Automated Design of Agentic Systems 的一点笔记：它把 agentic system 定义成代码，再让 meta-agent 搜索更好的设计。
+description: 拆一份官方搜索结果，看五次模型调用之间究竟传递了哪些内容。
 date: 2026-03-18
 category: papers
 tags:
-  - AI
-  - Agent
-  - Paper Notes
+  - 工作流
 draft: false
 places: []
 ---
 
-## 这个问题很有野心
+给三个模型调用分别取名 Teacher、Student 和 Verifier，听起来已经像一套解题方法了。但把名字遮住，只看输入输出，程序到底多做了什么？[ADAS](https://arxiv.org/html/2408.08435v1) 的结果档案里刚好有一份可以拆开的候选，叫 Dynamic Role-Playing Architecture，是 MGSM 搜索第 4 代的设计。
 
-ADAS 问的是：能不能自动化设计 agentic system？
+这份[官方存档](https://github.com/ShengranHu/ADAS/blob/2702bee8fefda42255efc5be9f60e3bd3db96ae4/results/mgsm_gpt3.5_results.json)的 `code` 字段保存了完整 `forward`。先按实际传值把它缩写一下，下面是阅读用的伪代码：
 
-过去很多 Agent 都是人工搭出来的：CoT、Self-Refine、ReAct、多 critic、ensemble、memory，各种模块靠人组合。ADAS 的想法是，把 Agent 定义成代码，让一个 meta-agent 不断写新 Agent、评估、保存，再基于历史发现继续生成更好的 Agent。
+```text
+解释 = Teacher(题目)
+思考, 答案 = Student(题目, 解释)
+结论, 教师反馈, 学生反馈 = Verifier(题目, 思考, 答案)
+新解释 = Teacher(题目, 教师反馈)
+新思考, 新答案 = Student(题目, 新解释, 学生反馈)
+返回新答案
+```
 
-这听起来很像 AutoML 进入 Agent 时代。
+五次调用，分工并不难懂。教师先提供解释，学生据此作答，验证者分别给教师和学生反馈，然后再做一轮。真正让我停下来的是第三行：Verifier 返回的结论并没有拿来决定是否继续。即使它认为原答案已经没问题，程序也照样再调用教师和学生，最终交第二份答案。
 
-## 三个核心要素
+这就和“答错了才修”不一样。角色名叫 Verifier，代码却没有验证后直接放行的分支。我们如果只用自然语言把流程概括成“教师指导、学生回答、验证者检查”，会把这个执行细节整个漏掉。
 
-论文把 ADAS 拆成三件事：
+第二轮的输入也值得看。教师得到题目和教师反馈，没有直接拿到自己的旧解释；学生得到题目、新解释和学生反馈，也没有直接拿到旧答案。Verifier 自己也没有直接收到教师的解释，只能依据学生的思考和答案等输入形成教师反馈。反馈对象可能携带相关信息，但究竟保存了多少，要看它实际生成什么。给角色取了名字，并不会替程序建立一份共享聊天记录，传哪些对象就能读哪些材料。
 
-- search space；
-- search algorithm；
-- evaluation function。
+[框架源码](https://github.com/ShengranHu/ADAS/blob/2702bee8fefda42255efc5be9f60e3bd3db96ae4/_mgsm/search.py) 用 `Info` 保存内容、作者和迭代编号等信息，再展开成提示。候选的工作就是安排这些基础调用。到这里，再看 ADAS 在搜索什么就清楚了：外层模型写这种 `forward` 程序，运行一批题，记录结果，再改另一份程序。
 
-搜索空间决定什么样的 agentic system 能被表示。作者选择代码作为表示方式，因为代码可读、可复用，也更容易利用已有工程生态。
+![ADAS 生成候选流程、评估并写入设计档案](../../assets/papers/paper-2026-03-18-adas-meta-agent-search.png)
 
-搜索算法决定怎么探索。本文的 Meta Agent Search 会维护一个 archive，里面保存历史发现的 Agent。meta-agent 基于 archive 生成新设计，写成代码，自反思检查，再在验证集上评估。
+图源：[论文 Figure 1](https://arxiv.org/html/2408.08435v1#S1.F1)，版权归原作者。图中一个候选可以是上面整套五次调用的程序。
 
-评价函数则决定什么叫“更好”。可以优化准确率、成本、延迟、安全等指标。这里其实是整个系统的核心。
+因此这里有两层修改。候选内部的教师和学生修某一道题的答案；外层 meta-agent 根据多道题的表现，改的是调用方式、提示和控制逻辑。候选代码执行报错时，搜索框架也会把异常交回外层修代码，这又不是 Verifier 在批改答案。把两层分开，才知道一条反馈究竟准备改变什么。
 
-## Archive 的意义
+论文分别在 MGSM、DROP、MMLU、GPQA 等领域搜索，外层用 GPT-4，候选与人工基线用 GPT-3.5，搜索 30 轮。MGSM 最佳人工基线为 39.0%，最佳搜索设计为 53.4%，但这个最佳结果不能直接归到本文拆的第 4 代候选身上。迁移实验还有按测试准确率筛前三个候选的步骤，读表时也应连着这个选择过程看。[实验与搜索分析](https://arxiv.org/html/2408.08435v1#S4.SS1)
 
-我觉得 ADAS 里最有意思的是 archive。它不是每轮只看当前最优解，而是保留历史设计作为 stepping stones。
-
-这让搜索更像开放式探索，而不是单纯局部优化。一个早期看起来一般的设计，后面可能和别的模块组合出更强结构。
-
-论文里发现的一些模式，比如多 CoT 候选、refinement、多维度 critic、ensemble，都是多个 stepping stones 逐步组合出来的。
-
-## 最大瓶颈是评价函数
-
-源笔记里最后强调得很好：ADAS 的强弱很大程度上取决于 evaluation function。
-
-如果评价函数只看验证集 accuracy，系统就可能过拟合验证集。如果不包含成本、延迟、安全，搜出来的 Agent 可能很慢、很贵，甚至有副作用。如果用 LLM judge，又会引入 judge bias。
-
-所以我不太会把 ADAS 理解成“让模型自动发明 Agent，万事大吉”。更现实的说法是：在一个人类设计好的搜索空间和评价函数里，让模型加速探索。
-
-## 安全问题不能跳过
-
-ADAS 让模型生成代码并执行，这本身就有风险。论文里提到容器化执行、人工检查、代码风险提示等安全措施。
-
-如果放到真实系统里，还要更严格：沙箱、权限隔离、网络限制、资源限制、审计、回滚。尤其是当 meta-agent 能改自己的设计时，边界一定要清楚。
-
-## 小结
-
-ADAS 给我的启发是：Agent 设计可能会从手工 pattern collection，走向自动化搜索。
-
-但它不是完全自动。搜索空间、初始模块、评价函数、安全沙箱，仍然是人类要设计好的部分。真正值得关注的，是怎么让自动搜索产出的东西既有效、又便宜、又可解释、又安全。
+读这种自动生成的流程，我会先数实际调用，再看哪些返回值被用掉。上面的 `final_verdict` 就是个很好的入口：如果想让通过的答案直接返回，需要在这里新增分支，然后重新比较结果和花费。

@@ -1,59 +1,45 @@
 ---
-title: Heuristic Learning：当 Agent 维护的不是权重，而是一套可测试的软件系统
+title: 打砖块卡在 387 分以后，代码改了哪里
 slug: paper-2026-05-06-heuristic-learning-beyond-gradients
-description: 读 Learning Beyond Gradients 的一点笔记：启发式规则以前难维护，编码 Agent 可能改变了这条成本曲线。
+description: 读 Learning Beyond Gradients 的 Breakout 记录：先打破循环，再让扰动及时收手。
 date: 2026-05-06
 category: papers
 tags:
-  - AI
-  - Agent
-  - Paper Notes
+  - 工作流
 draft: false
 places: []
 ---
 
-## 这篇不是典型论文笔记
+作者记录的 387 分 Breakout 版本挺有意思：球能接住，游戏没结束，分数却不怎么动了。挡板把球送回一条重复路线，剩下的砖一直碰不到。控制器在接球这件事上已经做得不错，继续只调接球精度，看起来不会解决眼前的问题。
 
-源文件里只有一个链接，指向 _Learning Beyond Gradients_。我把它当成一篇研究随笔来读，而不是论文。
+Jiayi Weng 在 [Learning Beyond Gradients](https://github.com/Trinkle23897/learning-beyond-gradients/blob/01505855120ba5fe801fc0f701b42b7c4594ff81/learning-beyond-gradient.en.md) 里保留了这次迭代。他原本想给 EnvPool 找便宜、可复现的测试策略，让环境走到比随机动作更有信息的状态。编码 Agent 看运行记录，再修改策略代码，作者把这种过程叫 Heuristic Learning。以下实验和录像都来自原作者，我没有复现。
 
-它讨论的点很有意思：持续学习不一定只能通过更新神经网络权重来实现。随着编码 Agent 变强，一套由规则、测试、日志、回放、记忆和补丁组成的软件系统，也可能通过不断迭代获得能力。
+本文为后续修订稿，5 月 6 日仅保留作原归档日期；以下引用固定在英文稿 2026 年 5 月 11 日的提交。[该英文文件首次入库](https://github.com/Trinkle23897/learning-beyond-gradients/commit/0581e0b0c1b8)为 5 月 8 日，晚于本文归档日期。
 
-作者把这个过程叫 Heuristic Learning。
+## 先让球换一条路线
 
-## 启发式为什么以前不流行
+原文处理停滞的办法很直接。连续很久没有奖励，就给预测落点增加偏移，而且让偏移换方向、换幅度，试着打破周期。接球程序仍在每一步执行；修改这些规则的 Agent 则在一轮运行之后看反馈，两者的速度和职责不同。
 
-启发式规则不是新东西。专家系统、规则系统、手写控制策略都存在很久了。问题是维护成本太高。
+加入这项处理后，记录里的分数从 387 到了 507。可以对照作者保留的[387 分录像](https://github.com/Trinkle23897/learning-beyond-gradients/blob/01505855120ba5fe801fc0f701b42b7c4594ff81/atari/breakout/heuristic_breakout_score387_tunnel0_render210x160.mp4)和[507 分录像](https://github.com/Trinkle23897/learning-beyond-gradients/blob/01505855120ba5fe801fc0f701b42b7c4594ff81/atari/breakout/heuristic_breakout_score507_stuckbreaker_render210x160.mp4)看。只看两个数字，会漏掉修改的理由：前一个版本活着但停滞，后一个版本有意改变球路。
 
-今天加一个 if 修 A，明天 B 坏了，再加一个 if，后天没人敢删任何东西。系统越长越像补丁堆，最后维护成本超过收益。
+随后出现的是高速低球问题。普通的落点追踪让挡板提前过头，作者记录加入 `fast_low_ball_lead_steps=3` 后得到了 839 分。继续往上改时，有些参数尝试没有用，最后有效的一处修改发生在后半场：球离挡板还远时可以扰动，接近时逐渐释放偏移。原文摘出的核心三行是：
 
-这篇文章的关键判断是：编码 Agent 改变了这条维护成本曲线。以前人类维护不起的规则系统，如果能由 Agent 读取失败、修改代码、补测试、看回放、写实验记录，也许重新变得值得拥有。
+```python
+if score >= 432 and stuck_release_horizon_steps > 0:
+    release_ratio = clip(steps_to_paddle / stuck_release_horizon_steps, 0.0, 1.0)
+    offset *= release_ratio
+```
 
-## HL 和 Deep RL 的区别
+这里的 `steps_to_paddle` 越小，偏移就越小。我喜欢这几行把“差不多该收手了”写成了一个能检查的条件。扰动帮助球碰到新砖，到了接球前还继续偏，就会把挡板拉走。作者另外补了动作与挡板位置之间的一步延迟补偿，最终记录到了 864 分。代码和各阶段重跑命令都在[原文附录](https://github.com/Trinkle23897/learning-beyond-gradients/blob/01505855120ba5fe801fc0f701b42b7c4594ff81/learning-beyond-gradient.en.md)。
 
-Deep RL 更新的是神经网络参数。Heuristic Learning 更新的是软件结构：规则、状态机、控制器、测试、日志、记忆、配置。
+![作者展示编码 Agent 读取反馈并维护策略软件的过程](../../assets/papers/heuristic-learning.png)
 
-两者都有状态、动作、反馈和更新，只是更新对象不同。
+配图来自 Jiayi Weng 的原文，版权归原作者，不是本站实验截图。
 
-HL 的优点是可解释、可测试、可回滚。一个有效规则可以直接跳到新策略，而不是靠梯度慢慢爬。旧能力可以固定成 regression tests、golden traces、failure videos、版本 diff。
+## 14,504 步从哪里开始算
 
-但它也不是万能。规则也会过拟合，测试也可能太窄，补丁也会破坏旧行为。只是这些问题更像工程维护问题，而不是参数灾难性遗忘。
+后面把控制器从 RAM 状态读取迁到纯图像输入，也很值得分开看。几何控制、打破循环和后期释放偏移，已经在 RAM 版本里摸索过；图像版本接着替换状态读取层，用 RGB 检测球、挡板等信息。约 14,504 个环境步数对应这段局部迁移，不能写成从零发现整套策略的花费。
 
-## 我最认同的一点
+387、507、839、864 同样是具体中间版本的记录，不是任意种子上的平均成绩。慢循环里还用了已训练语言模型的知识，因此“执行策略是普通程序”和“整个过程没有使用神经网络”也差很远。
 
-文中有一句意思我很喜欢：一个只增长、不压缩的 Heuristic System 最后会变成 big ball of mud。
-
-这太像真实工程了。能吸收反馈还不够，还要能压缩历史。失败记录要变成测试，局部补丁要重构成简单规则，重复经验要沉淀成模块。
-
-这和前面读到的 Agent memory 综述其实能连起来。Storage 是记录失败，Reflection 是分析失败，Experience 是把多个失败抽象成可复用策略。Heuristic Learning 则把这些经验落到代码系统里。
-
-## 它适合什么
-
-我不会说 HL 可以替代神经网络。复杂感知、开放语义理解、长程泛化，仍然需要模型。
-
-但在边界清楚、反馈明确、可重放、可测试的环境里，HL 很有吸引力。比如游戏控制、自动化流程、测试修复、规则型业务流程、部署排障。只要失败能复现，Agent 就可以围绕失败建立可维护系统。
-
-## 小结
-
-Heuristic Learning 给我的启发是：Agent 时代的“学习”不一定只发生在模型权重里。
-
-如果一个系统有测试、日志、回放、规则、记忆和持续修改能力，它也可以在工程意义上学习。真正的难点不是写更多规则，而是让规则、反馈和压缩机制形成一个可长期维护的软件系统。
+原文留下了各阶段代码和重跑命令，可以对照那几行偏移释放，检查球接近挡板时偏移是否真的减小。前面为打破循环加上的动作，到了接球前必须及时收回。

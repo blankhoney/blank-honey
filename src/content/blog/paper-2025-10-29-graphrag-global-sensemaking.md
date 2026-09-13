@@ -1,62 +1,42 @@
 ---
-title: GraphRAG：当问题不是找一句话，而是理解一整个语料库
+title: GraphRAG 的引用，怎样一路找到原文
 slug: paper-2025-10-29-graphrag-global-sensemaking
-description: 读 GraphRAG 的一点笔记：它把 RAG 从局部相似检索，推进到面向整个语料库的全局 sense-making。
+description: 从答案里的社区报告编号往回查，理解全局汇总为什么多了几层材料。
 date: 2025-10-29
 category: papers
 tags:
-  - AI
-  - RAG
-  - Paper Notes
+  - 检索增强
 draft: false
 places: []
 ---
 
-## Vector RAG 的边界
+看一份 GraphRAG 生成的回答，引用里可能写着 `Data: Reports`，后面跟报告编号。这个编号指向的是系统事先写好的社区报告，还没有直接到原文。如果想确认一句话是不是资料里真的说过，接下来还得往回走几步。
 
-传统 Vector RAG 很适合回答局部问题：某个事实在哪段文档里，某个概念的定义是什么，某个条款怎么写。
+[GraphRAG](https://arxiv.org/abs/2404.16130) 的 global search 先把语料加工成实体和关系，做层级社区发现，再给社区生成报告。用户提问时，系统把某一层的报告分组，各组生成局部回答，再汇总成最终答案。它适合讨论一批资料的整体主题，例如大量访谈中反复出现了哪些问题，所读的材料也因此经过了不止一次整理。
 
-但如果问题变成“这批新闻整体在讲什么趋势”“这组访谈里主要冲突是什么”“一个大语料库里的关键群体和关系是什么”，只找 top-k 相似片段就不够了。因为答案不在某几个 chunk 里，而分布在整个语料库的结构中。
+![从抽取后的实体关系中发现的图社区](../../assets/papers/paper-2025-10-29-graphrag-global-sensemaking.jpg)
 
-GraphRAG 关注的就是这种全局 sense-making 问题。
+图源：[原论文 Figure 4](https://arxiv.org/html/2404.16130v2#A2.F4)，版权归原作者。这里的社区是图中连接较密的节点分组。
 
-## 它的流程
+我想把引用这条路单独记下来，因为它决定了汇总以后还方便不方便核对。按官方早期 `v0.1.1` 的结构，可以这样查：
 
-GraphRAG 大致分成几个步骤：
+```text
+最终答案中的报告编号
+  → 社区报告
+  → 报告所引的实体、关系等记录
+  → 记录关联的 text_unit_ids
+  → 原文文本块及 document_ids
+  → 来源文档
+```
 
-1. 把原文档切成文本块；
-2. 用 LLM 抽取实体、关系和重要事实；
-3. 把实体和关系转成知识图谱；
-4. 对图做社区发现；
-5. 为不同层级社区生成摘要；
-6. 查询时让社区摘要先生成局部回答，再 reduce 成全局回答。
+[map 提示](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/query/structured_search/global_search/map_system_prompt.py) 要求局部结果给出描述、帮助分数和报告引用，[reduce 提示](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/query/structured_search/global_search/reduce_system_prompt.py) 再汇总并保留引用。社区报告里又可以引用实体、关系或声明的记录 ID。这些数不是原文页码，也不能直接当数组下标。
 
-我觉得最关键的是社区摘要。它不是等用户提问时才从原文里临时找，而是提前为语料库构建一层“全局记忆”。用户问全局问题时，系统不是在原始 chunk 里乱捞，而是在这些社区报告里组织答案。
+引用里显示的编号对应记录的 `short_id`，先按这个字段找到记录，再沿内部关联查找。它和内部 `id` 分开，具体见 [Identified 定义](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/model/identified.py)。不能把一个显示编号直接当成内部 ID 去查询文本块。
 
-## 和普通知识图谱 RAG 的区别
+接下来看数据对象。[实体](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/model/entity.py) 和[关系](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/model/relationship.py)保留 `text_unit_ids`，通过它找到 [TextUnit](https://github.com/microsoft/graphrag/blob/v0.1.1/graphrag/model/text_unit.py) 的文本和文档关联。这样读者看到一句关于某个实体的概括，至少有路径继续回到被抽取的段落。这份笔记对照的是该早期版本，后续接口变化时需要重查字段。
 
-GraphRAG 不只是“把图结构塞进 prompt”。它关心图的模块性：实体之间会形成关系紧密的社区，社区又可以层层聚合。
+不过“编号存在”还只是第一步。报告可能引用了一条真实关系，写出的解释却超出了那条关系；最后答案也可能把局部结论概括得太宽。沿这条路回查，才能区分原文说了什么、抽取写了什么，以及哪一层开始多说了一点。把引用点击后只打开另一份 AI 摘要，读者仍然没完成核对。
 
-这让它适合处理大规模语料的主题结构。低层社区保留细节，高层社区提供概览。查询时可以根据问题选择不同层级的摘要，在细节和覆盖面之间做取舍。
+原论文用约一百万和一百七十万 token 的播客转录、新闻材料，每份语料生成 125 个全局问题，再让模型两两比较答案。除了普通向量检索，还比较了直接对原始文本做 map-reduce 的 TS 基线，这个对照很必要，否则更全面可能只是因为看了更多内容。GraphRAG 在全面性、多样性上优于向量检索；相对 TS，部分中低层报告有较小提升，根层并非一直更好。[实验部分](https://arxiv.org/html/2404.16130v2#S4)
 
-从工程角度看，这很像先离线做索引和摘要，再在线做 Map-Reduce。成本被前置了，但查询时能回答更全局的问题。
-
-## 评估也换了问题
-
-传统 QA benchmark 更关心事实检索对不对。GraphRAG 评估的是全局问题，很多时候没有标准答案。
-
-论文使用 LLM as a Judge，按 Comprehensiveness、Diversity、Empowerment、Directness 等标准比较不同系统回答。这个设计不是完美的，judge 本身也会有偏差。但它至少承认了这类任务的答案不是一个字符串，而是一个帮助人理解语料库的解释。
-
-## 我会怎么用它
-
-如果是普通个人知识库，我不会一开始就上 GraphRAG。构图、社区发现、摘要维护都不便宜，也会引入抽取错误。
-
-但如果目标是“读一批材料，看全局结构”，GraphRAG 就很有吸引力。比如分析一批会议纪要、一堆项目日志、新闻集合、访谈文本。它回答的不是“某句话在哪”，而是“这些材料整体说明了什么”。
-
-更现实的做法可能是混合：先用 embedding 找到相关区域，再对局部子图或相关社区做摘要，而不是全量图索引一把梭。
-
-## 小结
-
-GraphRAG 的价值在于，把 RAG 的目标从局部命中扩展到全局理解。
-
-它提醒我：不是所有问题都应该用 top-k chunk 回答。有些问题需要先理解语料库的结构，再组织答案。代价是系统更复杂、离线成本更高、评估更难。是否值得，要看你的问题是不是全局问题。
+最低层报告的查询上下文比直接处理原文少约 26% 至 33%，但事先抽取和生成报告的花费在查询之前已经发生了。节省来自把原文加工成能反复使用的报告，这也意味着原文到报告的关联值得一起保存。

@@ -6,7 +6,29 @@ export default defineConfig({
   integrations: [
     sitemap(),
     expressiveCode({
-      themes: ['github-light', 'github-dark'],
+      themes: ['everforest-light', 'everforest-dark'],
+      styleOverrides: {
+        codeFontFamily: 'var(--mono)',
+        codeBackground: 'var(--soft)',
+        codeForeground: 'var(--fg)',
+        borderColor: 'var(--line)',
+        borderWidth: '1px',
+        borderRadius: '3px',
+        frames: {
+          frameBoxShadowCssValue: 'none',
+          editorBackground: 'var(--soft)',
+          editorTabBarBackground: 'var(--bg)',
+          editorActiveTabBackground: 'var(--soft)',
+          editorActiveTabForeground: 'var(--fg)',
+          editorTabBarBorderColor: 'var(--line)',
+          editorActiveTabIndicatorTopColor: 'var(--accent)',
+          terminalBackground: 'var(--soft)',
+          terminalTitlebarBackground: 'var(--bg)',
+          terminalTitlebarForeground: 'var(--muted)',
+          terminalTitlebarBorderBottomColor: 'var(--line)',
+          inlineButtonForeground: 'var(--muted)',
+        },
+      },
       useDarkModeMediaQuery: false,
       themeCssSelector: (theme) =>
         `[data-tone="${theme.name.endsWith('dark') ? 'dark' : 'light'}"]`,

@@ -1,58 +1,39 @@
 ---
-title: AFlow：自动搜索 Agentic Workflow，但不是完全放飞
+title: AFlow 搜出来的代码流程，修完以后还测了吗
 slug: paper-2026-04-01-aflow-workflow-search
-description: 读 AFlow 的一点笔记：它用 MCTS 和执行反馈搜索 workflow，把自动化 Agent 设计收束到可评估的工程空间。
+description: 沿 MBPP 的一个真实工作流，看生成、投票、测试和修复怎样连接。
 date: 2026-04-01
 category: papers
 tags:
-  - AI
-  - Agent
-  - Paper Notes
+  - 工作流
 draft: false
 places: []
 ---
 
-## 它接在 ADAS 后面看很合适
+AFlow 论文附录给出了一份用于 MBPP 的搜索结果，流程不复杂：生成三个代码候选，选出一个，拿去测试，失败了再修。这比“模型自动优化工作流”这句话好理解多了，也可以直接检查它到底优化出了什么。
 
-AFlow 可以放在 ADAS 后面读。ADAS 提出让 meta-agent 自动设计 agentic systems，AFlow 则更具体地把目标放在 agentic workflow generation 上。
+下面按[附录 B.1](https://arxiv.org/html/2410.10762v4) 中的执行顺序整理，省略了具体类名和提示参数：
 
-它关心的是：能不能自动搜索一套适合任务的 LLM workflow，而不是人手工搭 prompt、节点和流程。
+```text
+依次生成代码候选 1、2、3
+将三个候选交给 ensemble 选择
+测试选中的代码
+  测试成功 → 返回测试后的 solution
+  测试失败 → 把题目、失败代码和错误交给模型修复 → 返回修复稿
+```
 
-## Workflow 是什么
+三个候选是在 `for` 循环里逐个 `await` 的，所以这份代码并没有让三次生成同时运行。更容易看漏的是末尾：失败后的修复稿直接返回，没有再经过上面的测试。修复提示确实要求保持函数名与签名、针对错误修改，但模型交出修复稿，和测试确认修好了之间仍然少了一步。
 
-论文把 agentic workflow 定义成由 LLM-invoking nodes 和 edges 组成的流程。Node 包含 model、prompt、temperature、output format；edge 定义执行顺序、条件、依赖和循环。
+我觉得这是读自动生成工作流时很值得做的检查。图上有 Test，听起来像最后的答案已经测过；沿实际返回路径走一遍，会发现有一条路径绕过了最后一次测试。要在自己的代码里使用这套思路，就可以先决定修复后是否再跑测试、失败允许重试几次，而不是把“有测试节点”当成整个输出的性质。
 
-这比单个 prompt 更接近真实应用。很多任务不是一次 LLM 调用能完成的，而是需要分解、生成、评估、修正、聚合。
+这份 MBPP 流程在搜索第十四轮找到。AFlow 怎么找它？先给一组可调用的 Operators，例如代码生成、评审修订、测试和集成，再让优化器修改连接这些操作的代码与提示。一份完整工作流才是搜索树中的一个节点。它被选中以后生成下一份候选，跑验证题，把相对上一份好在哪里、差在哪里记下来，供后续继续改。
 
-但 workflow 搜索空间太大，所以 AFlow 不是真的让模型随便生成一切。它用模板、operators、code edges 和 evaluator 把搜索空间收住。
+![AFlow 用验证结果扩展工作流搜索树](../../assets/papers/paper-2026-04-01-aflow-workflow-search.png)
 
-## 搜索循环
+图源：[论文 Figure 3](https://arxiv.org/html/2410.10762v4#S3.F3)，版权归原作者。这棵树是在找解题程序，并非在一道题内搜索几个中间答案。
 
-AFlow 的搜索过程可以概括成四步：
+论文的表示能描述模型、温度、输出格式等属性，实际实验主要改提示和连接代码，模型等设置固定。优化器用 Claude 3.5 Sonnet，主实验执行器用 GPT-4o-mini，搜索 20 轮。数据按 1:4 划分验证和测试，作者先在验证部分跑空模板五次，再挑波动较大的题做搜索验证集；新候选也重复运行五次，比较均值和波动。[搜索设置](https://arxiv.org/html/2410.10762v4#S4) 的这些步骤说明，外层并非看一次回答顺眼就把流程留下。
 
-1. Soft Mixed Probability Selection：从已有 workflow 中选一个父 workflow；
-2. LLM-Based Expansion：让 LLM optimizer 修改 prompt 或代码连接；
-3. Execution Evaluation：实际执行 workflow，在验证集上评分；
-4. Experience Backpropagation：把性能、修改记录、失败经验回传。
+六项主任务中，AFlow 的平均分为 80.3，人工 CoT Self-Consistency 为 76.0，相差 4.3 个点；摘要写的约 5.7% 是相对提升。这个平均包含数学正确率、问答 F1 和代码 pass@1，想判断自己的代码任务适不适合，还是要回到对应那一列，而不能只读平均。[实验结果](https://arxiv.org/html/2410.10762v4#S5.SS1)
 
-这个结构让我觉得比较可靠，因为它不是让 LLM 自己宣称“我改好了”。改完以后要跑验证集，分数说话。
-
-## 人类设计仍然存在
-
-我不喜欢把 AFlow 说成“完全自动化 workflow 发现”。它更准确的描述是：在人类约束好的空间里自动优化。
-
-人类仍然提供 template、operator set、评估函数和任务数据。LLM optimizer 决定每轮改哪里、怎么改。验证集决定是否有效。
-
-这个边界很重要。否则很容易误解成“以后 workflow 不用设计了”。实际是设计工作从手写流程，部分转移到了设计搜索空间和评价函数。
-
-## 成本和迁移
-
-AFlow 有一个现实意义：弱模型通过搜索到更合适的 workflow，可能在成本-性能 Pareto front 上超过强模型的朴素调用。这对部署很有用。
-
-但源笔记里也提到模型迁移问题：用一个模型优化出来的 workflow，换到另一个模型上性能可能下降。因为不同模型的能力、格式稳定性、推理习惯不一样。workflow 不是完全模型无关的。
-
-## 小结
-
-AFlow 给我的启发是：Agent workflow 的自动化不是“让模型自由发挥”，而是“受约束搜索 + 执行反馈 + 经验回传”。
-
-它比手工调 prompt 更系统，也比完全开放的代码生成更可控。未来如果要做可维护的 Agent 平台，我会优先关注这种能评估、能回滚、能记录失败经验的 workflow search，而不是只堆更多 prompt trick。
+官方仓库的 [README](https://github.com/FoundationAgents/AFlow/blob/3f457218fc716093fe53f6df8a5d5e6379d66346/README.md) 提供各轮实验包。只打开仓库里 round_1 的初始文件，看到的还不是论文找到的最终工作流。

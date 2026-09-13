@@ -1,59 +1,35 @@
 ---
-title: LangGraph 双轨流程：一次改写、一次检索、并行生成
+title: MediAC 双轨：A 已经写完，接口还在等 B
 slug: medi-ac-2026-03-13-langgraph-dual-flow
-description: 第一次让双轨 demo 像个产品接口：用 LangGraph 串起改写、检索和 A/B 输出。
+description: 共享召回之后同时生成追问与报告，等待发生在 gather。
 date: 2026-03-13
 category: engineering
 tags:
-  - AI
-  - RAG
-  - LangGraph
-  - Engineering Log
+  - MediAC
 draft: false
 places: []
 ---
 
-## `/v1/dual` 出来以后，demo 才像那么回事
+两条线同时跑，即使 A 先写完，接口也仍要等 B。原因并不复杂：`/v1/dual` 要一起交回追问和报告，所以仍得等 B 线。前面做的并行有用，但用户拿到第一句话的时间，还是被较慢的分支拖着。
 
-前面几轮都在打地基：容器、ingest、检索、adapter。M4 才真正把它们串起来，做出 `/v1/dual`。
+这一阶段先把同步双轨接清楚。输入经过一次 rewrite，再召回成 `recall_bundle`，A/B 共用这批初始资料。A 生成追问，B 生成报告并检查是否继续检索，两份结果在末尾汇合。
 
-这个接口的目标很明确：用户输入一句话，系统先改写 query，再检索，然后同时产出 A 线问诊回复和 B 线结构化报告。
+![MediAC 同步双轨的共享召回与汇合等待](/content-diagrams/medi-dual-sync.svg)
 
-这也是我第一次觉得这个项目不只是几个脚本拼在一起。
+按同步接口绘制的示意图，分支长度不代表实测耗时。右侧汇合点仍等待两条线都完成。
 
-## 为什么用 LangGraph
+九月整理 `backend/dual_graph.py` 时，图实际只有 `rewrite_once`、`shared_retrieve` 和 `run_tracks` 三个节点。A/B 的并发放在最后一个节点内部：
 
-这个流程完全可以用普通函数写，也可以用 `asyncio.gather` 并发跑 A/B。更省事，代码也更短。
+```python
+consult_task = asyncio.create_task(self.run_consult(state))
+report_task = asyncio.create_task(self.run_report(state))
+consult_text, report = await asyncio.gather(consult_task, report_task)
+```
 
-但我最后还是用了 LangGraph。原因不是为了显得“Agent 化”，而是流程一旦分成 rewrite、retrieve、A answer、B report，状态传递会越来越乱。用 graph state 之后，每个节点消费什么、产出什么都更清楚。
+因此 B 的每一轮追加检索并不是独立图节点，它在 `run_report` 函数里循环。画图时可以展开解释内部步骤，读 trace 时却要知道实际节点到哪里为止，不然容易找一个代码里根本没有命名的节点。
 
-另一个原因是 LangSmith。这个 demo 后面要讲给别人看，trace 里能看到每一步输入输出，比口头解释“我们中间有检索”有说服力得多。
+共享召回省了一次初始检索，也便于比较两边用了什么材料。rewrite 只负责把问题整理成适合检索的短句；当前图的这个节点读取 query，不能把后来聊天路径携带的完整历史也算进来。生成节点要利用历史，还得显式传入相应 state。
 
-## 共享一次 rewrite 和 retrieval
+我选 [LangGraph](https://docs.langchain.com/oss/python/langgraph/graph-api) 是想把这几个读写位置固定下来：rewrite 写出新 query，retrieve 写证据，run_tracks 写两个结果。Route 只处理请求和返回，外部调用放 adapter。同步调用本来用普通函数也能组织，图的用途在于后面可以沿节点检查数据。
 
-`/v1/dual` 里 A 线和 B 线没有各查一遍。它们共享一次 query rewrite 和一次 retrieval。
-
-这样做有两个好处。第一，少一次外部调用，速度和成本都更可控。第二，A/B 基于同一份 `recall_bundle`，后面比较输出时不会被“召回内容不同”干扰。
-
-流程大概是：
-
-1. 读用户输入和最近会话；
-2. 改写查询；
-3. 按当前检索模式召回；
-4. A 线生成短回复；
-5. B 线生成结构化报告；
-6. 一起返回。
-
-## route 不要变成垃圾桶
-
-这一轮我特别克制 route 层。Route 只接请求、调用 graph、返回响应。Graph 管流程，adapter 管模型和检索。
-
-这个边界看起来普通，但很容易被破坏。只要图省事把 prompt、检索、日志、返回格式都塞进 route，后面任何改动都会牵一大片。
-
-## Trace 不是装上就好
-
-LangSmith 接上以后也踩了点小坑：有些节点一开始没有按预期出现在 trace 里，主要是 wrapper 位置、异步调用和 run name 没处理好。
-
-这让我意识到，可观测性不是“引入 SDK”就完事。你得认真命名每个节点，让 trace 真能对应到代码里的流程边界。否则出了问题，trace 也只是一张漂亮但没法用的图。
-
-M4 的价值不在于模型回答变聪明，而在于整个链路终于能被看见：改写、检索、A 线、B 线各自在哪里，输入输出是什么，问题该从哪一段开始查。
+要让 A 先到页面，下一步得改变接口的交付方式。只把 `gather` 前面的两个调用并发起来，做不到这件事。同步 `/v1/dual` 先保留给完整流程演示，聊天和报告分别返回的版本另做。

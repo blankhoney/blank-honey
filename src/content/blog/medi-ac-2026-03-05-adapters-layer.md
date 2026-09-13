@@ -1,50 +1,28 @@
 ---
-title: Adapters 薄层：把 LLM 和检索从编排里拆出去
+title: MediAC 的模型返回了 not-json，测试该看哪里
 slug: medi-ac-2026-03-05-adapters-layer
-description: 没有大重构，只加一层薄 adapter，让编排代码别直接绑死模型和检索实现。
+description: 两个薄 adapter 的用途，从 judge 的解析和回退说起。
 date: 2026-03-05
 category: engineering
 tags:
-  - AI
-  - RAG
-  - LangGraph
-  - Engineering Log
+  - MediAC
 draft: false
 places: []
 ---
 
-## 不是为了架构好看
+只想检查 judge 返回坏格式时怎么办，是否也要先启动 Qdrant、Neo4j，再连一次模型？节点里混着外部调用时，这种小检查也会变得很长。所以先把调用收在 `backend/adapters/llm.py` 和 `backend/adapters/retrieve.py` 两个入口。
 
-做完检索热切换后，代码开始有一点危险信号：LangGraph 节点里既要知道怎么调模型，又要知道怎么调检索，还要读配置。
+LLM adapter 负责模型地址、key、角色对应的模型名和请求。追问与报告的 prompt 还留在各自节点旁边：改一句追问，应该能直接看到这句在什么流程里使用。检索 adapter 则接 query 和 mode，返回统一字段。暂时只拆这些，不为还没接入的 provider 设计整套接口。
 
-短期能跑，长期会很难测。尤其是这个 demo 后面还要切云端模型、本地模型、hybrid、GraphRAG。如果每个节点都直接碰外部依赖，改一次就要到处找。
+九月整理测试时，`test_llm_judge.py` 提供了一个很适合讲解的例子。先用测试替身让 `chat` 返回合法 JSON，再让它返回 `not-json`，两次都不调用真实模型。
 
-所以 M3 后面我加了两个很薄的 adapter：`backend/adapters/llm.py` 和 `backend/adapters/retrieve.py`。
+```python
+async def fake_chat_bad(**kwargs):
+    return "not-json"
+```
 
-## LLM adapter 只管调用
+`judge_json` 解析失败后返回 `sufficient=False`，reason 以 `judge_invalid_json` 开头。测试检查这两个结果，就能知道坏格式没有被当作“材料充分”。这里的 False 记录的是解析失败，不能解读成模型认真判断过证据不足。
 
-LLM adapter 不负责写 prompt，也不负责决定问诊流程。它只做一件事：按配置调用模型，把文本结果交回去。
+这种测试只覆盖解析与回退。后面是否追加检索、达到上限是否停止，还需要另外检查 B 线控制逻辑；这个文件没有替它们全部测完。我觉得把范围说清楚挺有必要，不然看见名字叫 judge 测试，很容易以为连整条循环都验证了。
 
-prompt 继续放在业务语义附近。这样做是为了避免 adapter 变成新的“万能层”。很多项目抽象到最后，最难懂的不是业务代码，而是那个看似优雅、其实什么都管的中间层。
-
-这里我只想让 LangGraph 节点不用关心 API key、模型名、base URL 这些东西。
-
-## Retrieval adapter 统一返回结构
-
-Retrieval adapter 接收 query 和 mode，返回统一的 `recall_bundle`。不管底层走的是 hybrid 还是 GraphRAG，上层拿到的结构都一样。
-
-这个边界对测试特别有用。单测可以 monkeypatch adapter，塞一份固定召回结果进去，然后只验证编排逻辑。否则每个测试都要拖着 Qdrant、Neo4j 或真实 embedding 跑，速度慢，也不稳定。
-
-## 没有做 provider 框架
-
-我当时也想过要不要做一套 provider interface：OpenAI、Qwen、Ollama、不同 embedding、不同检索后端都挂进去。
-
-最后没做。原因很简单：项目还没复杂到那个程度。现在的问题不是“缺一个通用框架”，而是“编排层已经开始直接依赖外部服务”。薄 adapter 能解决当前问题，就先停在这里。
-
-这一层的标准是：越薄越好，能测就行。
-
-## 一个小收获
-
-`test_retrieve_structure.py` 和 judge 相关测试都因为这层变简单了。测试不用真的访问模型，也不用把检索服务全拉起来。只要 adapter 的返回结构稳定，上层逻辑就能单独验证。
-
-这类改动不显眼，但很实用。它不会让 demo 看起来更酷，却会让后面每次改 prompt、改模型、改检索模式时少一点心虚。
+有了两个入口，先用固定输入看程序反应，再接真实服务检查内容，就可以分别做。模型没返回 JSON 时先看解析路径，检索片段不相关时再查数据和检索；不用每次都等一整套服务，才知道出错的其实只是一个字段。

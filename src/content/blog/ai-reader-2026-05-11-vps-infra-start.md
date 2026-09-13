@@ -1,50 +1,42 @@
 ---
-title: 真正开始搭 VPS：第一天就被配置细节教育了
+title: DOMAIN 写进 .env 了，为什么 Caddy 还是读不到
 slug: ai-reader-2026-05-11-vps-infra-start
-description: AI Reader 基础设施第一天：Caddy、Authelia、Compose 和部署脚本带来的现实排障。
+description: 沿五月十一日的两次提交，检查变量从部署脚本到容器的传递。
 date: 2026-05-11
 category: engineering
 tags:
   - AI Reader
-  - RSS
-  - Infrastructure
-  - Engineering Log
 draft: false
 places: []
 ---
 
-## 第一天基本都在搭骨架
+5 月 11 日先搭 VPS 入口。Caddyfile 里用 `{$DOMAIN}`，仓库的环境文件也准备了域名，服务却还拿不到它。回看当天提交，修复落在两个地方，刚好能把变量经过的路径说明白。
 
-5 月 11 日，仓库正式动起来。第一批提交几乎都是基础设施：Caddy、Authelia、Docker Compose、部署脚本、环境变量和备份。
+部署脚本调用 Compose 时，先要选对环境文件。当天 `deploy.sh` 的 `af995ef` 版本给 edge 的调用补了：
 
-听起来很 boring，但这一天其实决定了后面能不能持续迭代。
+```bash
+--env-file "$REPO_ROOT/.env"
+```
 
-我一开始以为这些东西会很快。结果第一天就被各种小问题打脸：Caddy 里的 `DOMAIN` 没传进去，Authelia 配置模板不按预期替换，Docker Compose 校验又因为 `.env.example` 里的中文注释出问题。
+它让 Compose 知道从哪里取得用于替换配置的值。但值进入 Compose，并不会自动变成容器内所有进程的环境变量。几分钟后的 `be35d40` 版本在 `docker-compose.edge.yml` 给 Caddy 服务补上了下面这段：
 
-每个问题都不大，但叠在一起非常消耗耐心。
+```yaml
+environment:
+  DOMAIN: ${DOMAIN}
+```
 
-## Authelia 模板越聪明越容易坏
+这里 `${DOMAIN}` 先由 Compose 展开，结果传入容器。到了 Caddy 解析配置时，`{$DOMAIN}` 才能从自己的环境里取值。两种写法很像，读取者却不同。我觉得最容易漏的就是中间这一步：眼睛看见 `.env` 有值，便以为服务也该有了。
 
-Authelia 的配置需要域名、邮件、notifier、用户库这些东西。
+```text
+仓库 .env
+  → 部署命令指定 env-file
+  → Compose 展开 ${DOMAIN}
+  → environment 传入 Caddy 容器
+  → Caddy 展开 {$DOMAIN}
+```
 
-如果写死，staging/prod 会很难维护；如果全靠模板，又容易在容器里生成失败。最后我把模板处理改得更直接，用 `envsubst` 生成运行时配置，少一些“聪明”的模板逻辑。
+[Compose 插值](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)和[Caddy 环境变量](https://caddyserver.com/docs/caddyfile/concepts#environment-variables)各有说明。排查时可以沿这张顺序逐层看，别在最上面的文件里反复改同一个值。
 
-这个选择很土，但稳定。
+Authelia 的配置还要从模板生成运行文件，这部分用 `envsubst` 把输入输出固定下来。后续新增入口时，也遇到过宿主机 Caddyfile 已更新、容器仍读旧内容的问题。于是部署除了更新文件，还要处理运行中的入口，先确认容器里读到正确文件，再 reload 或重建。
 
-## Caddy 是入口，不是附属配置
-
-Caddy 也类似。最开始我低估了 edge 入口的重要性。
-
-reader、auth、staging-reader、staging-auth、后来的 ai-reader，所有域名都挂在这里。只要 Caddyfile 和容器内实际加载的文件不一致，外面看到的就是 TLS 握手失败、SNI 找不到证书。
-
-后面真的遇到过这个问题：宿主机 Caddyfile 已经有新站点，容器里还是旧的。那次之后我明确了一点：部署脚本必须负责 reload 或重建 edge，不能靠“我记得手动执行过”。
-
-## worker 先别默认启动
-
-这一天还做了一个重要的小决定：`scorer-worker` 先放到 Compose profile 里，不默认启动。
-
-因为当时评分任务还没完成，如果 worker 跟着基础设施一起跑，会制造一堆假错误。后面再启用 worker profile，比一开始就让它乱跑要干净很多。
-
-基础设施阶段最怕的是“差不多能跑”。差不多能跑的系统，后面每次出问题都要猜。
-
-第一天虽然慢，但把 Caddy、Authelia、Compose、deploy 这些链路一点点理顺，后面才能把注意力放回产品本身。那天结束时，项目还不像产品，更像一台刚接好电源的机器。但至少它开始有了骨架。
+评分服务那时还没准备好，就先放进 Compose profile，不默认启动。入口这边本来就在排错，没必要让未完成服务的报错挤满日志。当天这两处 DOMAIN 修改有代码可对照；要确认某次发布确实恢复，还得另外请求目标域名，看实际运行的入口有没有加载它。

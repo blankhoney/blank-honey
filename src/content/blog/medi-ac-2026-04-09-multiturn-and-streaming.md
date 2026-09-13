@@ -1,54 +1,44 @@
 ---
-title: 多轮问诊与 SSE：让 A 线真正像对话
+title: MediAC 流式回复：看见文字以后，还发生了什么
 slug: medi-ac-2026-04-09-multiturn-and-streaming
-description: 双轨接口能演示，但不像聊天；v1.1 先把 A 线改成真正的多轮流式问诊。
+description: POST 请求读取 SSE，随后保存完整消息，再发出 done。
 date: 2026-04-09
 category: engineering
 tags:
-  - AI
-  - LangGraph
-  - Medical Demo
-  - Engineering Log
+  - MediAC
 draft: false
 places: []
 ---
 
-## `/v1/dual` 不适合一直聊
+用户补了一句“疼了两天”，希望得到下一句追问。同步 `/v1/dual` 会连着报告一起等，于是这一阶段给 A 线单独做多轮与流式接口。聊天可以先输出文字，B 线调度继续在后面处理。
 
-`/v1/dual` 很适合展示双轨：一次请求同时返回 A 线和 B 线。可是拿它做连续问诊，就开始别扭。
+接口分别留了提交、恢复会话和读流的入口：
 
-用户只是补一句“疼了两天”，也要等 B 线报告一起跑完。A 线本来应该轻快，结果被同步报告拖住。这个体验不太像聊天，更像每轮都在提交一份表单。
+```http
+POST /v1/chat
+GET /v1/sessions/{id}/messages
+POST /v1/consult/stream
+```
 
-所以 v1.1 的目标不是重做双轨，而是把 A 线从 `/v1/dual` 里解放出来。
+“疼了两天”单独拿来没有完整含义，需要和历史消息放在一起。后端按 `session_id` 找到会话，把历史与当前输入组织进追问 prompt；浏览器保存 id，刷新后再从服务端读消息。
 
-## 新增三类接口
+SSE 适合这段从服务端不断推送文本的过程，但这个接口用 POST，前端不能只 new 一个原生 EventSource。它没有设置 POST 请求体的选项，所以这里用 fetch 发请求，再读 response body。[EventSource 构造参数](https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource)
 
-这一轮加了几个更像聊天产品的接口：
+网络返回的一块字节也不一定就是一条事件。前端需要先累积文本，按空行分出完整 SSE block，再解析 event 和 data；半条事件留在缓冲区等后续数据。[SSE 格式说明](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)值得对着读，不能假设一次 read 刚好对应一次 token 通知。
 
-- `POST /v1/chat`：提交一轮用户消息；
-- `GET /v1/sessions/{id}/messages`：读取会话消息；
-- `POST /v1/consult/stream`：用 SSE 返回 A 线流式回复。
+九月整理 `backend/main.py`，当前正常完成顺序如下：
 
-这样连续问诊和双轨演示分开了。`/v1/dual` 继续保留，用来展示 A/B 同时输出；新的 chat/stream 路径服务真实一点的多轮体验。
+```text
+读取历史与 intake
+→ 准备召回与 prompt
+→ 逐段发送 token，后台同时累积完整文本
+→ 提交用户消息与 assistant 消息到数据库
+→ 更新 intake，检查是否调度报告
+→ 发送 done，携带完整回答及报告任务状态
+```
 
-## 为什么选 SSE
+所以最后一段文字已经显示，不代表客户端已经拿到 done。数据库提交之后还会更新 intake 和检查调度；若这段失败，消息可能已经保存，但客户端没有收到正常完成事件。连接断开本身也不能代替成功确认。
 
-这里没有用 WebSocket。不是 WebSocket 不好，而是当前需求用不上双向实时通信。
+前端收到 token 时先显示临时文本，正常完成后再放入正式消息列表。下一次问答读取历史，依赖的是已保存的消息，不能依赖浏览器刚才画过哪个气泡。后面处理重复显示时，也得从这两份状态的交接入手。
 
-A 线只需要服务端把文本一点点推给浏览器。SSE 足够简单，FastAPI 支持也顺，调试时 curl 都能看。反向代理层面也比 WebSocket 少一些坑。
-
-这个选择很像前面几轮的原则：先解决当前问题，不提前把系统做重。
-
-## 多轮上下文开始重要了
-
-加了消息读取接口以后，前端可以恢复历史消息，后端也能基于最近几轮继续追问。
-
-这里仍然只是 demo 级会话，不是病历系统，也不是账号体系。它的目标是让问诊状态能连起来：上一轮问了什么，用户补了什么，下一轮还缺什么。
-
-## B 线问题还没完全解决
-
-v1.1 解决的是 A 线体验，B 线仍然偏同步。
-
-这其实暴露了下一步：报告不应该每轮都生成。用户还在补信息时，A 线继续聊就行；B 线更适合低频、异步地产出版本。
-
-所以 v1.1 更像过渡版本。它让 A 线终于像对话了，也保留了 `/v1/dual` 作为教学对比。真正的 A/B 解耦，要留到 v1.2。
+旧同步接口仍保留，便于一次看完整 A/B。流式接口先解决 A 线什么时候开始出字；报告任务和发送按钮什么时候互不等待，还要接着检查后面的调度与前端状态。
