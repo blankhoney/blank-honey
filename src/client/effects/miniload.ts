@@ -1,6 +1,6 @@
 import type { HeroContext } from '../hero';
 
-export default async function ({ stage, signal, reduced, light }: HeroContext) {
+export default async function ({ host, stage, signal, reduced, light }: HeroContext) {
   const { ShaderMount, ditheringFragmentShader, DitheringShapes, DitheringTypes } =
     await import('@paper-design/shaders');
   if (signal.aborted) return;
@@ -30,5 +30,31 @@ export default async function ({ stage, signal, reduced, light }: HeroContext) {
     1,
     light ? 500_000 : 1_800_000,
   );
-  signal.addEventListener('abort', () => shader.dispose(), { once: true });
+  // Darken only the cloud beneath the pointer, leaving the foreground text untouched.
+  const shadow = document.createElement('div');
+  shadow.className = 'pixel-cloud-shadow';
+  stage.append(shadow);
+  function hideShadow() {
+    shadow.classList.remove('visible');
+  }
+  host.addEventListener(
+    'pointermove',
+    (event) => {
+      if (event.pointerType === 'touch') return;
+      const bounds = stage.getBoundingClientRect();
+      shadow.style.transform = `translate3d(${event.clientX - bounds.left}px, ${event.clientY - bounds.top}px, 0) translate(-50%, -50%)`;
+      shadow.classList.add('visible');
+    },
+    { signal },
+  );
+  host.addEventListener('pointerleave', hideShadow, { signal });
+  window.addEventListener('blur', hideShadow, { signal });
+  signal.addEventListener(
+    'abort',
+    () => {
+      shadow.remove();
+      shader.dispose();
+    },
+    { once: true },
+  );
 }

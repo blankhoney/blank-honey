@@ -20,3 +20,5 @@
 新增效果：在此目录加入同名模块，导出接收 HeroContext 的挂载函数；在 config.hero 添加 id / name / source。所有监听、计时器、引擎资源须在传入 signal 中止时释放。只有选中的模块按需加载；库没有个人信息依赖。
 
 部署产物保留许可原文：`/vendor/licenses/paper-shaders-LICENSE.txt`、`/vendor/licenses/paper-shaders-NOTICE.txt`、`/vendor/licenses/fluid-LICENSE.txt`，不依赖生产机存在 node_modules。
+
+像素云交互补验：原站鼠标附近是柔边黑色暗区（降低噪声强度），不是盖住标题的黑圆。当前用背景层内原生 radial-gradient 跟随鼠标，离开/窗口失焦时恢复；卸载同时移除遮罩与监听。未移植受限 shader。
