@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Paper Study</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #f4f0e7;
+      color: #302e29;
+      font:
+        16px/1.7 system-ui,
+        sans-serif;
+    }
+    main {
+      width: min(760px, calc(100% - 40px));
+      margin: 8vh auto;
+    }
+    a {
+      color: inherit;
+    }
+    h1 {
+      font-family: Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(32px, 6vw, 56px);
+    }
+    p {
+      color: #686356;
+    }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 280px;
+      padding: 18px;
+      background: #fffcf5;
+      border: 1px solid #b8af9d;
+      border-radius: 4px;
+      font: 14px/1.6 monospace;
+      resize: vertical;
+    }
+    button,
+    input {
+      font: inherit;
+      padding: 9px 16px;
+      border: 1px solid #928878;
+      border-radius: 4px;
+      background: transparent;
+      color: inherit;
+    }
+    button {
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e8e0d1;
+    }
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid #81744d;
+      outline-offset: 3px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+    output {
+      display: block;
+      white-space: pre-wrap;
+    }
+    footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: #686356;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+  <main>
+    <a href="__SITE_RETURN__" target="_top">← 返回主站</a>
+    <h1>Paper Study</h1>
+    <p>移动折叠角度，观察纸张在光线中的变化。</p>
+    <div style="perspective: 900px; height: 300px; display: grid; place-items: center">
+      <div
+        id="paper"
+        style="
+          width: 230px;
+          height: 230px;
+          background: linear-gradient(125deg, #fffef8, #d6cbb5);
+          box-shadow: 18px 24px 40px #43382030;
+          transform: rotateY(25deg) rotateX(12deg);
+          transition: transform 0.15s ease;
+          border-right: 1px solid #b5a68c;
+        "
+      ></div>
+    </div>
+    <label for="angle">折叠角度</label>
+    <input id="angle" type="range" min="-70" max="70" value="25" /><output id="value">25°</output>
+    <footer>内容仅在当前浏览器处理，不上传、不保存。</footer>
+  </main>
+  <script>
+    const angle = document.querySelector('#angle');
+    angle.oninput = () => {
+      document.querySelector('#paper').style.transform =
+        `rotateY(${angle.value}deg) rotateX(12deg)`;
+      document.querySelector('#value').textContent = angle.value + '°';
+    };
+  </script>
+</html>

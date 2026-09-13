@@ -1,0 +1,51 @@
+---
+import Terminal from '../components/Terminal.astro';
+import { content } from '../application/content';
+import { config } from '../config';
+const { places, articles } = await content();
+---
+
+<Terminal
+  title="地图"
+  en="SOMEWHERE"
+  description="地图告诉我在哪里，记忆从别的地方开始。"
+  code={config.demoContent ? 'DEMO / TRAVEL NOTES' : 'TRAVEL NOTES'}
+>
+  <div class="map-layout">
+    <div>
+      <div id="map" data-cohort="frame" aria-label="可缩放的旅行地图">
+        <p class="empty">地图加载中，地点列表始终可读。</p>
+      </div>
+      <p class="map-legend">
+        <span>● 去过</span>
+        <span>○ 未去过</span>
+        <span id="map-status" role="status">
+          放大后查看地点与地标
+        </span>
+      </p>
+    </div>
+    <ul class="places">
+      {places.features.map((p) => (
+        <li>
+          <button data-place={p.properties.slug}>
+            <small>{p.properties.visited ? '●' : '○'}</small>
+            <strong>{p.properties.name}</strong>
+          </button>
+          <span>{p.properties.visited ? '已去过' : '还未抵达'}</span>
+          {articles
+            .filter((a) => a.data.places.includes(p.properties.slug))
+            .map((a) => (
+              <a href={`/blog/${a.id}/`}>{a.data.title} ↗</a>
+            ))}
+        </li>
+      ))}
+    </ul>
+  </div>
+  {config.demoContent && <p class="muted small">地点与旅行记录为验收示例，不代表站长真实经历。</p>}
+  <script
+    is:inline
+    id="map-data"
+    type="application/json"
+    set:html={JSON.stringify({ places, tiles: config.map }).replace(/</g, '\\u003c')}
+  ></script>
+</Terminal>

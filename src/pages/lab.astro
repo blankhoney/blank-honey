@@ -1,0 +1,21 @@
+---
+import Terminal from '../components/Terminal.astro';
+import { destinations } from '../application/destinations';
+const experiments = destinations('experiments');
+---
+
+<Terminal title="实验室" en="LABORATORY" description="给没有用途的小东西，一间自己的房间。">
+  <div class="directory" data-cohort="frame">
+    {experiments.map((t, i) => (
+      <a class="directory-row" href={t.url} rel="noopener noreferrer">
+        <span>{String(i + 1).padStart(2, '0')}</span>
+        <div>
+          <h2>{t.name}</h2>
+          <p>{t.description}</p>
+          <small>独立实验 / {new URL(t.url).host}</small>
+        </div>
+        <span>↗</span>
+      </a>
+    ))}
+  </div>
+</Terminal>

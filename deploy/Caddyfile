@@ -1,0 +1,57 @@
+{
+  admin off
+  auto_https off
+}
+:8080 {
+  root * /srv/site
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    X-Frame-Options DENY
+    -Server
+  }
+  @fresh not path /_astro/* /api/*
+  header @fresh Cache-Control "public, max-age=0, must-revalidate"
+  @immutable path /_astro/*
+  header @immutable Cache-Control "public, max-age=31536000, immutable"
+  @api path /api/probe /api/errors
+  handle @api {
+    reverse_proxy worker:3001
+  }
+  handle {
+    file_server
+  }
+  handle_errors {
+    header {
+      X-Content-Type-Options nosniff
+      X-Frame-Options DENY
+      Cache-Control no-store
+      -Server
+    }
+    rewrite * /404.html
+    file_server
+  }
+}
+:8081 {
+  root * /srv/lab
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+    X-Frame-Options DENY
+    Cache-Control "public, max-age=0, must-revalidate"
+    Content-Security-Policy "frame-ancestors 'none'; form-action 'none'"
+    -Server
+  }
+  file_server
+  handle_errors {
+    header {
+      X-Content-Type-Options nosniff
+      X-Frame-Options DENY
+      Cache-Control no-store
+      -Server
+    }
+    respond "{err.status_text}" {err.status_code}
+  }
+}

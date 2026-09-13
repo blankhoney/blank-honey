@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleList from '../components/ArticleList.astro';
+import { content } from '../application/content';
+import { config } from '../config';
+const { categories, articles } = await content();
+---
+
+<Base title="文章">
+  <section class="journal">
+    <div class="mast">
+      <span class="wordmark">
+        Your <em>Name.</em>
+      </span>
+      <span>个人札记 / VOL. 01</span>
+    </div>
+    <header class="editorial">
+      <h1>
+        留一点空白。
+        <em>
+          Room for
+          <br />
+          the ordinary.
+        </em>
+      </h1>
+      <p>
+        写代码，也写一些
+        <br />
+        没有用途的句子。
+        <br />
+        记录远行，和日常的缝隙。<small>偶尔更新 · 认真生活</small>
+      </p>
+    </header>
+    {categories.map((c) => (
+      <section class="category-block">
+        <h2 class="section-rule">
+          <a href={`/category/${c.slug}/`}>
+            {c.name} <span>↗</span>
+          </a>
+          <small>{String(c.articles.length).padStart(2, '0')} 篇 / 最近写下</small>
+        </h2>
+        <ArticleList articles={c.articles.slice(0, 4)} />
+      </section>
+    ))}
+    {!articles.length && <p class="empty">还没有文章，留一页空白。</p>}
+    <footer class="journal-footer">
+      <div>
+        不是所有记录，都需要一个结论。
+        <small>
+          {config.demoContent && '当前文章与摄影为验收示例。'} <a href="/">回看首屏</a>
+        </small>
+      </div>
+      <em>Take your time.</em>
+    </footer>
+  </section>
+</Base>

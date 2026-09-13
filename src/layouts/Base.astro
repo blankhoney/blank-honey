@@ -1,0 +1,79 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Shell from '../components/Shell.astro';
+import { config } from '../config';
+import { siteUrl } from '../application/destinations';
+import '@fontsource/newsreader/latin-400.css';
+import '@fontsource/newsreader/latin-400-italic.css';
+import '@fontsource/vt323/latin-400.css';
+import '@fontsource/source-code-pro/latin-400.css';
+import '../styles/site.css';
+interface Props {
+  title?: string;
+  description?: string;
+  family?: 'hero' | 'paper' | 'terminal';
+  article?: boolean;
+}
+const {
+  title = config.name,
+  description = config.description,
+  family = 'paper',
+  article = false,
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, siteUrl).href;
+const schema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${siteUrl}/#website`, url: siteUrl, name: config.name },
+    { '@type': 'Person', '@id': `${siteUrl}/#person`, name: config.name },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="zh-CN" data-family={family} data-tone="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title === config.name ? `${title} — 留一点空白` : `${title} — ${config.name}`}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title="Your Name RSS" href="/rss.xml" />
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}
+    ></script>
+    <script is:inline>
+      try {
+        const p = localStorage.getItem('bh:theme');
+        const h = new Date().getHours();
+        document.documentElement.dataset.tone =
+          p === 'light' || p === 'dark' ? p : h >= 7 && h < 19 ? 'light' : 'dark';
+      } catch {}
+    </script>
+    <ClientRouter fallback="swap" />
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      跳到正文
+    </a>
+    <Shell />
+    <main id="main" tabindex="-1" data-article={article || undefined}>
+      <slot />
+    </main>
+    <noscript>
+      <nav class="no-script-nav" aria-label="站点导航">
+        {config.navigation.map((n) => (
+          <a href={n.href}>{n.label}</a>
+        ))}
+      </nav>
+    </noscript>
+    <div id="fx-stage" transition:persist aria-hidden="true"></div>
+    <script>
+      import '../client/app';
+    </script>
+  </body>
+</html>

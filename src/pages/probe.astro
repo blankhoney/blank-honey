@@ -1,0 +1,17 @@
+---
+import Terminal from '../components/Terminal.astro';
+---
+
+<Terminal
+  title="探针"
+  en="STILL AWAKE"
+  description="散落各处的机器。此刻的状态，不多，也不少。"
+  code="10 SEC / READ ONLY"
+>
+  <div id="probe" data-cohort="frame">
+    <p role="status" class="empty">
+      正在读取主机状态…
+    </p>
+    <noscript>实时探针需要 JavaScript。文章与导航不受影响。</noscript>
+  </div>
+</Terminal>

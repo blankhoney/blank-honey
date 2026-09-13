@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+interface Props {
+  title: string;
+  en: string;
+  description: string;
+  code?: string;
+}
+const { title, en, description, code = 'READ ONLY / LIVE IN THE PRESENT' } = Astro.props;
+---
+
+<Base title={title} family="terminal">
+  <section class="terminal">
+    <div class="crumb">
+      <a href="/articles/">YOUR NAME</a>
+      <span>/ {title}</span>
+    </div>
+    <header class="terminal-head">
+      <div>
+        <h1 data-cohort="title">{en}</h1>
+        <p>{description}</p>
+      </div>
+      <small>{code}</small>
+    </header>
+    <div class="terminal-rule" data-cohort="rule">
+      <span>{title}</span>
+      <span>少一点装饰，多一点确定。</span>
+    </div>
+    <slot />
+    <footer class="terminal-footer">
+      <span>YOUR NAME / {en}</span>
+      <span>保持简单，留一点空白。</span>
+    </footer>
+  </section>
+</Base>

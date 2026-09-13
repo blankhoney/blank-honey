@@ -1,0 +1,38 @@
+---
+import Terminal from '../components/Terminal.astro';
+import { content } from '../application/content';
+const { articles, relations } = await content();
+const linked = new Set(relations.flatMap((r) => [r.source, r.target]));
+const nodes = articles
+  .filter((a) => linked.has(a.id))
+  .map((a) => ({ data: { id: a.id, label: a.data.title, href: `/blog/${a.id}/` } }));
+const edges = relations.map((r, i) => ({
+  data: { id: `edge-${i}`, source: r.source, target: r.target, label: r.label },
+}));
+---
+
+<Terminal
+  title="图谱"
+  en="CONNECTED"
+  description="把确定的联系留下。其余的，交给时间。"
+  code="DEFINITE RELATIONS ONLY"
+>
+  <div id="graph" data-cohort="frame" aria-label="文章关系图">
+    {relations.length === 0 && <p>尚未记录文章关系。确定的联系，会留在这里。</p>}
+  </div>
+  <div class="relations">
+    {relations.map((r) => (
+      <p>
+        <a href={`/blog/${r.source}/`}>{articles.find((a) => a.id === r.source)?.data.title}</a>
+        <span>{r.label}</span>
+        <a href={`/blog/${r.target}/`}>{articles.find((a) => a.id === r.target)?.data.title} ↗</a>
+      </p>
+    ))}
+  </div>
+  <script
+    is:inline
+    id="graph-data"
+    type="application/json"
+    set:html={JSON.stringify([...nodes, ...edges]).replace(/</g, '\\u003c')}
+  ></script>
+</Terminal>

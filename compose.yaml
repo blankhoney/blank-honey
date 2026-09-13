@@ -1,0 +1,62 @@
+name: personal-site
+x-service: &service
+  restart: unless-stopped
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: 5m, max-file: '2'}
+services:
+  web:
+    <<: *service
+    build:
+      context: .
+      target: web
+      secrets: [site_env]
+    ports: ['127.0.0.1:8080:8080', '127.0.0.1:8081:8081']
+    volumes: [caddy-data:/data, caddy-config:/config]
+    networks: [edge]
+    depends_on: [worker]
+  worker:
+    <<: *service
+    build: {context: ., target: worker}
+    environment:
+      PROMETHEUS_URL: http://prometheus:9090
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:8080}
+      LOG_DIR: /logs
+      HOSTS_FILE: /app/deploy/hosts.json
+    volumes: ['./deploy/hosts.json:/app/deploy/hosts.json:ro', './logs:/logs']
+    networks: [edge, metrics]
+    depends_on: [prometheus]
+  node-exporter:
+    <<: *service
+    image: prom/node-exporter:v1.12.1
+    command: ['--collector.disable-defaults', '--collector.cpu', '--collector.meminfo', '--collector.filesystem', '--collector.loadavg', '--collector.time']
+    networks: [metrics]
+  otel:
+    <<: *service
+    image: otel/opentelemetry-collector-contrib:0.160.0
+    command: ['--config=/etc/otel.yaml']
+    volumes: ['./deploy/otel.yaml:/etc/otel.yaml:ro']
+    networks: [metrics]
+    depends_on: [node-exporter]
+  prometheus:
+    <<: *service
+    image: prom/prometheus:v3.14.0
+    command: ['--config.file=/etc/prometheus/prometheus.yaml', '--storage.tsdb.path=/prometheus', '--storage.tsdb.retention.time=1h', '--storage.tsdb.retention.size=128MB']
+    volumes: ['./deploy/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro', 'prometheus-data:/prometheus']
+    networks: [metrics]
+    depends_on: [otel]
+networks:
+  edge:
+  metrics:
+    internal: true
+volumes:
+  caddy-data:
+  caddy-config:
+  prometheus-data:
+
+secrets:
+  site_env:
+    file: ${BUILD_ENV_FILE:-.env.example}

@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import { config } from '../config';
+---
+
+<Base family="hero">
+  <section class="hero" id="hero">
+    <div id="hero-particles" aria-hidden="true"></div>
+    <div class="hero-fallback" aria-hidden="true">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <header class="hero-top">
+      <span>YN / AN OPEN NOTEBOOK</span>
+      <span>留一点空白。</span>
+    </header>
+    <div class="hero-copy">
+      <p class="eyebrow">A PERSONAL SPACE, NOT A FEED.</p>
+      <h1>
+        Your<em>Name.</em>
+      </h1>
+      <p class="hero-description">
+        记录一些值得停留的瞬间。
+        <br />
+        代码、远行，以及日常的缝隙。
+      </p>
+      <p id="saying" class="saying">
+        {config.sayings[0]}
+      </p>
+    </div>
+    <div class="hero-bottom">
+      <a class="enter" href="/articles/">
+        <span>↗</span>进入文章
+      </a>
+      <details id="effect-picker">
+        <summary>
+          首屏效果 <span id="effect-label">01 / EVENT HORIZON</span>
+        </summary>
+        <div class="effect-controls">
+          <button id="effect-prev" aria-label="上一个效果">
+            ←
+          </button>
+          <span id="effect-position">01 / 05</span>
+          <button id="effect-next" aria-label="下一个效果">
+            →
+          </button>
+        </div>
+      </details>
+    </div>
+    <span class="hero-side">LEAVE A LITTLE ROOM.</span>
+  </section>
+</Base>
