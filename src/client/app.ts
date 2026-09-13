@@ -41,7 +41,7 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('click', (event) => {
   const el = event.target as Element;
   if (panel.classList.contains('open') && !shell.contains(el)) overlay(false, false);
-  if (el.closest('#search-results a')) overlay(false, false);
+  if (el.closest('#search-results a, #navigation nav a')) overlay(false, false);
   const theme = el.closest<HTMLElement>('[data-theme]');
   if (theme) {
     store.set('theme', theme.dataset.theme!);

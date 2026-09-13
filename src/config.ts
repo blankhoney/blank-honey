@@ -38,8 +38,13 @@ export const config = {
     maxZoom: 19,
   },
   radio: [
-    { id: 'ambient', name: '氛围电台', source: 'direct', urlEnv: 'RADIO_AMBIENT_URL' },
-    { id: 'classical', name: '古典电台', source: 'rss', urlEnv: 'RADIO_CLASSICAL_URL' },
+    {
+      id: 'ambient',
+      name: '氛围 · Ambient Sleeping Pill',
+      source: 'direct',
+      urlEnv: 'RADIO_AMBIENT_URL',
+    },
+    { id: 'classical', name: '古典 · YourClassical', source: 'rss', urlEnv: 'RADIO_CLASSICAL_URL' },
   ],
   // Add one record and rebuild; local HTML stays on the separate lab origin.
   tools: [

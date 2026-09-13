@@ -57,7 +57,7 @@ const schema = {
           <a href={`/category/${category.slug}/`} data-pagefind-filter="category">
             {category.name}
           </a>
-          <span>Blank Honey</span>
+          <span>{config.name}</span>
           {config.demoContent && <span>示例文章</span>}
         </div>
         {article.data.tags.map((t) => (
