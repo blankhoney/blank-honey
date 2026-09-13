@@ -1,89 +1,60 @@
 import { config } from '../config';
 import { capability } from './preferences';
 import { report } from './log';
-import type { Container } from '@tsparticles/engine';
-const presets = import.meta.glob('./effects/*.ts');
+
+export type HeroContext = {
+  host: HTMLElement;
+  stage: HTMLElement;
+  signal: AbortSignal;
+  reduced: boolean;
+  light: boolean;
+};
+const effects = import.meta.glob<{ default: (context: HeroContext) => Promise<void> }>(
+  './effects/*.ts',
+);
+
 export async function mountHero(signal: AbortSignal) {
-  if (signal.aborted) return;
-  const host = document.querySelector<HTMLElement>('#hero')!;
-  let current: Container | undefined,
-    version = 0;
-  let creation: Promise<Container | undefined> = Promise.resolve(undefined);
+  const target = document.querySelector<HTMLElement>('#hero');
+  if (!target || signal.aborted) return;
+  const host = target;
+  const stage = host.querySelector<HTMLElement>('#hero-stage')!;
   const requested = new URLSearchParams(location.search).get('effect');
-  let index = config.hero.findIndex((e) => e.id === requested);
+  let index = config.hero.findIndex((effect) => effect.id === requested);
   if (index < 0) index = Math.floor(Math.random() * config.hero.length);
-  document.querySelector('#saying')!.textContent =
-    config.sayings[Math.floor(Math.random() * config.sayings.length)];
+  let active: AbortController | undefined;
+
   async function show() {
-    const token = ++version;
-    current?.destroy();
-    current = undefined;
-    host.classList.remove('ready');
+    active?.abort();
+    const controller = new AbortController();
+    active = controller;
+    stage.replaceChildren();
     const effect = config.hero[index];
     host.dataset.effect = effect.id;
-    document.querySelector('#effect-label')!.textContent =
-      `${String(index + 1).padStart(2, '0')} / ${effect.name}`;
-    document.querySelector('#effect-position')!.textContent =
-      `${String(index + 1).padStart(2, '0')} / ${String(config.hero.length).padStart(2, '0')}`;
-    if (capability() === 'reduced-motion') return;
+    host.querySelector('h1')!.textContent = config.name;
+    host.dataset.reduced = String(capability() === 'reduced-motion');
+    host.querySelector('#effect-label')!.textContent = effect.name;
+    host.querySelector('#effect-position')!.textContent = `${index + 1} / ${config.hero.length}`;
     try {
-      const { particles } = await import('./particles');
-      const module = (await presets[`./effects/${effect.id}.ts`]()) as {
-        default: (ctx: import('./particles').PresetContext) => import('./particles').ISourceOptions;
-      };
-      if (signal.aborted || token !== version) return;
-      const light = capability() === 'light',
-        mobile = innerWidth <= 700;
-      const options = module.default({
-        count: mobile
-          ? config.particles.mobile
-          : light
-            ? config.particles.light
-            : config.particles.desktop,
-        mobile,
-        light,
+      const module = await effects[`./effects/${effect.id}.ts`]();
+      if (controller.signal.aborted || signal.aborted) return;
+      await module.default({
+        host,
+        stage,
+        signal: controller.signal,
+        reduced: capability() === 'reduced-motion',
+        light: capability() === 'light',
       });
-      const result = await (creation = creation
-        .catch(() => undefined)
-        .then(() => {
-          if (signal.aborted || token !== version) return undefined;
-          return particles('hero-particles', {
-            fpsLimit: light ? 30 : 60,
-            particles: {
-              number: { value: 0 },
-              size: { value: 1 },
-              paint: { color: { value: '#b6a27a' } },
-              opacity: { value: 0.8 },
-              move: { enable: false },
-            },
-            ...options,
-          });
-        }));
-      if (signal.aborted || token !== version) {
-        result?.destroy();
-        return;
-      }
-      current = result;
-      if (result) host.classList.add('ready');
     } catch (error) {
-      report('hero', error);
+      if (!controller.signal.aborted) report('hero', error);
     }
   }
-  const change = (direction: number) => {
+  function change(direction: number) {
     index = (index + direction + config.hero.length) % config.hero.length;
     void show();
-  };
-  document.querySelector('#effect-prev')!.addEventListener('click', () => change(-1), { signal });
-  document.querySelector('#effect-next')!.addEventListener('click', () => change(1), { signal });
+  }
+  host.querySelector('#effect-prev')!.addEventListener('click', () => change(-1), { signal });
+  host.querySelector('#effect-next')!.addEventListener('click', () => change(1), { signal });
   document.addEventListener('bh:motion', show, { signal });
-  matchMedia('(max-width: 700px)').addEventListener('change', show, { signal });
-  signal.addEventListener(
-    'abort',
-    () => {
-      ++version;
-      current?.destroy();
-    },
-    { once: true },
-  );
+  signal.addEventListener('abort', () => active?.abort(), { once: true });
   await show();
 }

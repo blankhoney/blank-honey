@@ -22,41 +22,37 @@ export function enclosure(xml: string): string {
 }
 async function main() {
   const stations = await Promise.all(
-    config.radio.flatMap((station) => {
-      const input = process.env[station.urlEnv]?.trim();
-      if (!input) return [];
-      return [
-        (async () => {
-          try {
-            let url = httpUrl(input);
-            if (station.source === 'rss') {
-              const response = await fetch(url, {
-                signal: AbortSignal.timeout(8000),
-                redirect: 'error',
-              });
-              if (!response.ok) throw new Error(`RSS HTTP ${response.status}`);
-              const reader = response.body!.getReader();
-              const chunks: Uint8Array[] = [];
-              let size = 0;
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                size += value.length;
-                if (size > 2_000_000) {
-                  await reader.cancel();
-                  throw new Error('RSS too large');
-                }
-                chunks.push(value);
-              }
-              url = enclosure(Buffer.concat(chunks).toString('utf8'));
+    config.radio.map(async (station) => {
+      const input = process.env[station.urlEnv]?.trim() || station.url;
+
+      try {
+        let url = httpUrl(input);
+        if (station.source === 'rss') {
+          const response = await fetch(url, {
+            signal: AbortSignal.timeout(8000),
+            redirect: 'error',
+          });
+          if (!response.ok) throw new Error(`RSS HTTP ${response.status}`);
+          const reader = response.body!.getReader();
+          const chunks: Uint8Array[] = [];
+          let size = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.length;
+            if (size > 2_000_000) {
+              await reader.cancel();
+              throw new Error('RSS too large');
             }
-            return { id: station.id, name: station.name, url, status: 'available' };
-          } catch {
-            console.warn(`Radio ${station.id}: unavailable`);
-            return { id: station.id, name: station.name, url: null, status: 'unavailable' };
+            chunks.push(value);
           }
-        })(),
-      ];
+          url = enclosure(Buffer.concat(chunks).toString('utf8'));
+        }
+        return { id: station.id, name: station.name, url, status: 'available' };
+      } catch {
+        console.warn(`Radio ${station.id}: unavailable`);
+        return { id: station.id, name: station.name, url: null, status: 'unavailable' };
+      }
     }),
   );
   await mkdir('src/data', { recursive: true });

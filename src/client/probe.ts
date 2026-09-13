@@ -1,5 +1,5 @@
 import { report } from './log';
-import { mergeHosts, type Host, type HostView } from '../domain/probe';
+import { mergeHosts, metricLevel, hostHealth, type Host, type HostView } from '../domain/probe';
 export async function mountProbe(signal: AbortSignal) {
   if (signal.aborted) return;
   const host = document.querySelector<HTMLElement>('#probe')!;
@@ -17,72 +17,91 @@ export async function mountProbe(signal: AbortSignal) {
       'p',
       failed || last.some((h) => h.stale)
         ? '部分采样已过期，保留最后一次状态。'
-        : '当前采样 · 10 秒刷新 · 负载为原值',
+        : '每 10 秒采样 · 占用 ≥75% 提醒，≥90% 高占用 · LOAD 为原始负载',
       'probe-note',
     );
     note.setAttribute('role', 'status');
     host.append(note);
-    for (const h of last) {
-      const row = element('section', undefined, 'machine');
-      row.dataset.status = h.status;
-      const main = element('div', undefined, 'machine-main');
-      main.append(element('h2', h.displayName), element('small', h.regionLabel));
-      const clock = element('time');
-      clock.dataset.zone = h.timeZone;
-      main.append(clock);
-      main.append(
-        element(
-          'span',
-          h.online === false
-            ? 'OFFLINE'
-            : failed || h.stale
-              ? 'STALE'
-              : h.status === 'ok'
-                ? 'ONLINE'
-                : 'UNAVAILABLE',
-          'state',
-        ),
+    for (const sample of last) {
+      const health = hostHealth(sample, failed);
+      const card = element('section', undefined, 'probe-card');
+      card.dataset.level = health.level;
+      const header = element('header', undefined, 'probe-card-header');
+      const identity = element('div');
+      identity.append(
+        element('h2', sample.displayName),
+        element('p', sample.regionLabel, 'probe-region'),
       );
-      row.append(main);
-      const metrics: [string, number | null, string?][] = [
-        ['CPU', h.cpuPercent],
-        ['MEMORY', h.memoryPercent],
+      header.append(identity, element('span', health.label, 'probe-state'));
+      card.append(header);
+
+      const metrics: [string, string, number | null, string?][] = [
+        ['CPU', '处理器', sample.cpuPercent],
+        ['MEMORY', '内存', sample.memoryPercent],
+        ['DISK', '磁盘', sample.diskPercent],
         [
           'SWAP',
-          h.swapPercent,
-          h.swapState === 'not-configured'
-            ? '未配置'
-            : h.swapState === 'unavailable'
-              ? '采集不可用'
-              : undefined,
+          '交换空间',
+          sample.swapPercent,
+          sample.swapState === 'not-configured' ? '未配置' : undefined,
         ],
-        ['DISK', h.diskPercent],
       ];
-      for (const [name, value, message] of metrics) {
-        const metric = element('div', undefined, 'metric');
-        metric.append(element('div', name, 'metric-label'));
-        const n = element(
-          'div',
-          typeof value === 'number' ? value.toFixed(1) : '—',
+      const table = element('dl', undefined, 'probe-metrics');
+      for (const [name, label, value, message] of metrics) {
+        const metric = element('div', undefined, 'probe-metric');
+        const level = metricLevel(value);
+        metric.dataset.level = failed || sample.stale || sample.online !== true ? 'unknown' : level;
+        const heading = element('dt');
+        heading.append(element('span', name), element('small', label));
+        const reading = element('dd');
+        const number = element(
+          'span',
+          level === 'unknown' ? '—' : value!.toFixed(1),
           'metric-value',
         );
-        if (typeof value === 'number') n.append(element('small', ' %'));
+        if (level !== 'unknown') number.append(element('small', ' %'));
         const bar = element('div', undefined, 'metric-bar');
+        bar.setAttribute('aria-hidden', 'true');
         const fill = element('span');
-        fill.style.width = `${typeof value === 'number' ? Math.max(0, Math.min(100, value)) : 0}%`;
+        fill.style.width = `${level === 'unknown' ? 0 : value}%`;
         bar.append(fill);
-        metric.append(n, bar);
-        if (message) metric.append(element('small', message));
-        row.append(metric);
+        const levelLabels = {
+          normal: '正常',
+          warning: '偏高',
+          critical: '过高',
+          unknown: '无数据',
+        };
+        let caption = message ?? levelLabels[level];
+        if (failed || sample.stale) caption = '最后采样';
+        else if (sample.online === false) caption = '离线';
+        reading.append(number, bar, element('small', caption, 'probe-metric-state'));
+        metric.append(heading, reading);
+        table.append(metric);
       }
-      row.append(
-        element(
-          'div',
-          `LOAD  ${[h.load1, h.load5, h.load15].map((v) => (typeof v === 'number' ? v.toFixed(2) : '—')).join(' / ')}    1 / 5 / 15 min`,
-          'load',
-        ),
-      );
-      host.append(row);
+      card.append(table);
+      const load = element('div', undefined, 'probe-load');
+      load.append(element('span', 'LOAD AVG', 'probe-label'));
+      for (const [index, value] of [sample.load1, sample.load5, sample.load15].entries()) {
+        const entry = element('span');
+        entry.append(
+          element('strong', typeof value === 'number' ? value.toFixed(2) : '—'),
+          element('small', `${[1, 5, 15][index]} min`),
+        );
+        load.append(entry);
+      }
+      card.append(load);
+      const footer = element('footer', undefined, 'probe-card-footer');
+      const clock = element('time');
+      clock.dataset.zone = sample.timeZone;
+      clock.title = '主机所在时区的当前时间';
+      const timestamp = element('time');
+      if (sample.sampledAt && Number.isFinite(Date.parse(sample.sampledAt))) {
+        timestamp.setAttribute('datetime', sample.sampledAt);
+        timestamp.textContent = `采样 ${new Date(sample.sampledAt).toLocaleTimeString('zh-CN', { hour12: false })}`;
+      } else timestamp.textContent = '暂无采样';
+      footer.append(clock, timestamp);
+      card.append(footer);
+      host.append(card);
     }
     clocks();
   }

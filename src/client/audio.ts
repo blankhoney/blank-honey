@@ -9,6 +9,7 @@ export function initAudio() {
   const select = document.querySelector<HTMLSelectElement>('#station')!;
   const button = document.querySelector<HTMLButtonElement>('#audio-toggle')!;
   const status = document.querySelector<HTMLElement>('#audio-status')!;
+  audio.volume = 0.35;
   let state: State = 'idle',
     userPaused = false,
     attempt = 0;

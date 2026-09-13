@@ -1,5 +1,15 @@
-/* Persistent overlays: opening the shell never changes the document geometry. */
+/* Only the right navigation displaces the reading surface; search stays above it. */
+:root {
+  --navigation-width: 430px;
+}
+html[data-navigation='open'] #main {
+  translate: calc(-1 * var(--navigation-width)) 0;
+}
+#main {
+  translate: 0 0;
+}
 #shell #navigation {
+  width: var(--navigation-width);
   transform: none;
   transition: none;
   visibility: hidden;
@@ -14,7 +24,7 @@
   content: '';
   position: fixed;
   inset: 0 0 0 auto;
-  width: min(430px, 100%);
+  width: var(--navigation-width);
   background: var(--bg);
   border-left: 1px solid var(--line);
   opacity: 0;
@@ -65,6 +75,9 @@
   transform: scale(1.35);
 }
 @media (max-width: 900px) {
+  :root {
+    --navigation-width: min(430px, 86vw);
+  }
   #shell #shell-search {
     top: 76px;
     left: 18px;
@@ -74,12 +87,12 @@
   }
   #shell #navigation {
     top: calc(var(--shell-search-height, 150px) + 92px);
-    width: 100%;
+    width: var(--navigation-width);
     padding: 20px 28px 32px;
   }
   #shell #navigation::before {
-    inset: 0;
-    width: 100%;
+    inset: 0 0 0 auto;
+    width: var(--navigation-width);
   }
   #shell #navigation .nav-top {
     margin: 0 0 18px;

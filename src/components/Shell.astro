@@ -86,7 +86,7 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
       </fieldset>
       {radio.length > 0 && (
         <div id="player">
-          <label for="station">预置电台</label>
+          <label for="station">背景音乐</label>
           <select id="station">
             {radio.map((s) => (
               <option value={s.id} disabled={!s.url}>
@@ -97,7 +97,25 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
           </select>
           <button id="audio-toggle">播放</button>
           <p id="audio-status" role="status"></p>
-          <audio id="audio" preload="none" />
+          <audio id="audio" preload="none" loop />
+          <p class="music-credit">
+            Kevin MacLeod ·{' '}
+            <a
+              href="https://incompetech.com/music/royalty-free/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              曲目来源
+            </a>{' '}
+            ·{' '}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              CC BY 4.0
+            </a>
+          </p>
           <script
             is:inline
             id="radio-data"

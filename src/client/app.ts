@@ -12,6 +12,8 @@ let shellVersion = 0;
 let shellAnimations: Animation[] = [];
 function overlay(open: boolean, restore = true, instant = false) {
   const token = ++shellVersion;
+  const main = document.querySelector<HTMLElement>('#main')!;
+  const currentPageOffset = getComputedStyle(main).translate;
   const active = shell.classList.contains('shell-active');
   const members = [
     searchPanel,
@@ -23,6 +25,7 @@ function overlay(open: boolean, restore = true, instant = false) {
   });
   shellAnimations.forEach((animation) => animation.cancel());
   shellAnimations = [];
+  document.documentElement.dataset.navigation = open ? 'open' : 'closed';
   panel.classList.toggle('open', open);
   panel.inert = searchPanel.inert = !open;
   dot.setAttribute('aria-expanded', String(open));
@@ -52,7 +55,8 @@ function overlay(open: boolean, restore = true, instant = false) {
   } else {
     shell.classList.add('shell-active', 'shell-moving');
     const origin = dot.getBoundingClientRect();
-    const duration = capability() === 'light' ? 420 : 700;
+    // A slower release gives the sidebar and reading surface one shared rhythm.
+    const duration = capability() === 'light' ? 500 : 850;
     shellAnimations = members.map((member, index) => {
       const bounds = member.getBoundingClientRect();
       const closed =
@@ -75,6 +79,12 @@ function overlay(open: boolean, restore = true, instant = false) {
         },
       );
     });
+    shellAnimations.push(
+      main.animate(
+        [{ translate: currentPageOffset }, { translate: getComputedStyle(main).translate }],
+        { duration, easing: 'cubic-bezier(.22,.7,.24,1)', fill: 'both' },
+      ),
+    );
     void Promise.all(shellAnimations.map((animation) => animation.finished.catch(() => {}))).then(
       finish,
     );

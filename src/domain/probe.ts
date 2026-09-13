@@ -28,3 +28,26 @@ export function mergeHosts(previous: HostView[], samples: Host[], now = Date.now
     return { ...(stale && old ? old : sample), stale, missed };
   });
 }
+
+export type MetricLevel = 'normal' | 'warning' | 'critical' | 'unknown';
+/** Display thresholds, not an incident detector: a single high sample is not an outage. */
+export function metricLevel(value: number | null): MetricLevel {
+  if (value === null || !Number.isFinite(value) || value < 0 || value > 100) return 'unknown';
+  if (value >= 90) return 'critical';
+  if (value >= 75) return 'warning';
+  return 'normal';
+}
+
+export function hostHealth(host: HostView, failed = false) {
+  if (!host.sampledAt || !Number.isFinite(Date.parse(host.sampledAt)))
+    return { level: 'unknown', label: '无数据' };
+  if (failed || host.stale) return { level: 'unknown', label: '采样过期' };
+  if (host.online === false) return { level: 'critical', label: '离线' };
+  if (host.online !== true || host.status !== 'ok') return { level: 'unknown', label: '无数据' };
+  const levels = [host.cpuPercent, host.memoryPercent, host.diskPercent].map(metricLevel);
+  if (host.swapState !== 'not-configured') levels.push(metricLevel(host.swapPercent));
+  if (levels.includes('critical')) return { level: 'critical', label: '占用过高' };
+  if (levels.includes('warning')) return { level: 'warning', label: '占用偏高' };
+  if (levels.includes('unknown')) return { level: 'unknown', label: '指标不完整' };
+  return { level: 'normal', label: '运行正常' };
+}

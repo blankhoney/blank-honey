@@ -28,14 +28,15 @@ for (const kind of ['tools', 'experiments'] as const) {
     if (!inside(root, source)) throw new Error('HTML outside project');
     const base = dirname(source),
       target = resolve(output, kind, item.slug);
-    const seen = new Set<string>();
+    const written = new Set<string>();
     // ponytail: follows static HTML/CSS references; bundle JavaScript module trees before registering HTML.
     async function copy(file: string, destination: string) {
       file = await realpath(file);
       if (!inside(base, file) || !inside(target, destination))
         throw new Error('Asset path escapes HTML directory');
-      if (seen.has(file)) return;
-      seen.add(file);
+      // One source can appear at both index.html and its original linked filename.
+      if (written.has(destination)) return;
+      written.add(destination);
       await mkdir(dirname(destination), { recursive: true });
       if (!/\.(html?|css)$/i.test(file)) {
         await copyFile(file, destination);

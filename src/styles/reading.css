@@ -1,0 +1,36 @@
+/* Keep editorial hierarchy while making dates and annotations comfortable to read. */
+.journal .mast {
+  font-size: 13px;
+  gap: 20px;
+}
+.journal .editorial > p {
+  font-size: 17px;
+}
+.journal .editorial small,
+.journal .section-rule small {
+  font-size: 12px;
+}
+.article-list .article-row {
+  grid-template-columns: 32px 104px minmax(0, 1fr) 18px;
+}
+.article-list .row-number,
+.article-list .article-row time {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.article-list .row-tags {
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .journal .mast {
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+  }
+  .journal .editorial > p {
+    font-size: 16px;
+  }
+  .article-list .article-row {
+    grid-template-columns: 28px minmax(0, 1fr) 14px;
+  }
+}
