@@ -1,10 +1,11 @@
 import { navigate } from 'astro:transitions/client';
 import { capability } from './preferences';
 export async function mountGraph(signal: AbortSignal) {
+  const elements = JSON.parse(document.querySelector('#graph-data')!.textContent!);
+  if (!elements.length || signal.aborted) return;
   const { default: cytoscape } = await import('cytoscape');
   if (signal.aborted) return;
   const host = document.querySelector<HTMLElement>('#graph')!;
-  const elements = JSON.parse(document.querySelector('#graph-data')!.textContent!);
   const style = getComputedStyle(document.documentElement),
     color = style.getPropertyValue('--fg').trim(),
     accent = style.getPropertyValue('--accent').trim();

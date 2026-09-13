@@ -1,7 +1,7 @@
 #!/bin/sh
 # Installed root-owned as /usr/local/sbin/blank-honey-deploy.
 set -eu
-umask 077
+umask 022
 base=/srv/blank-honey
 case "${1-}" in
   'deploy '*) revision=${1#deploy } ;;
@@ -24,6 +24,7 @@ compose() {
 compose config --quiet
 compose build --build-arg SITE_CONFIG_VERSION="$(date +%s)" web worker
 release="$base/releases/$release_id"
+umask 077
 mkdir -p "$release"
 compose config > "$release/compose.yaml"
 printf '%s\n' "$revision" > "$release/revision"

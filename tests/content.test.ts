@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   articleSchema,
+  relationsSchema,
   published,
   neighbors,
   validateReferences,
@@ -142,4 +143,16 @@ test('Lab build copies relative assets, injects return links, and rejects traver
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('Relation endpoints accept published Unicode IDs and reject URL separators', () => {
+  const edge = {
+    source: '教程（一）-搭建博客',
+    target: '教程（二）',
+    label: '文中引用',
+    status: 'definite',
+  };
+  assert.equal(relationsSchema.parse([edge])[0].source, edge.source);
+  for (const source of ['', '../article', 'article?x', 'article#x', 'article\\x'])
+    assert.equal(relationsSchema.safeParse([{ ...edge, source }]).success, false);
 });

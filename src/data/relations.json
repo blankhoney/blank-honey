@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "source": "教程-搭建简易博客",
+    "target": "教程（一）-github仓库的创建与同步",
+    "label": "文中引用",
+    "status": "definite"
+  },
+  {
+    "source": "教程-搭建简易博客",
+    "target": "教程（二）hexo框架的搭建及部署",
+    "label": "文中引用",
+    "status": "definite"
+  },
+  {
+    "source": "教程-搭建简易博客",
+    "target": "教程（三）-编写上传自己的博客文章",
+    "label": "文中引用",
+    "status": "definite"
+  },
+  {
+    "source": "教程-搭建简易博客",
+    "target": "教程（四）-解决博客文章中图片上传失败问题",
+    "label": "文中引用",
+    "status": "definite"
+  },
+  {
+    "source": "教程（三）-编写上传自己的博客文章",
+    "target": "教程（四）-解决博客文章中图片上传失败问题",
+    "label": "文中引用",
+    "status": "definite"
+  }
+]

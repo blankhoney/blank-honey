@@ -17,7 +17,9 @@ const edges = relations.map((r, i) => ({
   description="把确定的联系留下。其余的，交给时间。"
   code="DEFINITE RELATIONS ONLY"
 >
-  <div id="graph" data-cohort="frame" aria-label="文章关系图"></div>
+  <div id="graph" data-cohort="frame" aria-label="文章关系图">
+    {relations.length === 0 && <p>尚未记录文章关系。确定的联系，会留在这里。</p>}
+  </div>
   <div class="relations">
     {relations.map((r) => (
       <p>

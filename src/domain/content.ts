@@ -28,8 +28,14 @@ export const placesSchema = z.object({
 });
 export const relationsSchema = z.array(
   z.object({
-    source: slugSchema,
-    target: slugSchema,
+    source: z
+      .string()
+      .min(1)
+      .regex(/^[^/\\?#]+$/),
+    target: z
+      .string()
+      .min(1)
+      .regex(/^[^/\\?#]+$/),
     label: z.string().min(1),
     status: z.enum(['definite', 'tentative']),
   }),
