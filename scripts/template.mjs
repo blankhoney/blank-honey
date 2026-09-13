@@ -19,6 +19,7 @@ try {
   const keep = new Set([
     '.git',
     '.gitignore',
+    '.github',
     '.prettierrc.json',
     '.prettierignore',
     '.env.example',
@@ -45,7 +46,14 @@ try {
   ]);
   for (const item of readdirSync(directory))
     if (!keep.has(item)) rmSync(join(directory, item), { recursive: true, force: true });
-  for (const item of ['src/content/blog', 'src/assets', 'docs/reference', 'docs/acceptance.md'])
+  for (const item of [
+    'src/content/blog',
+    'src/assets',
+    'docs/reference',
+    'docs/acceptance.md',
+    '.github/workflows/deploy.yml',
+    '.github/README.md',
+  ])
     rmSync(join(directory, item), { recursive: true, force: true });
   writeFileSync(
     join(directory, 'src/data/places.json'),
