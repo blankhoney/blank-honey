@@ -96,6 +96,13 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
             ))}
           </select>
           <button id="audio-toggle">播放</button>
+          <div class="volume-control">
+            <label for="volume">音量</label>
+            <output id="volume-value" for="volume">
+              20%
+            </output>
+            <input id="volume" type="range" min="0" max="100" step="1" value="20" />
+          </div>
           <p id="audio-status" role="status"></p>
           <audio id="audio" preload="none" loop />
           <p class="music-credit">

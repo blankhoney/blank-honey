@@ -20,3 +20,11 @@
 新增效果：在此目录加入同名模块，导出接收 HeroContext 的挂载函数；在 config.hero 添加 id / name / source。所有监听、计时器、引擎资源须在传入 signal 中止时释放。只有选中的模块按需加载；库没有个人信息依赖。
 
 部署产物保留许可原文：`/vendor/licenses/paper-shaders-LICENSE.txt`、`/vendor/licenses/paper-shaders-NOTICE.txt`、`/vendor/licenses/fluid-LICENSE.txt`，不依赖生产机存在 node_modules。
+
+像素云交互补验：原站鼠标附近是柔边黑色暗区（降低噪声强度），不是盖住标题的黑圆。当前用背景层内原生 radial-gradient 跟随鼠标，离开/窗口失焦时恢复；卸载同时移除遮罩与监听。未移植受限 shader。
+
+## 科技页字面与背景（第二轮返修）
+
+持续粒子字面直接适配用户验收 HTML 的 BHInterfaceCloud；原型 shader 单独保留，生产模块格式化并接入 Astro 生命周期。复用相同的 Phenomenon 1.6.0（MIT、无依赖）负责 WebGL buffers 与渲染；公开接口与许可来源为 https://github.com/vaneenige/phenomenon 。不再使用此前稀疏粒子层结束后淡入正文的路径。小字号说明与输入控件保持原生语义。
+
+科技背景沿用验收 HTML Quiet Topography 的点阵布局，使用已有 tsParticles 绘制，降低速度与透明度。依赖许可随产物保留于 `/vendor/licenses/phenomenon-LICENSE.txt`。

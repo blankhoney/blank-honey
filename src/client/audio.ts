@@ -1,4 +1,5 @@
 import { report } from './log';
+import { store } from './preferences';
 type Station = { id: string; name: string; url: string | null };
 type State = 'empty' | 'idle' | 'loading' | 'playing' | 'paused' | 'waiting-for-click' | 'error';
 export function initAudio() {
@@ -9,7 +10,20 @@ export function initAudio() {
   const select = document.querySelector<HTMLSelectElement>('#station')!;
   const button = document.querySelector<HTMLButtonElement>('#audio-toggle')!;
   const status = document.querySelector<HTMLElement>('#audio-status')!;
-  audio.volume = 0.35;
+  const volume = document.querySelector<HTMLInputElement>('#volume')!;
+  const volumeValue = document.querySelector<HTMLOutputElement>('#volume-value')!;
+  function applyVolume(value: string) {
+    const parsed = Number(value);
+    const percent = Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 20;
+    volume.value = String(percent);
+    volumeValue.textContent = `${percent}%`;
+    audio!.volume = percent / 100;
+  }
+  applyVolume(store.get('volume', '20'));
+  volume.addEventListener('input', () => {
+    applyVolume(volume.value);
+    store.set('volume', volume.value);
+  });
   let state: State = 'idle',
     userPaused = false,
     attempt = 0;

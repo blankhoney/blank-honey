@@ -1056,15 +1056,11 @@ fieldset button[aria-pressed='true'] {
 #fx-stage:empty {
   display: none;
 }
-.page-points,
 .page-ghost,
 .turning-sheet {
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-.page-points {
-  z-index: 2;
 }
 .page-ghost {
   overflow: hidden;
@@ -1379,4 +1375,67 @@ html[data-motion='reduced-motion'] *::after {
 .music-credit {
   font: 11px/1.7 var(--mono);
   color: var(--muted);
+}
+
+/* The point surface is the visible ink; semantic DOM remains selectable and interactive. */
+#interface-cloud {
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  pointer-events: none;
+  overflow: hidden;
+}
+.interface-cloud-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.pc-ink,
+.pc-ink * {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+.pc-ink::selection,
+.pc-ink *::selection {
+  color: var(--fg) !important;
+  -webkit-text-fill-color: var(--fg) !important;
+  background: var(--soft);
+}
+.pc-rule {
+  border-color: transparent !important;
+}
+.pc-track,
+.pc-track > span {
+  background: transparent !important;
+}
+#terminal-atmosphere {
+  position: fixed;
+  inset: 18% -12% -28%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  transform: perspective(1000px) rotateX(24deg);
+}
+#terminal-atmosphere canvas {
+  width: 100%;
+  height: 100%;
+}
+html[data-family='terminal'] #main {
+  position: relative;
+  z-index: 1;
+}
+@media print {
+  #interface-cloud,
+  #terminal-atmosphere {
+    display: none;
+  }
+  .pc-ink,
+  .pc-ink * {
+    color: inherit !important;
+    -webkit-text-fill-color: initial !important;
+  }
+  .pc-rule {
+    border-color: var(--line) !important;
+  }
 }
