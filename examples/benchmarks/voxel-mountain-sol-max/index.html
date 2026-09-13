@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Three.js 实现的体素山脉、瀑布与穿云自然景观。"
+    />
+    <meta name="theme-color" content="#263a56" />
+    <title>云上山河 · Voxel Mountain</title>
+    <script type="module" crossorigin src="./assets/index-DkBxtMLa.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Br3VkIys.css">
+  </head>
+  <body>
+    <main id="app">
+      <canvas
+        id="scene"
+        aria-label="自动环游的 3D 体素山脉、瀑布和云海场景"
+      ></canvas>
+
+      <div class="vignette" aria-hidden="true"></div>
+
+      <section class="title-panel" aria-label="场景信息">
+        <p class="eyebrow">VOXEL LANDSCAPE · 06:24</p>
+        <h1>云上山河</h1>
+        <p class="subtitle">A mountain breathing above the clouds.</p>
+        <div class="rule"></div>
+        <dl class="scene-stats">
+          <div>
+            <dt id="voxel-count">—</dt>
+            <dd>可见体素</dd>
+          </div>
+          <div>
+            <dt>3</dt>
+            <dd>云雾层次</dd>
+          </div>
+          <div>
+            <dt>∞</dt>
+            <dd>自动环游</dd>
+          </div>
+        </dl>
+      </section>
+
+      <p class="motion-note" id="motion-note">镜头正在自动环游 · 无需操作</p>
+
+      <div class="loader" id="loader" role="status" aria-live="polite">
+        <span class="loader-mark" aria-hidden="true"></span>
+        <span>正在生成山河</span>
+      </div>
+
+      <section class="fallback" id="fallback" hidden>
+        <h2>无法启动 3D 场景</h2>
+        <p>此页面需要支持 WebGL 的现代浏览器。</p>
+      </section>
+
+      <noscript>
+        <p class="noscript">请启用 JavaScript 以观看 3D 场景。</p>
+      </noscript>
+    </main>
+
+  </body>
+</html>

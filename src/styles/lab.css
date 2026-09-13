@@ -134,6 +134,13 @@
   aspect-ratio: 16 / 9;
   object-fit: cover;
 }
+.benchmark-preview-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  color: var(--accent);
+  font: 16px/1.8 var(--mono);
+}
 
 .benchmark-prompt-link {
   display: block;

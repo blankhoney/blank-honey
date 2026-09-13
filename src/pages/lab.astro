@@ -15,13 +15,13 @@ const experiments = destinations('experiments');
     <section class="benchmark-list" aria-label="生成实验">
       {benchmarks.map((item) => (
         <article class="benchmark-card">
-          {item.preview && (
-            <a
-              class="benchmark-preview"
-              href={new URL(`benchmarks/${item.slug}/${item.entry}`, labOrigin).href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <a
+            class="benchmark-preview"
+            href={new URL(`benchmarks/${item.slug}/${item.entry}`, labOrigin).href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.preview ? (
               <img
                 src={item.preview}
                 alt={item.title}
@@ -30,8 +30,10 @@ const experiments = destinations('experiments');
                 loading="lazy"
                 decoding="async"
               />
-            </a>
-          )}
+            ) : (
+              <span class="benchmark-preview-empty">打开交互场景 ↗</span>
+            )}
+          </a>
           <p class="benchmark-kicker">
             {item.modelId} · {item.reasoningEffort}
           </p>
