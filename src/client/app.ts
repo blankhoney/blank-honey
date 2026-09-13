@@ -1,4 +1,4 @@
-import { applyPreferences, capability, store } from './preferences';
+import { applyPreferences, capability, commentTheme, store } from './preferences';
 import { initSearch } from './search';
 import { initAudio } from './audio';
 import { report } from './log';
@@ -103,7 +103,12 @@ document.addEventListener('bh:motion', () =>
 dot.addEventListener('click', () => overlay(!panel.classList.contains('open')));
 shell.querySelector('#close-nav')!.addEventListener('click', () => overlay(false));
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') overlay(false);
+  if (event.key === 'Escape') {
+    // The first Escape belongs to an open native picker; the next closes the shell.
+    const pickerOpen =
+      CSS.supports('appearance', 'base-select') && shell.querySelector('select:open');
+    if (!pickerOpen) overlay(false);
+  }
   if (event.key === 'Tab' && panel.classList.contains('open')) {
     const items = [
       ...shell.querySelectorAll<HTMLElement>(
@@ -194,7 +199,7 @@ async function mount() {
             'reactions-enabled': '1',
             'emit-metadata': '0',
             'input-position': 'bottom',
-            theme: document.documentElement.dataset.tone!,
+            theme: commentTheme(),
             lang: 'zh-CN',
           }))
             script.setAttribute(`data-${key}`, value);

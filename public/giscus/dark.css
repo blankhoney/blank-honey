@@ -1,0 +1,13 @@
+/* Match the reading page while retaining Giscus's dark syntax/status colors. */
+@import url('https://giscus.app/themes/dark.css');
+@import url('./paper.css');
+
+main {
+  color-scheme: dark;
+  --paper-bg: #29251f;
+  --paper-fg: #e9ddcb;
+  --paper-muted: #b8aa96;
+  --paper-line: #514639;
+  --paper-soft: #332d25;
+  --paper-accent: #c6a27b;
+}

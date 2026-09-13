@@ -796,10 +796,22 @@ fieldset button[aria-pressed='true'] {
 }
 .comments small {
   color: var(--muted);
-  font-size: 9px;
+  font: 12px var(--reader);
+  letter-spacing: 0.12em;
 }
 .comments p {
-  font: 13px var(--reader);
+  font: 15px/1.75 var(--reader);
+}
+.comments .comments-intro {
+  color: var(--muted);
+  margin: -10px 0 28px;
+}
+#giscus {
+  min-height: 180px;
+}
+.giscus-frame {
+  display: block;
+  width: 100%;
 }
 /* Terminal pages retain real text underneath a non-interactive particle surface. */
 .terminal {

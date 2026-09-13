@@ -1,0 +1,73 @@
+/* One native directory: inline when space is tight, in the left margin when it fits. */
+.article-toc-rail {
+  min-width: 0;
+}
+.article-toc-rail .toc {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 96%, var(--fg));
+  margin-bottom: 30px;
+}
+.article-toc-rail .toc summary {
+  font: 14px/1.6 var(--reader);
+}
+.article-toc-rail .toc small {
+  font: 10px/1.6 var(--mono);
+  margin-left: 10px;
+}
+.article-toc-rail .toc ol {
+  max-height: min(36svh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-top: 12px;
+  font: 14px/1.65 var(--reader);
+  scrollbar-width: thin;
+}
+.article-toc-rail .toc a {
+  display: block;
+  padding: 5px 0;
+  overflow-wrap: anywhere;
+}
+.article-toc-rail .toc a:hover,
+.article-toc-rail .toc a:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.article-toc-rail .toc .subheading {
+  padding-left: 14px;
+}
+@container (min-width: 1160px) {
+  .reading-column:has(.article-toc-rail) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reading-column:has(.article-toc-rail) > * {
+    grid-column: 1;
+  }
+  .reading-column > .article-toc-rail {
+    grid-row: 2;
+    width: 170px;
+    margin-left: -205px;
+  }
+  .reading-column:has(.article-toc-rail) > .prose {
+    grid-row: 2;
+    min-width: 0;
+  }
+  .article-toc-rail .toc {
+    position: sticky;
+    top: 36px;
+    padding: 14px 12px;
+    margin: 0;
+    border-width: 0 0 0 1px;
+    background: transparent;
+  }
+  .article-toc-rail .toc ol {
+    max-height: calc(100svh - 140px);
+    font-size: 13px;
+  }
+  .article-toc-rail .toc small {
+    display: block;
+    margin: 4px 0 0;
+  }
+}

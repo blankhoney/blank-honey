@@ -1,0 +1,13 @@
+/* Giscus supplies the accessible component defaults; the blog owns its palette. */
+@import url('https://giscus.app/themes/light.css');
+@import url('./paper.css');
+
+main {
+  color-scheme: light;
+  --paper-bg: #f4ebdd;
+  --paper-fg: #2b2723;
+  --paper-muted: #706256;
+  --paper-line: #d6cabc;
+  --paper-soft: #ebdfce;
+  --paper-accent: #7a5138;
+}

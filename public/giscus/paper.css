@@ -1,0 +1,82 @@
+/* Loaded inside Giscus's iframe; host-page styles cannot cross that boundary. */
+:host,
+html:root {
+  --font-family-serif: 'Newsreader', 'Source Han Serif CN', 'Noto Serif CJK SC', 'Songti SC', serif;
+  --font-family-default: var(--font-family-serif);
+  --font-family-sans: var(--font-family-serif);
+  --font-family-monospace: 'Source Code Pro', 'Noto Sans Mono CJK SC', monospace;
+}
+
+main {
+  --color-fg-default: var(--paper-fg);
+  --color-fg-muted: var(--paper-muted);
+  --color-fg-subtle: var(--paper-muted);
+  --color-canvas-default: var(--paper-bg);
+  --color-canvas-overlay: var(--paper-bg);
+  --color-canvas-inset: var(--paper-soft);
+  --color-canvas-subtle: var(--paper-soft);
+  --color-border-default: var(--paper-line);
+  --color-border-muted: var(--paper-line);
+  --color-neutral-muted: var(--paper-soft);
+  --color-accent-fg: var(--paper-accent);
+  --color-accent-emphasis: var(--paper-accent);
+  --color-accent-muted: var(--paper-line);
+  --color-accent-subtle: var(--paper-soft);
+  --color-btn-text: var(--paper-fg);
+  --color-btn-bg: var(--paper-bg);
+  --color-btn-border: var(--paper-line);
+  --color-btn-hover-bg: var(--paper-soft);
+  --color-btn-hover-border: var(--paper-accent);
+  --color-btn-active-bg: var(--paper-soft);
+  --color-btn-selected-bg: var(--paper-soft);
+  --color-btn-primary-text: var(--paper-bg);
+  --color-btn-primary-bg: var(--paper-accent);
+  --color-btn-primary-border: var(--paper-accent);
+  --color-btn-primary-hover-bg: var(--paper-fg);
+  --color-btn-primary-hover-border: var(--paper-fg);
+  --color-btn-primary-selected-bg: var(--paper-accent);
+  --color-btn-primary-disabled-bg: var(--paper-muted);
+  --color-btn-primary-disabled-text: var(--paper-bg);
+  --color-btn-primary-disabled-border: var(--paper-line);
+  --color-btn-shadow: none;
+  --color-btn-inset-shadow: none;
+  --color-btn-primary-shadow: none;
+  --color-btn-primary-inset-shadow: none;
+  --color-primer-shadow-inset: none;
+  --color-segmented-control-bg: var(--paper-soft);
+  --color-segmented-control-button-bg: var(--paper-bg);
+  --color-segmented-control-button-selected-border: var(--paper-accent);
+  --color-social-reaction-bg-hover: var(--paper-soft);
+  --color-social-reaction-bg-reacted-hover: var(--paper-line);
+  --color-action-list-item-default-hover-bg: var(--paper-soft);
+  font-family: var(--font-family-serif);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.gsc-comment-box,
+.gsc-comment,
+.gsc-reply-box,
+.gsc-comment-box-textarea,
+.btn {
+  border-radius: 3px;
+}
+.gsc-comment-box-textarea {
+  font-size: 16px;
+  line-height: 1.75;
+}
+.gsc-comment-content {
+  font-size: 16px;
+  line-height: 1.8;
+}
+.gsc-comment-header,
+.gsc-comment-box-tabs {
+  background: var(--paper-soft);
+}
+.gsc-comment-box-bottom {
+  font-size: 13px;
+}
+.gsc-comment-box-textarea::placeholder {
+  color: var(--paper-muted);
+  opacity: 1;
+}

@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import '../../styles/article-toc.css';
 import { render } from 'astro:content';
 import { content } from '../../application/content';
 import { neighbors } from '../../domain/content';
@@ -67,18 +68,20 @@ const schema = {
         ))}
       </header>
       {toc.length > 0 && (
-        <details class="toc" data-pagefind-ignore>
-          <summary>
-            文章目录 <small>CONTENTS</small>
-          </summary>
-          <ol>
-            {toc.map((h) => (
-              <li class:list={{ subheading: h.depth === 3 }}>
-                <a href={`#${h.slug}`}>{h.text}</a>
-              </li>
-            ))}
-          </ol>
-        </details>
+        <aside class="article-toc-rail" aria-label="文章目录" data-pagefind-ignore>
+          <details class="toc" open>
+            <summary>
+              文章目录 <small>CONTENTS</small>
+            </summary>
+            <ol>
+              {toc.map((h) => (
+                <li class:list={{ subheading: h.depth === 3 }}>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+            </ol>
+          </details>
+        </aside>
       )}
       <div class="prose">
         <Content />
@@ -107,8 +110,9 @@ const schema = {
         </nav>
         <section id="comments" class="comments">
           <h2>
-            留下几句话 <small>GISCUS / GITHUB</small>
+            留下几句话 <small>读者来信</small>
           </h2>
+          <p class="comments-intro">读到这里，有什么想法？欢迎留下你的看法。</p>
           {giscus.repo && giscus.repoId && giscus.categoryId ? (
             <div
               id="giscus"
