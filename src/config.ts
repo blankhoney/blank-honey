@@ -24,11 +24,11 @@ export const config = {
     { slug: 'thoughts', name: '感悟' },
   ],
   hero: [
-    { id: 'orbit', name: 'EVENT HORIZON', label: '环' },
-    { id: 'drift', name: 'STELLAR DRIFT', label: '流' },
-    { id: 'helix', name: 'DOUBLE HELIX', label: '旋' },
-    { id: 'terrain', name: 'QUIET TOPOGRAPHY', label: '形' },
-    { id: 'archive', name: 'SCATTERED SIGNALS', label: '点' },
+    { id: 'io724', name: '流体墨迹', source: 'https://io724.com' },
+    { id: 'miniload', name: '像素云', source: 'https://miniload.top' },
+    { id: 'isaca', name: '错层索引', source: 'https://isaca.pro' },
+    { id: 'yantao', name: '代码札记', source: 'https://yantao.wiki' },
+    // ios25span.com is unavailable; add its verified effect here when the reference returns.
   ],
   particles: { desktop: 1100, mobile: 420, light: 240 },
   map: {
@@ -39,12 +39,26 @@ export const config = {
   },
   radio: [
     {
-      id: 'ambient',
-      name: '氛围 · Ambient Sleeping Pill',
-      source: 'direct',
-      urlEnv: 'RADIO_AMBIENT_URL',
+      id: 'piano-01',
+      name: '静心钢琴 · Meditation Impromptu 01',
+      source: 'direct' as 'direct' | 'rss',
+      urlEnv: 'RADIO_PIANO_01_URL',
+      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2001.mp3',
     },
-    { id: 'classical', name: '古典 · YourClassical', source: 'rss', urlEnv: 'RADIO_CLASSICAL_URL' },
+    {
+      id: 'piano-02',
+      name: '缓缓流动 · Meditation Impromptu 02',
+      source: 'direct' as 'direct' | 'rss',
+      urlEnv: 'RADIO_PIANO_02_URL',
+      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2002.mp3',
+    },
+    {
+      id: 'dream',
+      name: '轻柔节拍 · Dream Culture',
+      source: 'direct' as 'direct' | 'rss',
+      urlEnv: 'RADIO_DREAM_URL',
+      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dream%20Culture.mp3',
+    },
   ],
   // Add one record and rebuild; local HTML stays on the separate lab origin.
   tools: [

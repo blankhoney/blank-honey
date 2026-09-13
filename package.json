@@ -21,6 +21,7 @@
     "@fontsource/newsreader": "^5.3.0",
     "@fontsource/source-code-pro": "^5.3.0",
     "@fontsource/vt323": "^5.3.0",
+    "@paper-design/shaders": "0.0.80",
     "@tsparticles/engine": "^4.4.0",
     "@tsparticles/slim": "^4.4.0",
     "astro": "^7.3.2",
@@ -28,6 +29,7 @@
     "cytoscape": "^3.34.3",
     "fast-xml-parser": "^5.11.1",
     "leaflet": "^1.9.4",
+    "webgl-fluid-enhanced": "^0.8.0",
     "zod": "^4.6.3"
   },
   "devDependencies": {

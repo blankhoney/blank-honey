@@ -147,7 +147,7 @@ small {
   line-height: 2;
   color: var(--muted);
 }
-/* The navigation overlays the page. Its geometry never changes the reading column. */
+/* Right navigation yields horizontal space; search remains an independent overlay. */
 #nav-dot {
   position: fixed;
   right: 24px;
@@ -397,11 +397,6 @@ fieldset button[aria-pressed='true'] {
   letter-spacing: -0.065em;
   margin: 0;
 }
-.hero h1 em {
-  font-weight: 400;
-  display: block;
-  margin: 10px 0 0 8vw;
-}
 .hero-description {
   font: 15px/2 var(--reader);
   color: #b8b8a9;
@@ -478,50 +473,6 @@ fieldset button[aria-pressed='true'] {
   font-size: 20px;
   width: 38px;
   height: 36px;
-}
-.hero-side {
-  position: absolute;
-  left: 27px;
-  top: 52%;
-  writing-mode: vertical-rl;
-  font: 9px var(--mono);
-  color: #737d6d;
-  letter-spacing: 0.17em;
-}
-#hero-particles {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-#hero-particles canvas {
-  pointer-events: none !important;
-}
-.hero-fallback {
-  position: absolute;
-  top: 22%;
-  right: 5%;
-  width: 46%;
-  aspect-ratio: 1;
-  opacity: 0.45;
-  z-index: 0;
-  pointer-events: none;
-}
-.hero-fallback div {
-  position: absolute;
-  inset: 5%;
-  border: 1px solid #7b8b69;
-  border-radius: 50%;
-  transform: rotate(-25deg) scaleY(0.65);
-}
-.hero-fallback div:nth-child(2) {
-  transform: rotate(25deg) scaleY(0.65);
-}
-.hero-fallback div:nth-child(3) {
-  transform: rotate(65deg) scaleY(0.65);
-}
-.hero.ready .hero-fallback {
-  display: none;
 }
 /* Warm paper, an index rather than a card wall. */
 .journal {
@@ -1099,7 +1050,8 @@ fieldset button[aria-pressed='true'] {
   z-index: 80;
   pointer-events: none;
   overflow: hidden;
-  perspective: 1600px;
+  perspective: 2000px;
+  perspective-origin: 35% 50%;
 }
 #fx-stage:empty {
   display: none;
@@ -1120,7 +1072,7 @@ fieldset button[aria-pressed='true'] {
   color: var(--fg);
 }
 .turning-sheet {
-  transform-origin: 50% 50%;
+  transform-origin: left center;
   transform-style: preserve-3d;
 }
 .paper-strip {
@@ -1136,12 +1088,6 @@ fieldset button[aria-pressed='true'] {
   inset: 0;
   overflow: hidden;
   backface-visibility: hidden;
-}
-.sheet-front::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, #0001, transparent 30%, #fff1);
 }
 .sheet-back {
   transform: rotateY(180deg);
@@ -1202,9 +1148,6 @@ fieldset button[aria-pressed='true'] {
     width: 42px;
     height: 42px;
   }
-  .hero-side {
-    display: none;
-  }
   #effect-picker {
     font-size: 10px;
     max-width: 160px;
@@ -1214,11 +1157,6 @@ fieldset button[aria-pressed='true'] {
   }
   .effect-controls {
     gap: 10px;
-  }
-  .hero-fallback {
-    width: 80%;
-    right: -25%;
-    top: 30%;
   }
   #nav-dot {
     top: 15px;
@@ -1401,16 +1339,44 @@ html[data-motion='reduced-motion'] *::after {
   animation-duration: 0.001ms !important;
   transition-duration: 0.001ms !important;
 }
-@media (max-width: 700px) {
-  #hero-particles {
-    opacity: 0.65;
-    mask-image: linear-gradient(90deg, transparent 0%, #0008 45%, #000 100%);
-  }
-}
 .no-script-nav {
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
   padding: 24px;
   border-top: 1px solid var(--line);
+}
+
+/* The paper bends from a travelling corner; shades belong to the fold, not a rigid card. */
+.paper-shade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+.paper-contact-shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  filter: blur(22px);
+  background: #000;
+  pointer-events: none;
+}
+
+/* Supporting terminal text should remain readable beside the display heading. */
+.terminal .crumb,
+.terminal-head > small,
+.terminal-rule,
+.terminal-footer {
+  font-size: 12px;
+}
+.terminal-head p {
+  font-size: 15px;
+  line-height: 1.8;
+}
+.music-credit {
+  font: 11px/1.7 var(--mono);
+  color: var(--muted);
 }

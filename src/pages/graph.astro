@@ -1,11 +1,32 @@
 ---
 import Terminal from '../components/Terminal.astro';
+import '../styles/graph.css';
 import { content } from '../application/content';
-const { articles, relations } = await content();
+const { articles, relations, categories } = await content();
 const linked = new Set(relations.flatMap((r) => [r.source, r.target]));
+const palette = ['#78b8b1', '#c49a78', '#9a9ecb', '#b2b47d', '#779fc7'];
+const graphCategories = categories.filter((category) =>
+  category.articles.some((article) => linked.has(article.id)),
+);
+const colorOf = (category: string) =>
+  palette[
+    Math.max(
+      0,
+      graphCategories.findIndex((item) => item.slug === category),
+    ) % palette.length
+  ];
+const articleById = new Map(articles.map((article) => [article.id, article]));
 const nodes = articles
   .filter((a) => linked.has(a.id))
-  .map((a) => ({ data: { id: a.id, label: a.data.title, href: `/blog/${a.id}/` } }));
+  .map((a) => ({
+    data: {
+      id: a.id,
+      label: a.data.title,
+      href: `/blog/${a.id}/`,
+      category: a.data.category,
+      color: colorOf(a.data.category),
+    },
+  }));
 const edges = relations.map((r, i) => ({
   data: { id: `edge-${i}`, source: r.source, target: r.target, label: r.label },
 }));
@@ -17,15 +38,47 @@ const edges = relations.map((r, i) => ({
   description="把确定的联系留下。其余的，交给时间。"
   code="DEFINITE RELATIONS ONLY"
 >
-  <div id="graph" data-cohort="frame" aria-label="文章关系图">
-    {relations.length === 0 && <p>尚未记录文章关系。确定的联系，会留在这里。</p>}
+  <div class="graph-toolbar">
+    <label>
+      文章分类{' '}
+      <select id="graph-category" aria-label="筛选图谱文章分类">
+        <option value="">全部</option>
+        {graphCategories.map((category) => (
+          <option value={category.slug}>{category.name}</option>
+        ))}
+      </select>
+    </label>
+    <button id="graph-center" type="button">
+      回到全景 ↗
+    </button>
   </div>
-  <div class="relations">
+  <div class="graph-scene">
+    <div id="graph" data-cohort="frame" aria-label="文章关系图">
+      {relations.length === 0 && <p>尚未记录文章关系。确定的联系，会留在这里。</p>}
+    </div>
+  </div>
+  <div class="graph-legend">
+    {graphCategories.map((category) => (
+      <span>
+        <i style={`--node-color:${colorOf(category.slug)}`}></i>
+        {category.name}
+      </span>
+    ))}
+    <span>拖动探索 · 空视野停留后自动回中</span>
+  </div>
+  <div class="relations graph-relations">
+    <div class="relation-heading" aria-hidden="true">
+      <span>文章</span>
+      <span>联系</span>
+      <span>关联文章</span>
+    </div>
     {relations.map((r) => (
-      <p>
-        <a href={`/blog/${r.source}/`}>{articles.find((a) => a.id === r.source)?.data.title}</a>
+      <p
+        data-relation-categories={`${articleById.get(r.source)?.data.category} ${articleById.get(r.target)?.data.category}`}
+      >
+        <a href={`/blog/${r.source}/`}>{articleById.get(r.source)?.data.title}</a>
         <span>{r.label}</span>
-        <a href={`/blog/${r.target}/`}>{articles.find((a) => a.id === r.target)?.data.title} ↗</a>
+        <a href={`/blog/${r.target}/`}>{articleById.get(r.target)?.data.title} ↗</a>
       </p>
     ))}
   </div>

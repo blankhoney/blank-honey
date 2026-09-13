@@ -6,10 +6,10 @@ import { cloud, pointAt, morphUpdater, sample, type Point } from '../src/client/
 
 const from: Point = { key: 'title', x: 80, y: 120, color: '#fff' };
 const to: Point = { key: 'title', x: 240, y: 180, color: '#fff' };
-test('Particle paths preserve endpoints and separate even when layout does not move', () => {
+test('Particle paths preserve endpoints and allow straight semantic migration', () => {
   assert.deepEqual(pointAt(from, to, 0, 45), { x: 80, y: 120 });
   assert.deepEqual(pointAt(from, to, 1, 45), { x: 240, y: 180 });
-  assert.ok(Math.abs(pointAt(from, from, 0.5, 45).x - from.x) > 40);
+  assert.deepEqual(pointAt(from, from, 0.5, 0), { x: from.x, y: from.y });
   assert.deepEqual(pointAt(from, to, 2, 45), pointAt(from, to, 1, 45));
 });
 test('Public updater moves actual particles independently and releases destroyed particles', async (t) => {
@@ -103,6 +103,10 @@ test('Destination sampling excludes the outgoing page ghost', () => {
 });
 
 test('Paper segments remain connected throughout the fold', () => {
+  assert.ok(
+    Math.abs(foldAt(36, 1440, 0.5).at(-1)!.angle) > 50,
+    'the edge curls, rather than turning as a rigid card',
+  );
   for (const t of [0, 0.25, 0.5, 0.75, 1]) {
     const segments = foldAt(12, 1440, t);
     for (let i = 0; i < segments.length - 1; i++) {

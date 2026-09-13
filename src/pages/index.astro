@@ -1,33 +1,57 @@
 ---
 import Base from '../layouts/Base.astro';
 import { config } from '../config';
+import '../styles/hero.css';
+import { content } from '../application/content';
+const { articles } = await content();
+const headlines = articles.slice(0, 5).map((article) => article.data.title);
+const code = `const notebook = {\n  author: ${JSON.stringify(config.name)},\n  focus: 'CODE · LIFE · JOURNEY'\n};\n\nfunction stay() {\n  return '留一点空白。';\n}`;
 ---
 
 <Base family="hero">
-  <section class="hero" id="hero">
-    <div id="hero-particles" aria-hidden="true"></div>
-    <div class="hero-fallback" aria-hidden="true">
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
+  <section class="hero" id="hero" data-effect="io724" data-headlines={JSON.stringify(headlines)}>
+    <div id="hero-stage" aria-hidden="true"></div>
     <header class="hero-top">
-      <span>BH / AN OPEN NOTEBOOK</span>
+      <span>{config.name}</span>
       <span>留一点空白。</span>
     </header>
     <div class="hero-copy">
-      <p class="eyebrow">A PERSONAL SPACE, NOT A FEED.</p>
-      <h1>
-        Blank<em>Honey.</em>
-      </h1>
-      <p class="hero-description">
-        记录一些值得停留的瞬间。
-        <br />
-        代码、远行，以及日常的缝隙。
-      </p>
-      <p id="saying" class="saying">
-        {config.sayings[0]}
-      </p>
+      <p class="eyebrow">A PERSONAL SPACE</p>
+      <h1>{config.name}</h1>
+      <p class="hero-description">{config.description}</p>
+      <p class="saying">{config.sayings[0]}</p>
+    </div>
+    <div class="hero-index">
+      <article class="index-card" data-front="true">
+        <span>01 / NOTEBOOK</span>
+        <h2>
+          写作
+          <br />间
+        </h2>
+        <p>{config.about}</p>
+        <a href="/articles/">阅读文章 ↗</a>
+      </article>
+      <article class="index-card" data-front="false" inert>
+        <span>02 / PLAYGROUND</span>
+        <h2>
+          实验
+          <br />室
+        </h2>
+        <p>一些想法，一些实现。保留探索的余地。</p>
+        <a href="/lab/">浏览实验 ↗</a>
+      </article>
+      <button id="index-switch" aria-label="切换索引卡片">
+        切换 ↔
+      </button>
+    </div>
+    <div class="hero-code-window" aria-hidden="true">
+      <div class="code-window-bar">
+        <i></i>
+        <i></i>
+        <i></i>
+        <span>notebook.ts</span>
+      </div>
+      <pre><code id="hero-code" data-text={code}>{code}</code></pre>
     </div>
     <div class="hero-bottom">
       <a class="enter" href="/articles/">
@@ -35,19 +59,18 @@ import { config } from '../config';
       </a>
       <details id="effect-picker">
         <summary>
-          首屏效果 <span id="effect-label">01 / EVENT HORIZON</span>
+          首屏效果 <span id="effect-label">流体墨迹</span>
         </summary>
         <div class="effect-controls">
           <button id="effect-prev" aria-label="上一个效果">
             ←
           </button>
-          <span id="effect-position">01 / 05</span>
+          <span id="effect-position">1 / {config.hero.length}</span>
           <button id="effect-next" aria-label="下一个效果">
             →
           </button>
         </div>
       </details>
     </div>
-    <span class="hero-side">LEAVE A LITTLE ROOM.</span>
   </section>
 </Base>

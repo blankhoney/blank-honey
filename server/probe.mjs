@@ -89,27 +89,27 @@ export function createProbe({ hosts, prometheusUrl, fetcher = fetch, now = Date.
         'load1',
         'load5',
         'load15',
-      ])
-        row[key] =
-          values[key] === null
-            ? null
-            : key.endsWith('Percent')
-              ? Math.max(0, Math.min(100, values[key]))
-              : values[key];
-      row.swapState =
-        values.swapTotal === 0
-          ? 'not-configured'
-          : values.swapTotal !== null && row.swapPercent !== null
-            ? 'available'
-            : 'unavailable';
-      if (row.swapState === 'not-configured') row.swapPercent = null;
+      ]) {
+        const value = values[key];
+        row[key] = value;
+        if (value !== null && key.endsWith('Percent')) row[key] = Math.max(0, Math.min(100, value));
+      }
+      if (values.swapTotal === 0) {
+        row.swapState = 'not-configured';
+        row.swapPercent = null;
+      } else if (values.swapTotal !== null && row.swapPercent !== null) {
+        row.swapState = 'available';
+      }
+      const metricsComplete = [
+        'cpuPercent',
+        'memoryPercent',
+        'diskPercent',
+        'load1',
+        'load5',
+        'load15',
+      ].every((key) => row[key] !== null);
       row.online = true;
-      row.status =
-        ['cpuPercent', 'memoryPercent', 'diskPercent', 'load1', 'load5', 'load15'].every(
-          (key) => row[key] !== null,
-        ) && row.swapState !== 'unavailable'
-          ? 'ok'
-          : 'unavailable';
+      if (metricsComplete && row.swapState !== 'unavailable') row.status = 'ok';
       return row;
     } catch {
       return row;

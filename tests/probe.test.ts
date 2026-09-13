@@ -42,3 +42,19 @@ test('one stale host does not freeze healthy or offline siblings', () => {
   assert.equal(next[2].online, false);
   assert.equal(mergeHosts(next, [sample('b', { cpuPercent: 50 })], time + 20000)[0].stale, true);
 });
+
+test('display distinguishes pressure, missing samples, stale values and offline hosts', async () => {
+  const { metricLevel, hostHealth } = await import('../src/domain/probe');
+  assert.equal(metricLevel(74.9), 'normal');
+  assert.equal(metricLevel(75), 'warning');
+  assert.equal(metricLevel(90), 'critical');
+  for (const value of [null, NaN, -1, 101]) assert.equal(metricLevel(value), 'unknown');
+  const healthy = mergeHosts([], [sample('a')], time)[0];
+  assert.equal(hostHealth(healthy).level, 'normal');
+  assert.equal(hostHealth({ ...healthy, cpuPercent: 90 }).label, '占用过高');
+  assert.equal(hostHealth({ ...healthy, cpuPercent: null }).label, '指标不完整');
+  assert.equal(hostHealth({ ...healthy, online: false }).label, '离线');
+  assert.equal(hostHealth({ ...healthy, stale: true, cpuPercent: 90 }).label, '采样过期');
+  assert.equal(hostHealth(healthy, true).label, '采样过期');
+  assert.equal(hostHealth({ ...healthy, sampledAt: null, stale: true }).label, '无数据');
+});

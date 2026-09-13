@@ -7,7 +7,7 @@ const tools = destinations('tools');
 <Terminal title="工具" en="TOOLBOX" description="一些小工具。打开，做完，然后离开。">
   <div class="directory" data-cohort="frame">
     {tools.map((t, i) => (
-      <a class="directory-row" href={t.url} rel="noopener noreferrer">
+      <a class="directory-row" href={t.url} target="_blank" rel="noopener noreferrer">
         <span>{String(i + 1).padStart(2, '0')}</span>
         <div>
           <h2>{t.name}</h2>

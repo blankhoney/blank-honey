@@ -8,11 +8,16 @@ import type { Point } from './particle-morph';
 import type { Container } from '@tsparticles/engine';
 
 type Painter = typeof import('./particle-morph');
+/** Continuous paper fold from the acceptance prototype; each strip starts at its neighbour's edge. */
 export function foldAt(count: number, width: number, progress: number) {
-  let x = 0,
-    z = 0;
-  return Array.from({ length: count }, (_, i) => {
-    const angle = (-24 * Math.sin(Math.PI * progress) * (i + 1)) / count;
+  const eased = progress ** 3 * (progress * (progress * 6 - 15) + 10);
+  const flex = Math.sin(Math.PI * eased);
+  const crease = 1.08 - eased * 1.2;
+  let x = 0;
+  let z = 0;
+  return Array.from({ length: count }, (_, index) => {
+    const position = (index + 0.5) / count;
+    const angle = (-70 * flex) / (1 + Math.exp(-(position - crease) * 8.5));
     const point = { x, z, angle };
     x += (Math.cos((angle * Math.PI) / 180) * width) / count;
     z -= (Math.sin((angle * Math.PI) / 180) * width) / count;
@@ -21,10 +26,8 @@ export function foldAt(count: number, width: number, progress: number) {
 }
 
 export function initTransitions() {
-  let version = 0,
-    active = false,
-    afterNavigation = false;
-  let painter: Painter | undefined, observer: ResizeObserver | undefined;
+  let version = 0;
+  let painter: Painter | undefined;
   let refreshTimer: ReturnType<typeof setTimeout>;
   const disposals: (() => void)[] = [];
   const stage = () => document.querySelector<HTMLElement>('#fx-stage')!;
@@ -32,13 +35,12 @@ export function initTransitions() {
   const load = async () => (painter ??= await import('./particle-morph'));
   function clear() {
     version++;
-    active = false;
     clearTimeout(refreshTimer);
-    observer?.disconnect();
     disposals.splice(0).forEach((dispose) => dispose());
     stage().replaceChildren();
     delete stage().dataset.effect;
     main().style.opacity = '';
+    main().inert = false;
   }
   async function play(
     el: Element,
@@ -56,34 +58,24 @@ export function initTransitions() {
     disposals.push(() => animation.cancel());
     return animation.finished.catch(() => {});
   }
-  function watch() {
-    observer?.disconnect();
-    // Observe dimensions, not mutation noise from the live clock or particle engine.
-    let width = main().offsetWidth,
-      height = main().offsetHeight;
-    observer = new ResizeObserver(() => {
-      const next = main();
-      if (width === next.offsetWidth && height === next.offsetHeight) return;
-      width = next.offsetWidth;
-      height = next.offsetHeight;
-      if (!active) {
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => void refresh(), 120);
-      }
-    });
-    observer.observe(main());
-    const changes = new MutationObserver((records) => {
-      if (!active && records.some((record) => (record.target as Element).id === 'probe')) {
-        clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(() => void refresh(), 120);
-      }
-    });
-    changes.observe(main(), { childList: true, subtree: true });
-    disposals.push(() => changes.disconnect());
-  }
   async function renderCloud(from: Point[], duration: number, entry: boolean, token: number) {
     const module = await load();
     await document.fonts.ready;
+    // The probe is fetched after the route swaps. Include its numbers/bars in the assembly.
+    const probe = document.querySelector('#probe');
+    if (probe && !probe.querySelector('.probe-card')) {
+      await new Promise<void>((resolve) => {
+        const observer = new MutationObserver(finish);
+        const timeout = setTimeout(finish, 500);
+        function finish() {
+          clearTimeout(timeout);
+          observer.disconnect();
+          resolve();
+        }
+        observer.observe(probe, { childList: true });
+        disposals.push(finish);
+      });
+    }
     if (token !== version) return;
     const layer = document.createElement('div');
     layer.id = `page-points-${token}`;
@@ -109,27 +101,6 @@ export function initTransitions() {
     }
     return layer;
   }
-  async function refresh() {
-    if (active) return;
-    clear();
-    if (document.documentElement.dataset.family !== 'terminal' || capability() === 'reduced-motion')
-      return;
-    const token = version;
-    try {
-      const layer = await renderCloud([], 0, false, token);
-      if (!layer || token !== version) return;
-      layer.style.opacity = '.22';
-      const startY = scrollY;
-      const follow = () => {
-        layer.style.transform = `translateY(${startY - scrollY}px)`;
-      };
-      window.addEventListener('scroll', follow, { passive: true });
-      disposals.push(() => window.removeEventListener('scroll', follow));
-      watch();
-    } catch (error) {
-      report('transition', error);
-    }
-  }
   function capture() {
     const old = main(),
       bounds = old.getBoundingClientRect(),
@@ -144,7 +115,16 @@ export function initTransitions() {
     const originals = old.querySelectorAll('canvas');
     clone.querySelectorAll('canvas').forEach((canvas, i) => {
       try {
-        canvas.getContext('2d')?.drawImage(originals[i], 0, 0);
+        const original = originals[i];
+        const image = document.createElement('img');
+        image.src = original.toDataURL();
+        image.alt = '';
+        image.style.cssText = original.style.cssText;
+        image.width = original.width;
+        image.height = original.height;
+        // Images survive cloning into paper strips; cloned canvases lose their pixels.
+        canvas.parentElement!.style.height = `${original.parentElement!.getBoundingClientRect().height}px`;
+        canvas.replaceWith(image);
       } catch {
         canvas.remove();
       }
@@ -166,8 +146,17 @@ export function initTransitions() {
     const sheet = document.createElement('div');
     sheet.className = 'turning-sheet';
     stage().append(sheet);
-    const count = capability() === 'light' ? 8 : 12;
-    const bends = Array.from({ length: 25 }, (_, step) => foldAt(count, innerWidth, step / 24));
+    const count = capability() === 'light' ? 20 : 36;
+    const frames = Array.from({ length: 49 }, (_, step) => {
+      const progress = step / 48;
+      const eased = progress ** 3 * (progress * (progress * 6 - 15) + 10);
+      return { progress, eased, flex: Math.sin(Math.PI * eased), yaw: -180 * eased ** 1.6 };
+    });
+    const bends = frames.map(({ progress }) => foldAt(count, innerWidth, progress));
+    const shadow = document.createElement('div');
+    shadow.className = 'paper-contact-shadow';
+    stage().prepend(shadow);
+    disposals.push(() => shadow.remove());
     for (let i = 0; i < count; i++) {
       const strip = document.createElement('div');
       strip.className = 'paper-strip';
@@ -181,12 +170,32 @@ export function initTransitions() {
       const print = ghost.cloneNode(true) as HTMLElement;
       print.style.cssText += `;width:${innerWidth}px;left:${(-i * innerWidth) / count}px`;
       front.append(print);
+      const frontShade = document.createElement('div');
+      const backShade = document.createElement('div');
+      frontShade.className = backShade.className = 'paper-shade';
+      front.append(frontShade);
+      back.append(backShade);
       strip.append(front, back);
+      for (const [side, shade] of [frontShade, backShade].entries()) {
+        void play(
+          shade,
+          frames.map((frame, step) => {
+            const normal = ((frame.yaw + bends[step][i].angle) * Math.PI) / 180;
+            return {
+              offset: frame.progress,
+              opacity: Math.abs(Math.sin(normal - side * 0.2)) * 0.24,
+            };
+          }),
+          duration,
+          0,
+          'linear',
+        );
+      }
       sheet.append(strip);
       void play(
         strip,
         bends.map((positions, step) => ({
-          offset: step / 24,
+          offset: frames[step].progress,
           transform: `translate3d(${positions[i].x}px,0,${positions[i].z}px) rotateY(${positions[i].angle}deg)`,
         })),
         duration,
@@ -195,19 +204,29 @@ export function initTransitions() {
       );
     }
     ghost.remove();
-    await play(
-      sheet,
-      [
-        { transform: 'translateX(0) rotateY(0deg) rotateZ(0deg)' },
-        { transform: 'translateX(1%) rotateY(-12deg) rotateZ(-.4deg)', offset: 0.18 },
-        { transform: 'translateX(-5%) rotateY(-68deg) rotateZ(-.8deg)', offset: 0.48 },
-        { transform: 'translateX(-24%) rotateY(-125deg) rotateZ(-.3deg)', offset: 0.76 },
-        { transform: 'translateX(-105%) rotateY(-155deg) rotateZ(0deg)' },
-      ],
+    void play(
+      shadow,
+      frames.map(({ progress, flex, yaw }) => ({
+        offset: progress,
+        transform: `translateX(${Math.max(-80, innerWidth * Math.max(0, Math.cos((yaw * Math.PI) / 180)) * 0.78 - 70)}px)`,
+        width: `${40 + 95 * flex}px`,
+        opacity: 0.14 * flex,
+      })),
       duration,
       0,
       'linear',
     );
+    await play(
+      sheet,
+      frames.map(({ progress, eased, flex, yaw }) => ({
+        offset: progress,
+        transform: `translate3d(${-innerWidth * 0.035 * eased ** 2}px,0,${6 * flex}px) rotateY(${yaw}deg) rotateZ(${-1.15 * flex}deg)`,
+      })),
+      duration,
+      0,
+      'linear',
+    );
+    shadow.remove();
     sheet.remove();
   }
   document.addEventListener(
@@ -226,7 +245,6 @@ export function initTransitions() {
       to = event.newDocument.documentElement.dataset.family;
     event.newDocument.documentElement.dataset.tone = tone();
     event.newDocument.documentElement.dataset.motion = capability();
-    afterNavigation = true;
     if (capability() === 'reduced-motion') return;
     const ghost = capture(),
       points = from === 'terminal' ? painter?.sample(capability() === 'light') || [] : [],
@@ -238,14 +256,12 @@ export function initTransitions() {
     event.swap = () => {
       swap();
       stage().append(ghost);
-      active = true;
       stage().dataset.effect = `${from}-to-${to}`;
       const timeout = setTimeout(() => {
         if (token === version) {
           clear();
-          void refresh();
         }
-      }, 2300);
+      }, 4500);
       disposals.push(() => clearTimeout(timeout));
       // Astro restores scroll after swap; sample the destination on the following frame.
       const frame = requestAnimationFrame(() => void exchange());
@@ -256,10 +272,11 @@ export function initTransitions() {
           light = capability() === 'light';
         try {
           if (from === 'terminal' && to === 'paper') {
-            await paper(ghost, light ? 900 : 1350);
+            await paper(ghost, light ? 1200 : 1800);
           } else if (to === 'terminal') {
             content.style.opacity = '0';
-            const duration = light ? 800 : 1150;
+            content.inert = true;
+            const duration = light ? 1200 : 1700;
             const layer = await renderCloud(points, duration, from !== 'terminal', token);
             if (!layer || token !== version) return;
             await Promise.all([
@@ -268,14 +285,14 @@ export function initTransitions() {
                 [{ opacity: 1 }, { opacity: 0, transform: 'scale(.985)' }],
                 duration * 0.3,
               ),
-              play(content, [{ opacity: 0 }, { opacity: 1 }], duration * 0.32, duration * 0.68),
+              play(content, [{ opacity: 0 }, { opacity: 1 }], duration * 0.18, duration * 0.82),
               play(
                 layer,
                 [
                   { opacity: 0 },
                   { opacity: 1, offset: 0.14 },
                   { opacity: 1, offset: 0.8 },
-                  { opacity: 0.22 },
+                  { opacity: 0 },
                 ],
                 duration,
               ),
@@ -303,27 +320,20 @@ export function initTransitions() {
         } finally {
           if (token === version) {
             clear();
-            void refresh();
           }
         }
       }
     };
   });
-  document.addEventListener('astro:page-load', () => {
-    if (!afterNavigation) void refresh();
-    afterNavigation = false;
-  });
   for (const name of ['bh:motion', 'bh:theme'])
     document.addEventListener(name, () => {
       clear();
-      void refresh();
     });
   window.addEventListener('resize', () => {
     clearTimeout(refreshTimer);
     // Resize invalidates viewport coordinates; reveal real content before rebuilding.
     refreshTimer = setTimeout(() => {
       clear();
-      void refresh();
     }, 200);
   });
 }

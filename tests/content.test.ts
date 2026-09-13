@@ -123,6 +123,11 @@ test('Lab build copies relative assets, injects return links, and rejects traver
         '<a href="__SITE_RETURN__">Return</a><link href="style.css" rel="stylesheet">',
       );
     await writeFile(join(root, 'examples/style.css'), 'body { color: black }');
+    await writeFile(
+      join(root, 'examples/json.html'),
+      '<a href="__SITE_RETURN__">Return</a><link href="style.css" rel="stylesheet"><a href="second.html">Next</a>',
+    );
+    await writeFile(join(root, 'examples/second.html'), '<a href="json.html">Back</a>');
     assert.equal(run().status, 0);
     assert.match(
       await readFile(join(root, 'lab-dist/tools/json/index.html'), 'utf8'),
@@ -131,6 +136,15 @@ test('Lab build copies relative assets, injects return links, and rejects traver
     assert.match(
       await readFile(join(root, 'lab-dist/tools/json/style.css'), 'utf8'),
       /color: black/,
+    );
+    // The entry is published as index.html, but sibling links still use its original name.
+    assert.match(
+      await readFile(join(root, 'lab-dist/tools/json/json.html'), 'utf8'),
+      /href="second.html"/,
+    );
+    assert.match(
+      await readFile(join(root, 'lab-dist/tools/json/second.html'), 'utf8'),
+      /href="json.html"/,
     );
     await writeFile(join(root, 'outside.css'), 'private');
     await writeFile(

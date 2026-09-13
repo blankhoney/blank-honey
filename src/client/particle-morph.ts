@@ -51,7 +51,7 @@ export function sample(light: boolean): Point[] {
       .querySelector('#main')!
       .querySelectorAll<HTMLElement>(
         terminal
-          ? '[data-cohort], .metric-value, .metric-bar'
+          ? '[data-cohort], .terminal h2, .terminal h3, .terminal-head p, .terminal-head small, .metric-value, .metric-label, .probe-metric dt, .probe-state, .probe-card, .metric-bar, .metric-bar > span, .state'
           : 'h1, .journal-mast, .section-kicker, .article-byline',
       ),
   ];
@@ -60,13 +60,18 @@ export function sample(light: boolean): Point[] {
     const r = el.getBoundingClientRect(),
       style = getComputedStyle(el);
     if (r.bottom < 0 || r.top > innerHeight || r.width < 1 || r.height < 1) continue;
-    const text = el.matches('h1,.metric-value');
+    const text = el.matches('h1,h2,h3,p,small,dt,.metric-value,.metric-label,.state,.probe-state');
     const key =
       el.dataset.cohort || (el.matches('h1') ? 'title' : `${text ? 'number' : 'rule'}-${index}`);
     const group: Point[] = [];
     const add = (x: number, y: number) => {
       if (x >= 0 && x <= innerWidth && y >= 0 && y <= innerHeight)
-        group.push({ key, x, y, color: style.color });
+        group.push({
+          key,
+          x,
+          y,
+          color: el.matches('.metric-bar > span') ? style.backgroundColor : style.color,
+        });
     };
     if (text) {
       const mask = document.createElement('canvas');
@@ -118,7 +123,7 @@ export function sample(light: boolean): Point[] {
     const cap = text ? (light ? 360 : 800) : light ? 120 : 260;
     result.push(...group.filter((_, i) => i % Math.max(1, Math.ceil(group.length / cap)) === 0));
   }
-  const cap = light ? 750 : 1800;
+  const cap = light ? 1500 : 3200;
   return result.filter((_, i) => i % Math.max(1, Math.ceil(result.length / cap)) === 0);
 }
 
@@ -179,7 +184,10 @@ export async function cloud(
         to: target,
         elapsed: 0,
         duration: duration * (0.82 + seed(i + 7) * 0.18),
-        bend: (seed(i + 29) - 0.5) * (light ? 75 : 150),
+        // Existing surfaces migrate directly; identical anchors stay in place.
+        bend: entry
+          ? (seed(i + 29) - 0.5) * 140
+          : Math.min(40, Math.hypot(target.x - source.x, target.y - source.y) * 0.08),
         ratio,
       });
   }
