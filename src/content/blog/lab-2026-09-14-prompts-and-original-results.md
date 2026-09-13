@@ -14,7 +14,9 @@ places: []
 
 博客的[实验区](https://blog.blankhoney.xyz/lab/)放了一些 AI 生成的可运行页面。画面旁边留着完整题面、模型信息和原始文件，看完以后可以把提示词带走，也可以下载代码，看看模型具体怎么实现。
 
-目前这批作品用了无机酸-_- / Atmeplz 的[公开题包](https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip)：[3D 体素中国建筑群](https://blog.blankhoney.xyz/lab/chinese-architecture/)、[体素山、瀑布与穿云](https://blog.blankhoney.xyz/lab/voxel-mountain/)，以及[黑洞与光线弯曲](https://blog.blankhoney.xyz/lab/blackhole/)。生成代码的模型都是 `gpt-6-astra`，思考强度为 `high`。题目作者、生成模型和博客的整理工作，在页面上分别标明。
+首批作品用了无机酸-_- / Atmeplz 的[公开题包](https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip)：[3D 体素中国建筑群](https://blog.blankhoney.xyz/lab/chinese-architecture/)、[体素山、瀑布与穿云](https://blog.blankhoney.xyz/lab/voxel-mountain/)，以及[黑洞与光线弯曲](https://blog.blankhoney.xyz/lab/blackhole/)。生成代码的模型都是 `gpt-6-astra`，思考强度为 `high`。题目作者、生成模型和博客的整理工作，在页面上分别标明。
+
+同样的三份题面也用 `gpt-6-astra / max` 跑了一遍：[建筑群](https://blog.blankhoney.xyz/lab/chinese-architecture-max/)、[山景](https://blog.blankhoney.xyz/lab/voxel-mountain-max/)、[黑洞](https://blog.blankhoney.xyz/lab/blackhole-max/)。两组结果都保留在实验区。`max` 版本的记录也注明了中途停止浏览器测试的情况，尚未复验的部分会直接列出。
 
 ## 先打开效果，再回头看题目
 
@@ -30,18 +32,18 @@ places: []
 
 | 文件 | 适合怎么用 |
 | --- | --- |
-| 原始 HTML | 保存模型交付的可运行页面。这批案例的入口分别为 `qingque.html`、`standalone.html` 和 `index.html`。 |
+| 原始 HTML | 保存模型交付的可运行页面。首批案例的入口分别为 `qingque.html`、`standalone.html` 和 `index.html`。 |
 | `source.zip` | 保留原始工程，解压后按其中的说明安装、启动或构建，适合继续修改。 |
 | `prompt.txt` | 保存完整题面，方便重新提交或比较文字是否一致。 |
 | `generation.json` | 查看这次生成的集成记录，与页面上的模型、日期等信息对照。 |
 
 如果点开 HTML 文件后浏览器显示的是源码文本，保存时使用列表里的原文件名，以 `.html` 结尾，再用浏览器打开。工程 ZIP 则按压缩包内的结构保留文件，运行方法以它自己的说明为准。
 
-这里的 HTML 与工程 ZIP 保留模型原始交付，博客集成没有替场景改布局、补效果或优化性能。因此下载到的结果也会带着它原有的不足。`prompt.txt` 和 `generation.json` 是供查阅的题面与记录文件，和模型生成的作品一并提供。
+页面会说明运行文件和工程包的来源；需要构建或重新打包时，也会记在观察记录里。博客集成没有替场景改布局、补效果或优化性能。因此下载到的结果也会带着它原有的不足。`prompt.txt` 和 `generation.json` 是供查阅的题面与记录文件，和模型生成的作品一并提供。
 
 ## 模型自检和观察记录要一起看
 
-每项详情都有实际模型、思考强度、生成日期和提示词版本，还记录了运行环境与工具使用情况。当前三项都在独立新任务里生成，只提交了原题，没有追加用户修正提示。平台默认的系统指令与工具仍然存在，模型也在任务内做了检查。
+每项详情都有实际模型、思考强度、生成日期和提示词版本，还记录了运行环境与工具使用情况。首批三项都在独立新任务里生成，只提交了原题，没有追加用户修正提示。平台默认的系统指令与工具仍然存在，模型也在任务内做了检查。
 
 因此，“单次用户任务”允许模型在交付前使用工具、运行代码并自行调整。页面里的自检说明会写明这次用了哪些工具、做了什么检查，不能只凭这个标签就把结果理解成一次直接输出。
 

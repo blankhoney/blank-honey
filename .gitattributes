@@ -1,3 +1,5 @@
 # Preserve benchmark originals, including upstream CRLF and bundled shader whitespace.
 examples/benchmarks/*/*.html -text -whitespace linguist-generated=true
 examples/benchmarks/*/prompt.txt -text -whitespace
+examples/benchmarks/voxel-mountain-max/assets/* -text -whitespace linguist-generated=true
+examples/benchmarks/*/fonts/OFL-*.txt -text -whitespace
