@@ -12,7 +12,7 @@ case "$revision" in *[!0-9a-f]*) exit 2 ;; esac
 exec 9>"$base/deploy.lock"
 flock -n 9 || { echo 'Deployment already running.' >&2; exit 1; }
 cd "$base/app"
-git fetch --depth=1 origin main
+git fetch --depth=1 origin +refs/heads/main:refs/remotes/origin/main
 [ "$(git rev-parse origin/main)" = "$revision" ] || { echo 'Commit is not current main.' >&2; exit 1; }
 git reset --hard "$revision"
 export STATE_DIR="$base/shared" BUILD_ENV_FILE="$base/shared/site.env"
