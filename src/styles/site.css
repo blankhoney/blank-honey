@@ -1104,35 +1104,54 @@ fieldset button[aria-pressed='true'] {
 #fx-stage:empty {
   display: none;
 }
-.particle-cohort {
-  position: absolute;
-  pointer-events: none;
-  transform-origin: top left;
-}
-.paper-leaf {
+.page-points,
+.page-ghost,
+.turning-sheet {
   position: absolute;
   inset: 0;
+  pointer-events: none;
+}
+.page-points {
+  z-index: 2;
+}
+.page-ghost {
+  overflow: hidden;
   background: var(--bg);
+  color: var(--fg);
+}
+.turning-sheet {
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+.paper-strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
   transform-origin: left center;
   transform-style: preserve-3d;
-  box-shadow: 12px 0 55px #0003;
 }
-.paper-front,
-.paper-back {
+.sheet-front,
+.sheet-back {
   position: absolute;
   inset: 0;
-  background: var(--bg);
+  overflow: hidden;
   backface-visibility: hidden;
 }
-.paper-back {
-  transform: rotateY(180deg);
-  background: #ddcfba;
-}
-.paper-front:after {
+.sheet-front::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 35%, #0001 52%, #fff2 55%, transparent 65%);
+  background: linear-gradient(90deg, #0001, transparent 30%, #fff1);
+}
+.sheet-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--bg) 80%, #000),
+    var(--soft) 20%,
+    var(--bg) 75%,
+    color-mix(in srgb, var(--bg) 85%, #000)
+  );
 }
 ::view-transition-old(root),
 ::view-transition-new(root) {

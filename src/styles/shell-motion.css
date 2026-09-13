@@ -1,0 +1,103 @@
+/* Persistent overlays: opening the shell never changes the document geometry. */
+#shell #navigation {
+  transform: none;
+  transition: none;
+  visibility: hidden;
+  background: transparent;
+  border: 0;
+}
+#shell.shell-active #navigation,
+#shell.shell-active #shell-search {
+  visibility: visible;
+}
+#shell #navigation::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(430px, 100%);
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+  opacity: 0;
+  transition: opacity 350ms ease;
+  z-index: -1;
+}
+#shell #navigation.open::before {
+  opacity: 1;
+}
+#shell #shell-search {
+  position: fixed;
+  top: 24px;
+  left: max(24px, calc((100vw - 1320px) / 2));
+  right: 454px;
+  z-index: 103;
+  padding: 25px 28px;
+  max-height: calc(100svh - 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  visibility: hidden;
+  transform-origin: right top;
+}
+#shell #navigation .nav-top,
+#shell #navigation nav a,
+#shell #navigation .settings,
+#shell #navigation .about {
+  transform-origin: left center;
+}
+#shell.shell-moving #navigation {
+  overflow: visible;
+}
+#shell.shell-moving #shell-search,
+#shell.shell-moving #navigation .nav-top,
+#shell.shell-moving #navigation nav a,
+#shell.shell-moving #navigation .settings,
+#shell.shell-moving #navigation .about {
+  will-change: transform, opacity;
+}
+#shell #nav-dot span {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--fg) 6%, transparent),
+    0 0 0 9px color-mix(in srgb, var(--fg) 3%, transparent);
+}
+#shell.shell-moving #nav-dot span {
+  transform: scale(1.35);
+}
+@media (max-width: 900px) {
+  #shell #shell-search {
+    top: 76px;
+    left: 18px;
+    right: 18px;
+    padding: 20px;
+    max-height: 36svh;
+  }
+  #shell #navigation {
+    top: calc(var(--shell-search-height, 150px) + 92px);
+    width: 100%;
+    padding: 20px 28px 32px;
+  }
+  #shell #navigation::before {
+    inset: 0;
+    width: 100%;
+  }
+  #shell #navigation .nav-top {
+    margin: 0 0 18px;
+  }
+  #shell #navigation nav {
+    margin-top: 12px;
+  }
+  #shell #navigation nav a {
+    min-height: 46px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #shell #navigation::before,
+  #shell #nav-dot span {
+    transition: none;
+  }
+}
+[data-motion='reduced-motion'] #shell #navigation::before,
+[data-motion='reduced-motion'] #shell #nav-dot span {
+  transition: none;
+}
