@@ -29,6 +29,7 @@
     "cytoscape": "^3.34.3",
     "fast-xml-parser": "^5.11.1",
     "leaflet": "^1.9.4",
+    "phenomenon": "^1.6.0",
     "webgl-fluid-enhanced": "^0.8.0",
     "zod": "^4.6.3"
   },

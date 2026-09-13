@@ -1,15 +1,18 @@
 /* Only the right navigation displaces the reading surface; search stays above it. */
 :root {
-  --navigation-width: 430px;
+  --navigation-width: 280px;
 }
 html[data-navigation='open'] #main {
-  translate: calc(-1 * var(--navigation-width)) 0;
+  width: calc(100% - var(--navigation-width));
 }
 #main {
-  translate: 0 0;
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
 }
 #shell #navigation {
   width: var(--navigation-width);
+  padding-inline: 24px;
   transform: none;
   transition: none;
   visibility: hidden;
@@ -38,7 +41,7 @@ html[data-navigation='open'] #main {
   position: fixed;
   top: 24px;
   left: max(24px, calc((100vw - 1320px) / 2));
-  right: 454px;
+  right: calc(var(--navigation-width) + 24px);
   z-index: 103;
   padding: 25px 28px;
   max-height: calc(100svh - 48px);
@@ -76,7 +79,7 @@ html[data-navigation='open'] #main {
 }
 @media (max-width: 900px) {
   :root {
-    --navigation-width: min(430px, 86vw);
+    --navigation-width: clamp(144px, 41vw, 190px);
   }
   #shell #shell-search {
     top: 76px;
@@ -88,7 +91,7 @@ html[data-navigation='open'] #main {
   #shell #navigation {
     top: calc(var(--shell-search-height, 150px) + 92px);
     width: var(--navigation-width);
-    padding: 20px 28px 32px;
+    padding: 20px 14px 32px;
   }
   #shell #navigation::before {
     inset: 0 0 0 auto;
@@ -113,4 +116,91 @@ html[data-navigation='open'] #main {
 [data-motion='reduced-motion'] #shell #navigation::before,
 [data-motion='reduced-motion'] #shell #nav-dot span {
   transition: none;
+}
+
+#shell #navigation nav a {
+  gap: 10px;
+}
+#shell .volume-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  margin: 14px 0;
+}
+#shell #volume {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+#shell #volume-value {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 900px) {
+  #shell #navigation .nav-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #shell #navigation nav a {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 4px 8px;
+  }
+  #shell #navigation nav a small:last-child {
+    grid-column: 2;
+    margin-left: 0;
+  }
+  #shell #navigation fieldset button {
+    margin-right: 10px;
+  }
+  #shell #navigation .about {
+    overflow-wrap: anywhere;
+  }
+}
+/* Respond to the remaining reading width, not the unchanged browser viewport. */
+@container (max-width: 650px) {
+  html[data-navigation='open'] #main :is(.journal, .reading-page, .terminal) {
+    padding-inline: 18px;
+  }
+  html[data-navigation='open'] #main .editorial {
+    display: block;
+  }
+  html[data-navigation='open'] #main .editorial h1 {
+    font-size: clamp(25px, 8cqi, 37px);
+  }
+  html[data-navigation='open'] #main .editorial h1 em {
+    font-size: clamp(30px, 11cqi, 57px);
+    overflow-wrap: anywhere;
+  }
+  html[data-navigation='open'] #main .editorial > p {
+    margin-top: 24px;
+  }
+  html[data-navigation='open'] #main .mast {
+    flex-wrap: wrap;
+  }
+  html[data-navigation='open'] #main .article-row {
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 8px;
+  }
+  html[data-navigation='open'] #main .article-row time {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  html[data-navigation='open'] #main .article-row > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  html[data-navigation='open'] #main .row-arrow {
+    display: none;
+  }
+  html[data-navigation='open'] #main .section-rule {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  html[data-navigation='open'] #main :is(h1, h2, h3, p) {
+    overflow-wrap: anywhere;
+  }
 }

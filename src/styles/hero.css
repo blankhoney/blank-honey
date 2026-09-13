@@ -75,13 +75,7 @@
   letter-spacing: 0.035em;
 }
 #hero[data-effect='miniload'] .saying {
-  width: min(700px, 100%);
-  margin: 80px auto 0;
-  padding: 30px;
-  border: 1px solid #ffffff35;
-  border-radius: 18px;
-  background: #111c;
-  backdrop-filter: blur(12px);
+  display: none;
 }
 #hero[data-effect='isaca'] {
   background: #e4e9ef;
@@ -261,10 +255,6 @@
   #hero .hero-description {
     font-size: 14px;
   }
-  #hero[data-effect='miniload'] .saying {
-    margin-top: 45px;
-    padding: 22px;
-  }
   #hero[data-effect='isaca'] .hero-index {
     inset: 26% 4% 16%;
   }
@@ -358,4 +348,78 @@
 }
 .pixel-cloud-shadow.visible {
   opacity: 1;
+}
+
+/* Always-visible controls sit on the viewport centre, independent of the entry link. */
+#hero #effect-picker {
+  position: absolute;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px;
+  max-width: none;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  border-radius: 40px;
+  background: color-mix(in srgb, #000 65%, transparent);
+  color: #f2f4f5;
+  backdrop-filter: blur(14px);
+  text-align: center;
+}
+#hero #effect-picker button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+#hero #effect-picker button:hover {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+#hero #effect-picker button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.effect-current {
+  min-width: 100px;
+}
+.effect-caption {
+  display: block;
+  font: 10px/1.4 var(--mono);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+#hero #effect-label {
+  margin-top: 3px;
+  font: 13px/1.5 var(--mono);
+}
+#hero[data-effect='isaca'] #effect-picker,
+#hero[data-effect='yantao'] #effect-picker {
+  background: #f5f6f0dc;
+  color: #17202c;
+}
+@media (max-width: 700px) {
+  #hero .hero-bottom {
+    top: 66px;
+    bottom: auto;
+    left: auto;
+    right: 24px;
+  }
+  #hero .hero-bottom .enter {
+    padding: 6px 0;
+    gap: 8px;
+    font-size: 13px;
+  }
+  #hero .hero-bottom .enter > span {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+  }
+  #hero[data-effect='yantao'] .hero-bottom .enter {
+    padding: 3px 10px;
+  }
 }

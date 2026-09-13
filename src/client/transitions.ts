@@ -4,10 +4,8 @@ import type {
   TransitionBeforePreparationEvent,
   TransitionBeforeSwapEvent,
 } from 'astro:transitions/client';
-import type { Point } from './particle-morph';
-import type { Container } from '@tsparticles/engine';
 
-type Painter = typeof import('./particle-morph');
+type Painter = typeof import('./interface-cloud');
 /** Continuous paper fold from the acceptance prototype; each strip starts at its neighbour's edge. */
 export function foldAt(count: number, width: number, progress: number) {
   const eased = progress ** 3 * (progress * (progress * 6 - 15) + 10);
@@ -26,16 +24,31 @@ export function foldAt(count: number, width: number, progress: number) {
 }
 
 export function initTransitions() {
+  let atmosphereController: AbortController | undefined;
+  const refreshAtmosphere = async () => {
+    atmosphereController?.abort();
+    const controller = (atmosphereController = new AbortController());
+    if (document.documentElement.dataset.family === 'terminal')
+      await (await import('./terminal-atmosphere')).mountAtmosphere(controller.signal);
+  };
+  document.addEventListener('astro:before-swap', () => atmosphereController?.abort());
+  for (const event of ['astro:page-load', 'bh:motion', 'bh:theme'])
+    document.addEventListener(
+      event,
+      () => void refreshAtmosphere().catch((error) => report('atmosphere', error)),
+    );
   let version = 0;
   let painter: Painter | undefined;
-  let refreshTimer: ReturnType<typeof setTimeout>;
+  let previousSurface: ReturnType<
+    NonNullable<Painter['interfaceCloud']['active']>['snapshot']
+  > | null = null;
   const disposals: (() => void)[] = [];
   const stage = () => document.querySelector<HTMLElement>('#fx-stage')!;
   const main = () => document.querySelector<HTMLElement>('#main')!;
-  const load = async () => (painter ??= await import('./particle-morph'));
-  function clear() {
+  const load = async () => (painter ??= await import('./interface-cloud'));
+  function clear(preserveSurface = false) {
     version++;
-    clearTimeout(refreshTimer);
+    if (!preserveSurface) painter?.interfaceCloud.destroy();
     disposals.splice(0).forEach((dispose) => dispose());
     stage().replaceChildren();
     delete stage().dataset.effect;
@@ -58,10 +71,9 @@ export function initTransitions() {
     disposals.push(() => animation.cancel());
     return animation.finished.catch(() => {});
   }
-  async function renderCloud(from: Point[], duration: number, entry: boolean, token: number) {
+  async function renderCloud(duration: number, token: number) {
     const module = await load();
     await document.fonts.ready;
-    // The probe is fetched after the route swaps. Include its numbers/bars in the assembly.
     const probe = document.querySelector('#probe');
     if (probe && !probe.querySelector('.probe-card')) {
       await new Promise<void>((resolve) => {
@@ -77,29 +89,23 @@ export function initTransitions() {
       });
     }
     if (token !== version) return;
-    const layer = document.createElement('div');
-    layer.id = `page-points-${token}`;
-    layer.className = 'page-points';
-    stage().append(layer);
-    let engine: Container | undefined;
-    disposals.push(() => {
-      engine?.destroy();
-      layer.remove();
-    });
-    engine = await module.cloud(
-      layer,
-      from,
-      module.sample(capability() === 'light'),
+    return module.interfaceCloud.make(main(), {
+      light: capability() === 'light',
+      animate: true,
       duration,
-      entry,
-      capability() === 'light',
-    );
-    if (token !== version) {
-      engine?.destroy();
-      layer.remove();
+      seed: previousSurface,
+    });
+  }
+  async function mountSurface() {
+    if (document.documentElement.dataset.family !== 'terminal' || capability() === 'reduced-motion')
       return;
-    }
-    return layer;
+    // A route exchange owns assembly until its ghost is removed.
+    if (stage().dataset.effect || painter?.interfaceCloud.active) return;
+    const token = version;
+    await document.fonts.ready;
+    const module = await load();
+    if (token !== version || stage().dataset.effect) return;
+    module.interfaceCloud.make(main(), { light: capability() === 'light', animate: true });
   }
   function capture() {
     const old = main(),
@@ -232,6 +238,7 @@ export function initTransitions() {
   document.addEventListener(
     'astro:before-preparation',
     (event: TransitionBeforePreparationEvent) => {
+      previousSurface = painter?.interfaceCloud.active?.snapshot() || null;
       clear();
       if (
         capability() !== 'reduced-motion' &&
@@ -247,7 +254,6 @@ export function initTransitions() {
     event.newDocument.documentElement.dataset.motion = capability();
     if (capability() === 'reduced-motion') return;
     const ghost = capture(),
-      points = from === 'terminal' ? painter?.sample(capability() === 'light') || [] : [],
       token = version;
     const swap = event.swap;
     // Our live overlay replaces the browser's root screenshot animation, not the router.
@@ -274,28 +280,13 @@ export function initTransitions() {
           if (from === 'terminal' && to === 'paper') {
             await paper(ghost, light ? 1200 : 1800);
           } else if (to === 'terminal') {
-            content.style.opacity = '0';
-            content.inert = true;
             const duration = light ? 1200 : 1700;
-            const layer = await renderCloud(points, duration, from !== 'terminal', token);
-            if (!layer || token !== version) return;
+            const surface = await renderCloud(duration, token);
+            if (!surface || token !== version) return;
+            // The assembled surface stays visible. There is no DOM cross-fade underneath it.
             await Promise.all([
-              play(
-                ghost,
-                [{ opacity: 1 }, { opacity: 0, transform: 'scale(.985)' }],
-                duration * 0.3,
-              ),
-              play(content, [{ opacity: 0 }, { opacity: 1 }], duration * 0.18, duration * 0.82),
-              play(
-                layer,
-                [
-                  { opacity: 0 },
-                  { opacity: 1, offset: 0.14 },
-                  { opacity: 1, offset: 0.8 },
-                  { opacity: 0 },
-                ],
-                duration,
-              ),
+              play(ghost, [{ opacity: 1 }, { opacity: 0 }], duration * 0.25),
+              surface.finished,
             ]);
           } else {
             const duration = from === 'hero' ? (light ? 360 : 600) : light ? 180 : 300;
@@ -319,21 +310,19 @@ export function initTransitions() {
           report('transition', error);
         } finally {
           if (token === version) {
-            clear();
+            clear(to === 'terminal');
           }
         }
       }
     };
   });
+  document.addEventListener(
+    'astro:page-load',
+    () => void mountSurface().catch((error) => report('surface', error)),
+  );
   for (const name of ['bh:motion', 'bh:theme'])
     document.addEventListener(name, () => {
       clear();
+      void mountSurface().catch((error) => report('surface', error));
     });
-  window.addEventListener('resize', () => {
-    clearTimeout(refreshTimer);
-    // Resize invalidates viewport coordinates; reveal real content before rebuilding.
-    refreshTimer = setTimeout(() => {
-      clear();
-    }, 200);
-  });
 }

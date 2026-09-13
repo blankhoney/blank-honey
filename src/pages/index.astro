@@ -57,20 +57,41 @@ const code = `const notebook = {\n  author: ${JSON.stringify(config.name)},\n  f
       <a class="enter" href="/articles/">
         <span>↗</span>进入文章
       </a>
-      <details id="effect-picker">
-        <summary>
-          首屏效果 <span id="effect-label">流体墨迹</span>
-        </summary>
-        <div class="effect-controls">
-          <button id="effect-prev" aria-label="上一个效果">
-            ←
-          </button>
-          <span id="effect-position">1 / {config.hero.length}</span>
-          <button id="effect-next" aria-label="下一个效果">
-            →
-          </button>
-        </div>
-      </details>
+    </div>
+
+    <div id="effect-picker" role="group" aria-label="切换首屏效果">
+      <button id="effect-prev" type="button" aria-label="上一个首屏效果" title="上一个首屏效果">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="m14 6-6 6 6 6" />
+        </svg>
+      </button>
+      <div class="effect-current" aria-live="polite" aria-atomic="true">
+        <span class="effect-caption">
+          首屏效果 <span id="effect-position">1 / {config.hero.length}</span>
+        </span>
+        <span id="effect-label">流体墨迹</span>
+      </div>
+      <button id="effect-next" type="button" aria-label="下一个首屏效果" title="下一个首屏效果">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="m10 6 6 6-6 6" />
+        </svg>
+      </button>
     </div>
   </section>
 </Base>

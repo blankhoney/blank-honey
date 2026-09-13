@@ -28,10 +28,7 @@ export async function mountProbe(signal: AbortSignal) {
       card.dataset.level = health.level;
       const header = element('header', undefined, 'probe-card-header');
       const identity = element('div');
-      identity.append(
-        element('h2', sample.displayName),
-        element('p', sample.regionLabel, 'probe-region'),
-      );
+      identity.append(element('h2', sample.displayName));
       header.append(identity, element('span', health.label, 'probe-state'));
       card.append(header);
 
@@ -94,12 +91,8 @@ export async function mountProbe(signal: AbortSignal) {
       const clock = element('time');
       clock.dataset.zone = sample.timeZone;
       clock.title = '主机所在时区的当前时间';
-      const timestamp = element('time');
-      if (sample.sampledAt && Number.isFinite(Date.parse(sample.sampledAt))) {
-        timestamp.setAttribute('datetime', sample.sampledAt);
-        timestamp.textContent = `采样 ${new Date(sample.sampledAt).toLocaleTimeString('zh-CN', { hour12: false })}`;
-      } else timestamp.textContent = '暂无采样';
-      footer.append(clock, timestamp);
+      const location = element('span', sample.regionLabel || '位置未标注', 'probe-region');
+      footer.append(location, clock);
       card.append(footer);
       host.append(card);
     }

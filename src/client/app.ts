@@ -13,7 +13,7 @@ let shellAnimations: Animation[] = [];
 function overlay(open: boolean, restore = true, instant = false) {
   const token = ++shellVersion;
   const main = document.querySelector<HTMLElement>('#main')!;
-  const currentPageOffset = getComputedStyle(main).translate;
+  const currentPageWidth = getComputedStyle(main).width;
   const active = shell.classList.contains('shell-active');
   const members = [
     searchPanel,
@@ -80,10 +80,11 @@ function overlay(open: boolean, restore = true, instant = false) {
       );
     });
     shellAnimations.push(
-      main.animate(
-        [{ translate: currentPageOffset }, { translate: getComputedStyle(main).translate }],
-        { duration, easing: 'cubic-bezier(.22,.7,.24,1)', fill: 'both' },
-      ),
+      main.animate([{ width: currentPageWidth }, { width: getComputedStyle(main).width }], {
+        duration,
+        easing: 'cubic-bezier(.22,.7,.24,1)',
+        fill: 'both',
+      }),
     );
     void Promise.all(shellAnimations.map((animation) => animation.finished.catch(() => {}))).then(
       finish,
