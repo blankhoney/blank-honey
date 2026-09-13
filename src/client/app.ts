@@ -1,4 +1,4 @@
-import { applyPreferences, store } from './preferences';
+import { applyPreferences, capability, store } from './preferences';
 import { initSearch } from './search';
 import { initAudio } from './audio';
 import { report } from './log';
@@ -7,26 +7,98 @@ let pageController: AbortController | undefined;
 const shell = document.querySelector<HTMLElement>('#shell')!;
 const panel = shell.querySelector<HTMLElement>('#navigation')!;
 const dot = shell.querySelector<HTMLButtonElement>('#nav-dot')!;
-function overlay(open: boolean, restore = true) {
+const searchPanel = shell.querySelector<HTMLElement>('#shell-search')!;
+let shellVersion = 0;
+let shellAnimations: Animation[] = [];
+function overlay(open: boolean, restore = true, instant = false) {
+  const token = ++shellVersion;
+  const active = shell.classList.contains('shell-active');
+  const members = [
+    searchPanel,
+    ...panel.querySelectorAll<HTMLElement>('.nav-top, nav a, .settings, .about'),
+  ];
+  const current = members.map((member) => {
+    const style = getComputedStyle(member);
+    return { transform: style.transform, opacity: style.opacity };
+  });
+  shellAnimations.forEach((animation) => animation.cancel());
+  shellAnimations = [];
   panel.classList.toggle('open', open);
-  panel.inert = !open;
+  panel.inert = searchPanel.inert = !open;
   dot.setAttribute('aria-expanded', String(open));
   dot.setAttribute('aria-label', open ? '关闭导航与搜索' : '打开导航与搜索');
-  if (!open && restore) dot.focus({ preventScroll: true });
-  if (open)
-    requestAnimationFrame(() => {
-      if (panel.classList.contains('open'))
-        panel.querySelector<HTMLInputElement>('#search')!.focus({ preventScroll: true });
+  if (open) {
+    if (!active) panel.scrollTop = 0;
+    shell.classList.add('shell-active');
+    searchPanel.querySelector<HTMLInputElement>('#search')!.focus({ preventScroll: true });
+    shell.style.setProperty('--shell-search-height', `${searchPanel.offsetHeight}px`);
+  }
+  if (
+    !open &&
+    (restore ||
+      searchPanel.contains(document.activeElement) ||
+      panel.contains(document.activeElement))
+  )
+    dot.focus({ preventScroll: true });
+  function finish() {
+    if (token !== shellVersion) return;
+    shell.classList.toggle('shell-active', open);
+    shell.classList.remove('shell-moving');
+    shellAnimations.forEach((animation) => animation.cancel());
+    shellAnimations = [];
+  }
+  if (instant || capability() === 'reduced-motion' || (!active && !open)) {
+    finish();
+  } else {
+    shell.classList.add('shell-active', 'shell-moving');
+    const origin = dot.getBoundingClientRect();
+    const duration = capability() === 'light' ? 420 : 700;
+    shellAnimations = members.map((member, index) => {
+      const bounds = member.getBoundingClientRect();
+      const closed =
+        index === 0
+          ? `translate(80px, ${-bounds.bottom - 30}px) rotate(-9deg) scale(.92)`
+          : `translate(${origin.left + origin.width / 2 - bounds.left}px, ${origin.top + origin.height / 2 - bounds.top - bounds.height / 2}px) rotate(-110deg) scale(.025)`;
+      return member.animate(
+        [
+          active ? current[index] : { transform: closed, opacity: 0 },
+          {
+            transform: open ? 'translate(0, 0) rotate(0) scale(1)' : closed,
+            opacity: open ? 1 : 0,
+          },
+        ],
+        {
+          duration,
+          delay: open ? index * 12 : 0,
+          easing: 'cubic-bezier(.22,.7,.24,1)',
+          fill: 'both',
+        },
+      );
     });
+    void Promise.all(shellAnimations.map((animation) => animation.finished.catch(() => {}))).then(
+      finish,
+    );
+  }
 }
+const searchSize = new ResizeObserver(() => {
+  shell.style.setProperty('--shell-search-height', `${searchPanel.offsetHeight}px`);
+});
+searchSize.observe(searchPanel);
+window.addEventListener('resize', () => overlay(panel.classList.contains('open'), false, true));
+document.addEventListener('astro:before-preparation', () => overlay(false, false, true));
+document.addEventListener('bh:motion', () =>
+  overlay(panel.classList.contains('open'), false, true),
+);
 dot.addEventListener('click', () => overlay(!panel.classList.contains('open')));
 shell.querySelector('#close-nav')!.addEventListener('click', () => overlay(false));
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') overlay(false);
   if (event.key === 'Tab' && panel.classList.contains('open')) {
-    const items = [...panel.querySelectorAll<HTMLElement>('a,button,input,select')].filter(
-      (e) => !e.hasAttribute('disabled') && e.getClientRects().length,
-    );
+    const items = [
+      ...shell.querySelectorAll<HTMLElement>(
+        '#shell-search a, #shell-search input, #shell-search select, #navigation a, #navigation button, #navigation input, #navigation select',
+      ),
+    ].filter((e) => !e.hasAttribute('disabled') && e.getClientRects().length);
     const first = items[0],
       last = items.at(-1);
     if (event.shiftKey && document.activeElement === first) {
@@ -41,7 +113,7 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('click', (event) => {
   const el = event.target as Element;
   if (panel.classList.contains('open') && !shell.contains(el)) overlay(false, false);
-  if (el.closest('#search-results a, #navigation nav a')) overlay(false, false);
+  if (el.closest('#search-results a, #navigation nav a')) overlay(false, false, true);
   const theme = el.closest<HTMLElement>('[data-theme]');
   if (theme) {
     store.set('theme', theme.dataset.theme!);

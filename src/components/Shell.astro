@@ -1,5 +1,6 @@
 ---
 import { config } from '../config';
+import '../styles/shell-motion.css';
 import { content } from '../application/content';
 import radioData from '../data/radio.generated.json';
 const radio = radioData as { id: string; name: string; url: string | null }[];
@@ -9,16 +10,15 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
 ---
 
 <div id="shell" transition:persist data-pagefind-ignore>
-  <button id="nav-dot" aria-label="打开导航与搜索" aria-controls="navigation" aria-expanded="false">
+  <button
+    id="nav-dot"
+    aria-label="打开导航与搜索"
+    aria-controls="navigation shell-search"
+    aria-expanded="false"
+  >
     <span></span>
   </button>
-  <aside id="navigation" aria-label="导航与设置" inert>
-    <div class="nav-top">
-      <span>BLANK HONEY / INDEX</span>
-      <button id="close-nav" aria-label="关闭导航">
-        关闭 ×
-      </button>
-    </div>
+  <section id="shell-search" aria-label="搜索文章" inert>
     <label class="search-label" for="search">
       搜索文章 <span>SEARCH</span>
     </label>
@@ -50,6 +50,14 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
       </label>
     </div>
     <div id="search-results" role="region" aria-label="搜索结果" aria-live="polite"></div>
+  </section>
+  <aside id="navigation" aria-label="导航与设置" inert>
+    <div class="nav-top">
+      <span>BLANK HONEY / INDEX</span>
+      <button id="close-nav" aria-label="关闭导航">
+        关闭 ×
+      </button>
+    </div>
     <nav>
       {config.navigation.map((n, i) => (
         <a href={n.href}>

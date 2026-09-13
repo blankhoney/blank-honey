@@ -1,14 +1,11 @@
 import { tsParticles, type ISourceOptions, type Container } from '@tsparticles/engine';
 import { loadSlim } from '@tsparticles/slim';
-import { loadEmittersPlugin } from '@tsparticles/plugin-emitters';
 let ready: Promise<void> | undefined;
 export async function particles(
   id: string,
   options: ISourceOptions,
 ): Promise<Container | undefined> {
-  await (ready ??= Promise.all([loadSlim(tsParticles), loadEmittersPlugin(tsParticles)]).then(
-    () => {},
-  ));
+  await (ready ??= loadSlim(tsParticles));
   const { manualParticles, ...engineOptions } = options;
   const result = await tsParticles.load({
     id,
