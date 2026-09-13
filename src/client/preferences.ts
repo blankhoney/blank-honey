@@ -38,6 +38,10 @@ export function tone() {
       ? 'dark'
       : 'light';
 }
+/** Giscus loads its own stylesheet because it lives in a cross-origin iframe. */
+export function commentTheme() {
+  return new URL(`/giscus/${tone()}.css`, window.location.origin).href;
+}
 export function applyPreferences() {
   const next = tone(),
     changed = document.documentElement.dataset.tone !== next;
@@ -60,7 +64,7 @@ export function applyPreferences() {
       );
   const frame = document.querySelector<HTMLIFrameElement>('.giscus-frame');
   frame?.contentWindow?.postMessage(
-    { giscus: { setConfig: { theme: tone() } } },
+    { giscus: { setConfig: { theme: commentTheme() } } },
     'https://giscus.app',
   );
 }
