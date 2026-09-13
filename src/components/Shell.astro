@@ -1,0 +1,109 @@
+---
+import { config } from '../config';
+import { content } from '../application/content';
+import radioData from '../data/radio.generated.json';
+const radio = radioData as { id: string; name: string; url: string | null }[];
+const { categories, articles } = await content();
+const tags = [...new Set(articles.flatMap((a) => a.data.tags))];
+const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
+---
+
+<div id="shell" transition:persist data-pagefind-ignore>
+  <button id="nav-dot" aria-label="打开导航与搜索" aria-controls="navigation" aria-expanded="false">
+    <span></span>
+  </button>
+  <aside id="navigation" aria-label="导航与设置" inert>
+    <div class="nav-top">
+      <span>BLANK HONEY / INDEX</span>
+      <button id="close-nav" aria-label="关闭导航">
+        关闭 ×
+      </button>
+    </div>
+    <label class="search-label" for="search">
+      搜索文章 <span>SEARCH</span>
+    </label>
+    <input id="search" type="search" placeholder="寻找一个词，一段记忆…" autocomplete="off" />
+    <div id="search-filters" hidden>
+      <label>
+        分类
+        <select id="filter-category">
+          <option value="">全部分类</option>
+          {categories.map((c) => (
+            <option value={c.name}>{c.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        标签
+        <select id="filter-tag">
+          <option value="">全部标签</option>
+          {tags.map((t) => (
+            <option>{t}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+    <div id="search-results" role="region" aria-label="搜索结果" aria-live="polite"></div>
+    <nav>
+      {config.navigation.map((n, i) => (
+        <a href={n.href}>
+          <small>{String(i + 1).padStart(2, '0')}</small>
+          <span>{n.label}</span>
+          <small>{n.en}</small>
+        </a>
+      ))}
+    </nav>
+    <div class="settings">
+      <fieldset>
+        <legend>明暗 / THEME</legend>
+        {['auto', 'light', 'dark'].map((v, i) => (
+          <button data-theme={v} aria-pressed="false">
+            {['自动', '日间', '夜间'][i]}
+          </button>
+        ))}
+      </fieldset>
+      <fieldset>
+        <legend>动效 / MOTION</legend>
+        {['auto', 'light', 'reduced-motion'].map((v, i) => (
+          <button data-motion={v} aria-pressed="false">
+            {['自动', '轻量', '关闭'][i]}
+          </button>
+        ))}
+      </fieldset>
+      {radio.length > 0 && (
+        <div id="player">
+          <label for="station">预置电台</label>
+          <select id="station">
+            {radio.map((s) => (
+              <option value={s.id} disabled={!s.url}>
+                {s.name}
+                {!s.url ? ' · 暂不可用' : ''}
+              </option>
+            ))}
+          </select>
+          <button id="audio-toggle">播放</button>
+          <p id="audio-status" role="status"></p>
+          <audio id="audio" preload="none" />
+          <script
+            is:inline
+            id="radio-data"
+            type="application/json"
+            set:html={JSON.stringify(radio).replace(/</g, '\\u003c')}
+          ></script>
+        </div>
+      )}
+    </div>
+    <div class="about">
+      <span>ABOUT / {config.name}</span>
+      <p>{config.about}</p>
+      {github && (
+        <a href={github} rel="noopener noreferrer" target="_blank">
+          GitHub ↗
+        </a>
+      )}
+      <a href="/rss.xml" data-astro-reload>
+        RSS ↗
+      </a>
+    </div>
+  </aside>
+</div>

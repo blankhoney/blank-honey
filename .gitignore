@@ -9,3 +9,4 @@ logs/
 lab-dist/
 artifacts/
 .DS_Store
+src/data/radio.generated.json

@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { content } from '../../application/content';
+export async function getStaticPaths() {
+  return (await content()).categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category },
+  }));
+}
+const { category } = Astro.props;
+---
+
+<Base title={category.name}>
+  <section class="journal">
+    <a class="back" href="/articles/">
+      ← 返回文章选择
+    </a>
+    <header class="archive-head">
+      <p class="eyebrow">CATEGORY / ARCHIVE</p>
+      <h1>{category.name}</h1>
+      <p>{category.articles.length} 篇记录，按时间排列。</p>
+    </header>
+    <ArticleList articles={category.articles} />
+  </section>
+</Base>

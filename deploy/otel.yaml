@@ -1,0 +1,20 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: node
+          scrape_interval: 5s
+          scrape_timeout: 4s
+          static_configs:
+            - targets: ['node-exporter:9100']
+exporters:
+  prometheus:
+    endpoint: 0.0.0.0:9464
+    send_timestamps: true
+    metric_expiration: 20s
+    translation_strategy: UnderscoreEscapingWithoutSuffixes
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [prometheus]

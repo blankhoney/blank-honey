@@ -1,0 +1,20 @@
+---
+const { articles } = Astro.props;
+---
+
+<div class="article-list">
+  {articles.map((a: any, i: number) => (
+    <a class="article-row" href={`/blog/${a.id}/`}>
+      <span class="row-number">{String(i + 1).padStart(2, '0')}</span>
+      <time datetime={a.data.date.toISOString()}>
+        {a.data.date.toISOString().slice(0, 10).replaceAll('-', '.')}
+      </time>
+      <div>
+        <h3>{a.data.title}</h3>
+        <p>{a.data.description}</p>
+        <span class="row-tags">{a.data.tags.map((t: string) => `#${t}`).join(' / ')}</span>
+      </div>
+      <span class="row-arrow">↗</span>
+    </a>
+  ))}
+</div>

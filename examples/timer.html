@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Focus Timer</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #f4f0e7;
+      color: #302e29;
+      font:
+        16px/1.7 system-ui,
+        sans-serif;
+    }
+    main {
+      width: min(760px, calc(100% - 40px));
+      margin: 8vh auto;
+    }
+    a {
+      color: inherit;
+    }
+    h1 {
+      font-family: Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(32px, 6vw, 56px);
+    }
+    p {
+      color: #686356;
+    }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 280px;
+      padding: 18px;
+      background: #fffcf5;
+      border: 1px solid #b8af9d;
+      border-radius: 4px;
+      font: 14px/1.6 monospace;
+      resize: vertical;
+    }
+    button,
+    input {
+      font: inherit;
+      padding: 9px 16px;
+      border: 1px solid #928878;
+      border-radius: 4px;
+      background: transparent;
+      color: inherit;
+    }
+    button {
+      cursor: pointer;
+    }
+    button:hover {
+      background: #e8e0d1;
+    }
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid #81744d;
+      outline-offset: 3px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+    output {
+      display: block;
+      white-space: pre-wrap;
+    }
+    footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: #686356;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+  <main>
+    <a href="__SITE_RETURN__" target="_top">← 返回主站</a>
+    <h1>Focus Timer</h1>
+    <p>给一段不被打断的时间。计时以时钟为准，切换标签页后仍会校准。</p>
+    <label for="minutes">分钟（1–180）</label>
+    <input id="minutes" type="number" required min="1" max="180" step="1" value="25" /><output
+      id="clock"
+      style="font: 72px monospace; margin: 28px 0"
+      aria-label="剩余时间"
+      >25:00</output
+    >
+    <div class="actions"><button id="toggle">开始</button><button id="reset">重置</button></div>
+    <output id="status" role="status"></output>
+    <footer>内容仅在当前浏览器处理，不上传、不保存。</footer>
+  </main>
+  <script>
+    const minutes = document.querySelector('#minutes'),
+      clock = document.querySelector('#clock'),
+      toggle = document.querySelector('#toggle'),
+      status = document.querySelector('#status');
+    let remaining = 25 * 60000,
+      end = 0,
+      running = false;
+    function draw() {
+      if (running) {
+        remaining = Math.max(0, end - Date.now());
+        if (!remaining) {
+          running = false;
+          minutes.disabled = false;
+          toggle.textContent = '开始';
+          status.textContent = '时间到了，休息一下。';
+        }
+      }
+      const seconds = Math.ceil(remaining / 1000);
+      clock.textContent =
+        String(Math.floor(seconds / 60)).padStart(2, '0') +
+        ':' +
+        String(seconds % 60).padStart(2, '0');
+    }
+    function reset() {
+      if (!minutes.reportValidity()) return;
+      running = false;
+      remaining = Number(minutes.value) * 60000;
+      minutes.disabled = false;
+      toggle.textContent = '开始';
+      status.textContent = '';
+      draw();
+    }
+    toggle.onclick = () => {
+      if (!minutes.reportValidity()) return;
+      if (running) {
+        remaining = Math.max(0, end - Date.now());
+        running = false;
+        toggle.textContent = '继续';
+      } else {
+        if (remaining <= 0) remaining = Number(minutes.value) * 60000;
+        end = Date.now() + remaining;
+        running = true;
+        toggle.textContent = '暂停';
+      }
+      minutes.disabled = running;
+      draw();
+    };
+    minutes.onchange = reset;
+    document.querySelector('#reset').onclick = reset;
+    setInterval(draw, 250);
+    document.addEventListener('visibilitychange', draw);
+  </script>
+</html>

@@ -1,0 +1,9 @@
+node_modules
+dist
+lab-dist
+.astro
+artifacts
+logs
+public/world.geojson
+docs/reference
+package-lock.json

@@ -1,0 +1,14 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+dist
+lab-dist
+logs
+artifacts
+test-results
+playwright-report
+.private
+src/data/radio.generated.json
+.astro

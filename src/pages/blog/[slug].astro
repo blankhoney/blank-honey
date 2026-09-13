@@ -1,0 +1,131 @@
+---
+import Base from '../../layouts/Base.astro';
+import { render } from 'astro:content';
+import { content } from '../../application/content';
+import { neighbors } from '../../domain/content';
+import { config } from '../../config';
+import { siteUrl } from '../../application/destinations';
+export async function getStaticPaths() {
+  return (await content()).articles.map((article) => ({
+    params: { slug: article.id },
+    props: { article },
+  }));
+}
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+const { newer, older } = neighbors((await content()).articles, article.id);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const category = config.categories.find((c) => c.slug === article.data.category)!;
+const giscus = {
+  repo: import.meta.env.PUBLIC_GISCUS_REPO,
+  repoId: import.meta.env.PUBLIC_GISCUS_REPO_ID,
+  categoryId: import.meta.env.PUBLIC_GISCUS_CATEGORY_ID,
+};
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: article.data.title,
+  description: article.data.description,
+  datePublished: article.data.date.toISOString(),
+  author: { '@type': 'Person', name: config.name, '@id': `${siteUrl}/#person` },
+  mainEntityOfPage: new URL(`/blog/${article.id}/`, siteUrl).href,
+};
+---
+
+<Base title={article.data.title} description={article.data.description} article>
+  <div class="reading-page">
+    <a class="back" href="/articles/">
+      ← 返回文章选择
+    </a>
+    <article class="reading-column" data-pagefind-body>
+      <header>
+        <div class="title-tags">
+          <h1 data-pagefind-meta="title">{article.data.title}</h1>
+          <div class="tag-links" aria-label="文章标签">
+            {article.data.tags.map((t) => (
+              <button data-search-tag={t}>#{t}</button>
+            ))}
+          </div>
+        </div>
+        <p class="deck" data-pagefind-meta="description">
+          {article.data.description}
+        </p>
+        <div class="metadata">
+          <time datetime={article.data.date.toISOString()}>
+            {article.data.date.toISOString().slice(0, 10)}
+          </time>
+          <a href={`/category/${category.slug}/`} data-pagefind-filter="category">
+            {category.name}
+          </a>
+          <span>Blank Honey</span>
+          {config.demoContent && <span>示例文章</span>}
+        </div>
+        {article.data.tags.map((t) => (
+          <span hidden data-pagefind-filter="tag">
+            {t}
+          </span>
+        ))}
+      </header>
+      {toc.length > 0 && (
+        <details class="toc" data-pagefind-ignore>
+          <summary>
+            文章目录 <small>CONTENTS</small>
+          </summary>
+          <ol>
+            {toc.map((h) => (
+              <li class:list={{ subheading: h.depth === 3 }}>
+                <a href={`#${h.slug}`}>{h.text}</a>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+      <div class="prose">
+        <Content />
+      </div>
+      <div class="reading-end" aria-hidden="true">
+        · · ·
+      </div>
+      <div data-pagefind-ignore>
+        <nav class="neighbors" aria-label="相邻文章">
+          {newer ? (
+            <a href={`/blog/${newer.id}/`}>
+              <small>← 上一篇 · 较新</small>
+              {newer.data.title}
+            </a>
+          ) : (
+            <span />
+          )}
+          {older ? (
+            <a href={`/blog/${older.id}/`}>
+              <small>下一篇 · 较旧 →</small>
+              {older.data.title}
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+        <section id="comments" class="comments">
+          <h2>
+            留下几句话 <small>GISCUS / GITHUB</small>
+          </h2>
+          {giscus.repo && giscus.repoId && giscus.categoryId ? (
+            <div
+              id="giscus"
+              data-repo={giscus.repo}
+              data-repo-id={giscus.repoId}
+              data-category-id={giscus.categoryId}
+            ></div>
+          ) : (
+            <p class="muted">评论尚未配置。阅读无需登录。</p>
+          )}
+        </section>
+      </div>
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify(schema).replace(/</g, '\\u003c')}
+      ></script>
+    </article>
+  </div>
+</Base>
