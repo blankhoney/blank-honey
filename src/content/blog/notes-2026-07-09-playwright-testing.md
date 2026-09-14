@@ -19,7 +19,7 @@ places: []
 
 把初稿运行起来之后，还需要根据失败信息返回修正。
 
-![生成代码以后，先检查断言示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-playwright-testing-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-playwright-testing-1.svg" alt="生成代码以后，先检查断言示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

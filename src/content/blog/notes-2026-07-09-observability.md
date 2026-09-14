@@ -17,7 +17,7 @@ places: []
 
 采集链路可以单独画出来。不同信号并列进入处理链，Collector 后的存储只是功能角色，不指定某个部署方案。
 
-![三种信号可以描述同一次运行示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-observability-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-observability-1.svg" alt="三种信号可以描述同一次运行示意图" loading="lazy" style="width: 552px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
@@ -43,7 +43,7 @@ flowchart TD
 
 一条调用链中的操作共享 Trace 上下文，Span 之间还可以记录父子关系。以下是一个假设请求中的父子 Span 关系。
 
-![Trace 与 Span 单独画示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-observability-2.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-observability-2.svg" alt="Trace 与 Span 单独画示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

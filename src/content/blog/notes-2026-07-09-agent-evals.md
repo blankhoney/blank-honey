@@ -17,7 +17,7 @@ Anthropic 的 [Agent 评测说明](https://www.anthropic.com/engineering/demysti
 
 这几个词可以放进同一张图里。评分同时可以读取轨迹与结果，不必只看最终回答。
 
-![一次任务可以运行很多次示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-evals-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-evals-1.svg" alt="一次任务可以运行很多次示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

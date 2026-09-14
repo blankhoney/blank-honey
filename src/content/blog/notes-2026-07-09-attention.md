@@ -23,7 +23,7 @@ FFN 是前馈网络。这次只记下了它的名字，具体维度和计算细�
 
 下面只画遮罩的可见范围。实线表示位置 3 可以访问的位置；虚线表示被遮罩的未来位置。
 
-![生成时不能提前看到答案示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-attention-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-attention-1.svg" alt="生成时不能提前看到答案示意图" loading="lazy" style="width: 690px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

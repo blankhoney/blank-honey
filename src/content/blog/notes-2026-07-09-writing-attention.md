@@ -39,7 +39,7 @@ LLM 可以帮助重排章节、校订文字、查找不一致，也可以按指�
 
 箭头左边是遇到的困难，右边是可以尝试的调整。
 
-![下一步写到现在就能执行示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-writing-attention-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-writing-attention-1.svg" alt="下一步写到现在就能执行示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

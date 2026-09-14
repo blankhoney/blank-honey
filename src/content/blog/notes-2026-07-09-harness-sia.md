@@ -17,7 +17,7 @@ places: []
 
 [SIA: Self Improving AI with Harness & Weight Updates](https://arxiv.org/abs/2605.27276)把这两种更新放进一个反馈循环。论文中 task-specific agent 执行任务，反馈智能体依据轨迹决定如何修改 harness 或发起权重更新。下面画出这一循环，省略训练内部步骤。
 
-![Harness 和权重是两处不同的改动示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-harness-sia-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-harness-sia-1.svg" alt="Harness 和权重是两处不同的改动示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

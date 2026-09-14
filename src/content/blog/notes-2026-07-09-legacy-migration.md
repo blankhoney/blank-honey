@@ -29,7 +29,7 @@ places: []
 
 [Parallel change](https://martinfowler.com/bliki/ParallelChange.html)将接口变更分为扩展、迁移、收缩。下面按手写箭头重画。
 
-![接口变化分三步走示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-legacy-migration-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-legacy-migration-1.svg" alt="接口变化分三步走示意图" loading="lazy" style="width: 552px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
@@ -52,7 +52,7 @@ flowchart LR
 
 退役前，可以按下面的顺序检查范围和使用情况。
 
-![退役要同时看引用与实际使用示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-legacy-migration-2.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-legacy-migration-2.svg" alt="退役要同时看引用与实际使用示意图" loading="lazy" style="width: 360px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

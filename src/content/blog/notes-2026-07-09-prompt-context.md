@@ -19,7 +19,7 @@ places: []
 
 准备提示词时，可以沿着下面的顺序逐项检查。
 
-![先交代任务，再选择表达方式示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-prompt-context-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-prompt-context-1.svg" alt="先交代任务，再选择表达方式示意图" loading="lazy" style="width: 216px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
@@ -49,7 +49,7 @@ schema 能表达字段结构，但接口支持哪些约束，需要查对应产�
 
 把这些材料按用途展开，可以得到下面这张分类图。连接线表示组成关系，不表示消息权限或发送顺序。
 
-![上下文里的材料应当能找到用途示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-prompt-context-2.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-prompt-context-2.svg" alt="上下文里的材料应当能找到用途示意图" loading="lazy" style="width: 690px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

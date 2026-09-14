@@ -15,7 +15,7 @@ places: []
 
 [C4 的四个层次](https://c4model.com/diagrams)是系统上下文、容器、组件和代码。它们像不断放大的视图，读者需要的细节不同，图也跟着变化。下面把这四层画在一起；箭头表示继续展开的方向，不表示运行时调用。
 
-![先决定图给谁看示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-architecture-spec-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-architecture-spec-1.svg" alt="先决定图给谁看示意图" loading="lazy" style="width: 168px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
@@ -49,7 +49,7 @@ PRD 阶段可以先写 JSON 或 HTML 样例，让结果有个形状。比如要�
 
 架构图确定依赖方向后，可以把允许的关系写成规则，再交给检查器与当前代码比对。
 
-![依赖方向需要回到代码里检查示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-architecture-spec-2.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-architecture-spec-2.svg" alt="依赖方向需要回到代码里检查示意图" loading="lazy" style="width: 690px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>

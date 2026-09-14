@@ -23,7 +23,7 @@ places: []
 
 下面是对原页阶段关系的整理图，补上了判断与返回分支，便于说明流程；它不是某个 Agent 产品的内部实现。
 
-![一次交接应当能让人重新开始示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-workflow-1.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-workflow-1.svg" alt="一次交接应当能让人重新开始示意图" loading="lazy" style="width: 390px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
@@ -57,7 +57,7 @@ flowchart TD
 
 下面按这条流水线重画，保留人工定义验收和最终回归之间的关系。
 
-![让检查帮助下一步决定示意图](/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-workflow-2.svg)
+<img src="/content-diagrams/notes-2026-07-09/notes-2026-07-09-agent-workflow-2.svg" alt="让检查帮助下一步决定示意图" loading="lazy" style="width: 308px; max-width: 100%; height: auto; margin-inline: auto;" />
 
 <details>
 <summary>查看 Mermaid 源码</summary>
