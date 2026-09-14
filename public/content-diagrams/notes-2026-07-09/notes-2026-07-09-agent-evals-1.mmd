@@ -1,0 +1,7 @@
+flowchart TD
+  task["Task：任务与成功标准"] -->|运行一次| trial["Trial：一次尝试"]
+  trial --> transcript["Transcript：消息和工具交互"]
+  trial --> outcome["Outcome：最终环境状态"]
+  transcript --> grader["Grader：按标准评估"]
+  outcome --> grader
+  grader --> record["分数、失败类型与证据"]

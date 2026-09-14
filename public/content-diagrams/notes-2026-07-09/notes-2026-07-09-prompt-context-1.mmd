@@ -1,0 +1,8 @@
+flowchart TD
+  task["任务目标与使用场景"] --> audience["读者、角色与范围"]
+  audience --> materials["必要材料和可用工具"]
+  materials --> constraints["约束、示例与输出格式"]
+  constraints --> result["生成结果"]
+  result --> evaluation["用事先确定的标准检查"]
+  evaluation --> revise["按具体问题修订提示或材料"]
+  revise --> constraints

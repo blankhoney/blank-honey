@@ -1,0 +1,5 @@
+flowchart LR
+  view["架构视图"] -->|明确允许方向| rules["依赖规则"]
+  rules -->|转成可执行检查| checker["依赖检查器"]
+  source["当前代码"] -->|提取实际依赖| checker
+  checker -->|报告违反的规则| review["人工审查和修正"]

@@ -1,0 +1,4 @@
+flowchart TD
+  context["系统上下文：使用者、外部系统与边界"] -->|展开内部| containers["容器：应用、服务与数据存储"]
+  containers -->|展开一个容器| components["组件：职责、接口与依赖"]
+  components -->|按需解释实现| code["代码：类型、方法与关系"]

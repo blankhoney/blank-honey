@@ -1,0 +1,4 @@
+flowchart TD
+  request["请求 Span：Trace T"] --> api["接口处理 Span：Trace T"]
+  api --> db["数据库查询 Span：Trace T"]
+  api --> remote["外部调用 Span：Trace T"]
