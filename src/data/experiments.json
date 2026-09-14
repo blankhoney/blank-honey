@@ -1,5 +1,125 @@
 [
   {
+    "slug": "sunwake-astra-max",
+    "title": "Sunwake · Astra max",
+    "description": "原创木帆船驶过三角海面，沿三座灯塔航行，可切换晨光、风暴和极光。",
+    "directory": "examples/benchmarks/sunwake-astra-max",
+    "entry": "index.html",
+    "preview": "/benchmarks/sunwake-astra-max.webp",
+    "prompt": "Generate the game concepts\nGenerate a few concept images for a 3D boating game in different styles and game states. Show high seas and large waves at sunrise, with sunlight reflected on the water, sparkling blue spray, and droplets on the camera. The water can look retro and triangular, but movement and physics should feel extremely smooth. Aim for procedural geometry without imported sprites or models.\n\nBuild the first sailing slice\nBuild a playable first slice from the attached First Light Voyage and Glass Between Storms concepts. Match those images as closely as possible, including the gameplay.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/sunwake/concept-first-light-voyage-f0074c39cecd.webp\nhttps://cdn.openai.com/devhub/showcase/sunwake/concept-glass-between-storms-0085cc92f83d.webp\n\nRefine the sailing feel\nKeep the triangular water style. Make buoyancy smooth and connect waves, displacement, wakes, ripples, and spray so the boat feels naturally connected to the sea.\n\nExplore two water treatments\nAdd a Natural water treatment while keeping Illustrated as the default. Let me compare the two without discarding the faceted style.\n\nGive the voyage structure and light\nGive the voyage islands and lighthouse objectives, then refine the weather, clouds, and lighting. Preserve the faceted water and add a five-minute celestial cycle with stars and aurora, while keeping the sailing behavior intact.\n\nGive the boat the same care\nCreate a detailed Blender vessel, refine its silhouette and construction, and integrate it into the game. Animate the rigging and support both Illustrated and Natural materials.\n\nSettle the boat naturally into the water\nRefine the boat’s resting height and buoyancy so it sits naturally in the sea, with water contact and wakes aligned as it moves across waves.",
+    "modelId": "gpt-6-astra",
+    "reasoningEffort": "max",
+    "generatedAt": "2026-09-14T12:19:27+00:00",
+    "author": {
+      "name": "Thomas Ricouard / OpenAI",
+      "sourceUrl": "https://developers.openai.com/showcase/sunwake"
+    },
+    "promptVersion": "OpenAI Showcase · 2026-09-14 公开编辑摘要 · 7 步合并",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型完成构建、10 项源码/物理/资源检查、6 组 GLSL 编译及 GLB 校验；按约束未开浏览器。主集成另做 Chrome 短检。",
+      "environment": "独立 Codex 新任务，未继承博客聊天；实际运行记录为 gpt-6-astra / max。平台系统指令与工具可用。",
+      "additionalInstructions": "本次测试说明（不属于官方原文）：以上是 OpenAI Showcase 公开的多轮编辑摘要，现合并为一个独立任务。请基于这些要求和所列概念参考图，直接完成可运行的静态浏览器游戏；不复用官方成品代码或成品模型。概念图已有公开参考时直接查看并使用为视觉参考，无须重新生成概念图。可以使用成熟库。采用 ponytail full，读取 /Users/blankhoney/.codex/skills/ponytail/SKILL.md，保留可读源码，不省略明确要求。只在本任务目录施工；不打开任何浏览器、网页或自动化 Chrome，不启动常驻服务，只做命令行构建和必要自检。请把完整可读工程、依赖锁文件和静态构建 dist 放在 outputs；构建使用相对资源路径便于子目录部署。可选离线单 HTML 必须先独立校验内联 JS 语法。不要发布，主任务统一验收发布；注明未做浏览器验收。"
+    },
+    "observations": [
+      "题面由官方多轮构建的公开编辑摘要合并，包含两张概念参考图链接；本次直接使用参考图，不重新生成概念图，也未复制官方成品代码。两个模型获得相同输入。",
+      "在线文件为模型交付的原始 dist；source.zip 是模型原始完整工程包，场景与源码均未改。含实际生成的 Blender 船模、GLB、可读源码与依赖锁，预览图由主集成在游戏中补拍。",
+      "Chrome 短检通过开始航行、水面风格、镜头、海图、天空设置以及晨光/极光预设，无控制台错误。原始工程包的 Blender/预览元数据保留本机制作路径。",
+      "未完成三座灯塔全航程、手机控制或持续帧率验收；画面与物理效果保留本次原始实现。"
+    ]
+  },
+  {
+    "slug": "sunwake-sol-max",
+    "title": "Sunwake · Sol max",
+    "description": "三角海面、帆船和四座灯塔，支持水面样式与船首视角切换。",
+    "directory": "examples/benchmarks/sunwake-sol-max",
+    "entry": "index.html",
+    "preview": "/benchmarks/sunwake-sol-max.webp",
+    "prompt": "Generate the game concepts\nGenerate a few concept images for a 3D boating game in different styles and game states. Show high seas and large waves at sunrise, with sunlight reflected on the water, sparkling blue spray, and droplets on the camera. The water can look retro and triangular, but movement and physics should feel extremely smooth. Aim for procedural geometry without imported sprites or models.\n\nBuild the first sailing slice\nBuild a playable first slice from the attached First Light Voyage and Glass Between Storms concepts. Match those images as closely as possible, including the gameplay.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/sunwake/concept-first-light-voyage-f0074c39cecd.webp\nhttps://cdn.openai.com/devhub/showcase/sunwake/concept-glass-between-storms-0085cc92f83d.webp\n\nRefine the sailing feel\nKeep the triangular water style. Make buoyancy smooth and connect waves, displacement, wakes, ripples, and spray so the boat feels naturally connected to the sea.\n\nExplore two water treatments\nAdd a Natural water treatment while keeping Illustrated as the default. Let me compare the two without discarding the faceted style.\n\nGive the voyage structure and light\nGive the voyage islands and lighthouse objectives, then refine the weather, clouds, and lighting. Preserve the faceted water and add a five-minute celestial cycle with stars and aurora, while keeping the sailing behavior intact.\n\nGive the boat the same care\nCreate a detailed Blender vessel, refine its silhouette and construction, and integrate it into the game. Animate the rigging and support both Illustrated and Natural materials.\n\nSettle the boat naturally into the water\nRefine the boat’s resting height and buoyancy so it sits naturally in the sea, with water contact and wakes aligned as it moves across waves.",
+    "modelId": "gpt-5.6-sol",
+    "reasoningEffort": "max",
+    "generatedAt": "2026-09-14T11:52:30+00:00",
+    "author": {
+      "name": "Thomas Ricouard / OpenAI",
+      "sourceUrl": "https://developers.openai.com/showcase/sunwake"
+    },
+    "promptVersion": "OpenAI Showcase · 2026-09-14 公开编辑摘要 · 7 步合并",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型完成源码语法、波面法线、五分钟天象周期、构建资源及依赖检查；按约束未开浏览器。集成后的 Chrome 短检由主任务另做。",
+      "environment": "独立 Codex 新任务，未继承博客聊天；实际运行记录为 gpt-5.6-sol / max。平台系统指令与工具可用。",
+      "additionalInstructions": "本次测试说明（不属于官方原文）：以上是 OpenAI Showcase 公开的多轮编辑摘要，现合并为一个独立任务。请基于这些要求和所列概念参考图，直接完成可运行的静态浏览器游戏；不复用官方成品代码或成品模型。概念图已有公开参考时直接查看并使用为视觉参考，无须重新生成概念图。可以使用成熟库。采用 ponytail full，读取 /Users/blankhoney/.codex/skills/ponytail/SKILL.md，保留可读源码，不省略明确要求。只在本任务目录施工；不打开任何浏览器、网页或自动化 Chrome，不启动常驻服务，只做命令行构建和必要自检。请把完整可读工程、依赖锁文件和静态构建 dist 放在 outputs；构建使用相对资源路径便于子目录部署。可选离线单 HTML 必须先独立校验内联 JS 语法。不要发布，主任务统一验收发布；注明未做浏览器验收。"
+    },
+    "observations": [
+      "题面由官方多轮构建的公开编辑摘要合并，包含两张概念参考图链接；本次直接使用参考图，不重新生成概念图，也未复制官方成品代码。两个模型获得相同输入。",
+      "在线文件为模型交付的原始 dist，场景未改。source.zip 由主集成按明确文件清单打包，含可读源码、锁文件、构建与完整提交任务；Three.js 许可证从锁定的 0.180.0 包补入，截图由主集成补拍。",
+      "本版用源码构造船体，并交付 Blender 建模脚本；生成任务没有执行 Blender，也没有生成 .blend/GLB。Chrome 短检能开始游戏，Illustrated/Natural、天气、追船/船首视角及暂停均可操作，无控制台错误。",
+      "未完成四座灯塔全航程、完整昼夜循环、手机操舵或持续帧率验收；画面与物理效果保留本次原始实现。"
+    ]
+  },
+  {
+    "slug": "void-explorer-astra-max",
+    "title": "Void Explorer · Astra max",
+    "description": "明亮蓝紫星云中的 AURORA，含辅助着陆、舷梯、地表探索与可选目的地星图。",
+    "directory": "examples/benchmarks/void-explorer-astra-max",
+    "entry": "index.html",
+    "preview": "/benchmarks/void-explorer-astra-max.webp",
+    "prompt": "Generate the game concepts\nGenerate concept art for a fully explorable procedural universe where every star and planet I can see is somewhere I can go. I should be able to accelerate toward them, fly from space into a planet's atmosphere, and see the ground below. Use simpler retro 3D with retro-futurist neon colors, strong contrast, and an evocative sense of deep space. Find a middle ground between too realistic and too simplistic. Show orbital flight, atmospheric descent, and high-speed flight with stars and dust rushing around the ship.\n\nBuild the first vertical slice\nBuild the first playable vertical slice of this procedural universe using the attached concept art as visual references. Assemble a basic procedural ship and connect flight, boost, travel between systems, waypoints, distance readouts, and continuous descent toward planetary terrain. Playtest the complete journey.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/void-explorer/concept-orbit-9ced0979a45d.webp\nhttps://cdn.openai.com/devhub/showcase/void-explorer/concept-descent-da2bf1f314ee.webp\n\nMake flight and navigation feel right\nImprove the flight feel and make travel between planets faster. Make navigation visual with star charts and direct targeting, while keeping destinations and distances consistent.\n\nUpgrade the rendering\nUpgrade the rendering to WebGPU with WebGL support. Preserve the procedural world and simulation, then improve lighting, planetary materials, bloom, and the transition from orbit to the surface.\n\nRefine the spacecraft concept\nGenerate concept images to refine AURORA, the exploration spacecraft for Void Explorer. Explore its silhouette and generate several views of the same design. Keep the ivory and indigo hull, emerald canopy, twin cyan engines, and four separate angular wings with pink tip lights. Refine the concepts until the shape is clear enough to model in 3D.\n\nBuild and integrate AURORA\nBuild AURORA in Blender using the attached ship concepts. Treat the approved top view as the authority for the silhouette and proportions, with the front view as supporting reference. Preserve the four separate wings and open gaps, mirror the geometry, and integrate the finished spacecraft into Void Explorer.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-top-5887bd0cbcce.webp\nhttps://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-front-ca54e31f4a37.webp\n\nMake exploration physical\nLet me land on the generated terrain, deploy the landing gear, leave through the ramp, walk around the ship, and reboard. Keep takeoff and the return to flight continuous.\n\nKeep the world coherent\nPlaytest the complete journey from orbit to the surface and back. Keep terrain loading smooth and resilient, and check that rivers, water depth, and atmosphere behave consistently throughout flight and exploration.",
+    "modelId": "gpt-6-astra",
+    "reasoningEffort": "max",
+    "generatedAt": "2026-09-14T12:25:07+00:00",
+    "author": {
+      "name": "Thomas Ricouard / OpenAI",
+      "sourceUrl": "https://developers.openai.com/showcase/void-explorer"
+    },
+    "promptVersion": "OpenAI Showcase · 2026-09-14 公开编辑摘要 · 8 步合并",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型完成 15 组命令行检查，涵盖起降往返、导航、地形与模型资源，并通过生产构建。按约束未开浏览器；主集成另做 Chrome 短检。",
+      "environment": "独立 Codex 新任务，未继承博客聊天；实际运行记录为 gpt-6-astra / max。平台系统指令与工具可用。",
+      "additionalInstructions": "本次测试说明（不属于官方原文）：以上是 OpenAI Showcase 公开的多轮编辑摘要，现合并为一个独立任务。请基于这些要求和所列概念参考图，直接完成可运行的静态浏览器游戏；不复用官方成品代码或成品模型。概念图已有公开参考时直接查看并使用为视觉参考，无须重新生成概念图。可以使用成熟库。采用 ponytail full，读取 /Users/blankhoney/.codex/skills/ponytail/SKILL.md，保留可读源码，不省略明确要求。只在本任务目录施工；不打开任何浏览器、网页或自动化 Chrome，不启动常驻服务，只做命令行构建和必要自检。请把完整可读工程、依赖锁文件和静态构建 dist 放在 outputs；构建使用相对资源路径便于子目录部署。可选离线单 HTML 必须先独立校验内联 JS 语法。不要发布，主任务统一验收发布；注明未做浏览器验收。\n用户本次额外要求：背景不要那么暗。"
+    },
+    "observations": [
+      "题面由官方多轮构建的公开编辑摘要合并，附有概念参考图链接；本次直接使用参考图，不重新生成概念图，也未复制官方成品代码。两个模型获得相同输入，均含“背景不要那么暗”。",
+      "在线文件为模型原始 dist，source.zip 为模型原始工程包，含实际 Blender 飞船、GLB、源码与依赖锁。主集成仅补实际游戏截图及原工程第三方许可副本，未改场景。原模型和预览图片元数据保留本机制作路径。",
+      "Chrome WebGPU 短检通过辅助接近与着陆、展开舷梯并进入步行状态、星图本地/恒星视图和设置。默认背景亮度 1.35，控制台无错误。",
+      "浏览器未走完步行接近舷梯、回舱起飞或跨星球完整路线；点击回舱时正常提示需靠近舷梯。未验证 WebGL 回退、手机控制或持续帧率。"
+    ]
+  },
+  {
+    "slug": "void-explorer-sol-max",
+    "title": "Void Explorer · Sol max",
+    "description": "较亮的蓝紫太空、程序化飞船与星球下降流程。",
+    "directory": "examples/benchmarks/void-explorer-sol-max",
+    "entry": "index.html",
+    "preview": "/benchmarks/void-explorer-sol-max.webp",
+    "prompt": "Generate the game concepts\nGenerate concept art for a fully explorable procedural universe where every star and planet I can see is somewhere I can go. I should be able to accelerate toward them, fly from space into a planet's atmosphere, and see the ground below. Use simpler retro 3D with retro-futurist neon colors, strong contrast, and an evocative sense of deep space. Find a middle ground between too realistic and too simplistic. Show orbital flight, atmospheric descent, and high-speed flight with stars and dust rushing around the ship.\n\nBuild the first vertical slice\nBuild the first playable vertical slice of this procedural universe using the attached concept art as visual references. Assemble a basic procedural ship and connect flight, boost, travel between systems, waypoints, distance readouts, and continuous descent toward planetary terrain. Playtest the complete journey.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/void-explorer/concept-orbit-9ced0979a45d.webp\nhttps://cdn.openai.com/devhub/showcase/void-explorer/concept-descent-da2bf1f314ee.webp\n\nMake flight and navigation feel right\nImprove the flight feel and make travel between planets faster. Make navigation visual with star charts and direct targeting, while keeping destinations and distances consistent.\n\nUpgrade the rendering\nUpgrade the rendering to WebGPU with WebGL support. Preserve the procedural world and simulation, then improve lighting, planetary materials, bloom, and the transition from orbit to the surface.\n\nRefine the spacecraft concept\nGenerate concept images to refine AURORA, the exploration spacecraft for Void Explorer. Explore its silhouette and generate several views of the same design. Keep the ivory and indigo hull, emerald canopy, twin cyan engines, and four separate angular wings with pink tip lights. Refine the concepts until the shape is clear enough to model in 3D.\n\nBuild and integrate AURORA\nBuild AURORA in Blender using the attached ship concepts. Treat the approved top view as the authority for the silhouette and proportions, with the front view as supporting reference. Preserve the four separate wings and open gaps, mirror the geometry, and integrate the finished spacecraft into Void Explorer.\n\nReference images:\nhttps://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-top-5887bd0cbcce.webp\nhttps://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-front-ca54e31f4a37.webp\n\nMake exploration physical\nLet me land on the generated terrain, deploy the landing gear, leave through the ramp, walk around the ship, and reboard. Keep takeoff and the return to flight continuous.\n\nKeep the world coherent\nPlaytest the complete journey from orbit to the surface and back. Keep terrain loading smooth and resilient, and check that rivers, water depth, and atmosphere behave consistently throughout flight and exploration.",
+    "modelId": "gpt-5.6-sol",
+    "reasoningEffort": "max",
+    "generatedAt": "2026-09-14T11:42:52+00:00",
+    "author": {
+      "name": "Thomas Ricouard / OpenAI",
+      "sourceUrl": "https://developers.openai.com/showcase/void-explorer"
+    },
+    "promptVersion": "OpenAI Showcase · 2026-09-14 公开编辑摘要 · 8 步合并",
+    "run": {
+      "singleUserTask": true,
+      "agentTools": true,
+      "selfCheck": "模型完成命令行旅程仿真、生产构建和依赖检查；按约束未开浏览器。集成后的 Chrome 短检由主任务另做。",
+      "environment": "独立 Codex 新任务，未继承博客聊天；实际运行记录为 gpt-5.6-sol / max。平台系统指令与工具可用。",
+      "additionalInstructions": "本次测试说明（不属于官方原文）：以上是 OpenAI Showcase 公开的多轮编辑摘要，现合并为一个独立任务。请基于这些要求和所列概念参考图，直接完成可运行的静态浏览器游戏；不复用官方成品代码或成品模型。概念图已有公开参考时直接查看并使用为视觉参考，无须重新生成概念图。可以使用成熟库。采用 ponytail full，读取 /Users/blankhoney/.codex/skills/ponytail/SKILL.md，保留可读源码，不省略明确要求。只在本任务目录施工；不打开任何浏览器、网页或自动化 Chrome，不启动常驻服务，只做命令行构建和必要自检。请把完整可读工程、依赖锁文件和静态构建 dist 放在 outputs；构建使用相对资源路径便于子目录部署。可选离线单 HTML 必须先独立校验内联 JS 语法。不要发布，主任务统一验收发布；注明未做浏览器验收。\n用户本次额外要求：背景不要那么暗。"
+    },
+    "observations": [
+      "题面由官方多轮构建的公开编辑摘要合并，附有概念参考图链接；本次直接使用参考图，不重新生成概念图，也未复制官方成品代码。两个模型获得相同输入，均含“背景不要那么暗”。",
+      "在线文件是模型交付的原始 dist，未修改场景。source.zip 由主集成按明确文件清单打包，包含可读源码、锁文件、构建及完整提交任务；截图为主集成补拍。",
+      "本版以程序化 Three.js 几何构造 AURORA，没有 Blender 模型。Chrome 实际启用 WebGPU，开始、星图、辅助下降、着陆、舷梯、离舰与重新登舰可操作，短检无控制台错误。",
+      "落地高度仍显示 1.42 km，刚离舰时到飞船距离显示 6.40 km，单位与场景尺度不自然，保留原稿。未完成浏览器起飞返航、其他星系、WebGL 回退、手机或持续帧率验收。"
+    ]
+  },
+  {
     "slug": "chinese-architecture-sol-max",
     "title": "3D 体素中国建筑群 · Sol max",
     "description": "Sol / max 同题生成的紫宸宫阙：中轴宫苑、钟鼓楼与五层宝塔。",

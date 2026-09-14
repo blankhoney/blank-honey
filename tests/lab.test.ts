@@ -67,6 +67,10 @@ test('benchmark packaging preserves bytes and JS module trees, excludes private 
     await writeFile(join(base, 'source.zip'), archive);
     await writeFile(join(base, 'assets/main.js'), "import './nested.mjs';\n");
     await writeFile(join(base, 'assets/nested.mjs'), 'export const untouched = true;\n');
+    const model = Buffer.from('676c54460200000014000000000000004a534f4e', 'hex');
+    await writeFile(join(base, 'assets/boat.glb'), model);
+    const sourceMap = '{"version":3,"sources":["main.js"],"mappings":""}\n';
+    await writeFile(join(base, 'assets/main.js.map'), sourceMap);
     for (const name of ['json', 'timer', 'text', 'paper'])
       await writeFile(join(root, `examples/${name}.html`), '<a href="__SITE_RETURN__">Return</a>');
     const run = spawnSync(
@@ -99,7 +103,21 @@ test('benchmark packaging preserves bytes and JS module trees, excludes private 
     const files = JSON.parse(
       await readFile(join(root, 'lab-dist/benchmark-sources/sample/files.json'), 'utf8'),
     );
-    assert.equal(files.length, 4);
+    assert.equal(files.length, 6);
+    for (const path of [
+      'lab-dist/benchmarks/sample/assets/main.js.map',
+      'lab-dist/benchmark-sources/sample/assets/main.js.map.txt',
+    ]) {
+      assert.equal(await readFile(join(root, path), 'utf8'), sourceMap);
+    }
+    assert.deepEqual(
+      await readFile(join(root, 'lab-dist/benchmarks/sample/assets/boat.glb')),
+      model,
+    );
+    assert.deepEqual(
+      await readFile(join(root, 'lab-dist/benchmark-sources/sample/assets/boat.glb.txt')),
+      model,
+    );
     assert.deepEqual(await readFile(join(root, 'lab-dist/benchmarks/sample/source.zip')), archive);
     assert.deepEqual(
       await readFile(join(root, 'lab-dist/benchmark-sources/sample/source.zip')),

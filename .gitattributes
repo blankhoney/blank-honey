@@ -4,3 +4,4 @@ examples/benchmarks/*/prompt.txt -text -whitespace
 examples/benchmarks/voxel-mountain-max/assets/* -text -whitespace linguist-generated=true
 examples/benchmarks/*/fonts/OFL-*.txt -text -whitespace
 examples/benchmarks/*-sol-max/assets/* -text -whitespace linguist-generated=true
+examples/benchmarks/*-astra-max/assets/* -text -whitespace linguist-generated=true

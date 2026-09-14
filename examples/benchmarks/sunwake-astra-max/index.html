@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b2531" />
+    <meta
+      name="description"
+      content="An open-water voyage in a sea of triangles. Follow the first light, find the islands, and bring three lighthouses home."
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>SUNWAKE — A first-light voyage</title>
+    <script type="module" crossorigin src="./assets/index-C29bh2mj.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/three-DWKJvjYf.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-BfA5eiBo.css">
+  </head>
+  <body>
+    <main id="game" aria-label="Sunwake sailing game">
+      <canvas
+        id="sea"
+        aria-label="3D ocean. Use W and S for power, A and D to steer, Space to slow, and E to light a beacon."
+        tabindex="0"
+      ></canvas>
+      <div class="edge-shade" aria-hidden="true"></div>
+      <header class="topbar hud">
+        <a
+          class="brand"
+          href="#"
+          id="brand"
+          aria-label="Sunwake, voyage information"
+        >
+          <svg viewBox="0 0 44 44" aria-hidden="true">
+            <path
+              d="M7 25a15 15 0 0 1 30 0M4 29h36M8 34h28M14 39h16M22 1v5M6 8l4 4M38 8l-4 4"
+            />
+          </svg>
+          <span
+            ><strong>SUNWAKE</strong><small>A FIRST-LIGHT VOYAGE</small></span
+          >
+        </a>
+        <div class="compass" aria-label="Heading">
+          <span class="compass-rule"></span>
+          <div class="compass-points">
+            <span id="heading-left">NW</span><span>N</span
+            ><b id="heading">000°</b><span>E</span
+            ><span id="heading-right">NE</span>
+          </div>
+          <i></i>
+        </div>
+        <div class="top-actions">
+          <span class="live-state"
+            ><i></i><span id="phase-name">First light</span></span
+          >
+          <button
+            class="icon-button"
+            id="sound-button"
+            title="Enable ocean audio"
+            aria-label="Enable ocean audio"
+            aria-pressed="false"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M11 5 6 9H3v6h3l5 4V5ZM16 9l5 6m0-6-5 6" />
+            </svg>
+          </button>
+          <button
+            class="icon-button"
+            id="settings-button"
+            title="Sea and sky settings"
+            aria-label="Sea and sky settings"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16M4 17h16M9 4v6m6 4v6" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section
+        class="voyage-panel hud"
+        id="voyage-panel"
+        aria-label="Voyage objectives"
+      >
+        <div class="eyebrow">
+          <span class="gold-dash"></span> THE LANTERN ROUTE
+          <span id="progress-text">00 / 03</span>
+        </div>
+        <h2 id="objective-name">Morrow Light</h2>
+        <p id="objective-description">A small light. A long way home.</p>
+        <div class="route-progress" aria-label="Three lighthouse objectives">
+          <i class="current"></i><span></span><i></i><span></span><i></i>
+        </div>
+        <button id="chart-button" class="text-button">
+          Open sea chart <span>M ↗</span>
+        </button>
+      </section>
+
+      <div class="target-marker hud" id="target-marker" aria-hidden="true">
+        <div class="target-diamond"></div>
+        <span id="marker-label">MORROW LIGHT</span
+        ><small id="marker-distance">0.37 km</small><i></i>
+      </div>
+
+      <section class="welcome hud" id="welcome">
+        <span class="eyebrow">01 &nbsp; / &nbsp; THE OPEN WATER</span>
+        <h1>Follow the<br /><em>first light.</em></h1>
+        <p>
+          Three islands. Three sleeping lanterns.<br />An ocean that never holds
+          still.
+        </p>
+        <button class="primary" id="start-button" disabled>
+          <span id="start-label">Preparing your vessel</span
+          ><span id="start-arrow">…</span>
+        </button>
+        <span class="welcome-note">HEADPHONES ON. HORIZON AHEAD.</span>
+      </section>
+
+      <section
+        class="instruments hud"
+        id="instruments"
+        aria-label="Vessel instruments"
+        hidden
+      >
+        <div class="speed">
+          <span id="speed">0.0</span>
+          <div><b>KNOTS</b><small id="motion-label">At rest</small></div>
+        </div>
+        <div class="power-meter">
+          <span>SAIL POWER</span>
+          <div class="power-track"><i id="power-fill"></i></div>
+          <b id="power-value">0%</b>
+        </div>
+        <div class="wind-line">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M3 8h12a3 3 0 1 0-3-3M3 12h17M3 16h10a3 3 0 1 1-3 3"
+            /></svg
+          ><span id="wind-value">SW &nbsp; 14 kn</span
+          ><span class="separator">/</span
+          ><span id="swell-value">1.8 m swell</span>
+        </div>
+      </section>
+
+      <div
+        class="context-prompt hud"
+        id="context-prompt"
+        role="status"
+        hidden
+      ></div>
+      <div class="toast hud" id="toast" role="status" aria-live="polite"></div>
+
+      <footer class="bottom-bar hud">
+        <div class="coordinates">
+          <i></i><span id="coordinates">36° 42′ N &nbsp; 024° 18′ E</span>
+        </div>
+        <div class="controls-hint" id="controls-hint">
+          <span><kbd>W</kbd><kbd>S</kbd> Power</span
+          ><span><kbd>A</kbd><kbd>D</kbd> Steer</span
+          ><button id="camera-button" title="Change camera">
+            <kbd>C</kbd> Camera</button
+          ><button id="help-button" title="All controls"><kbd>?</kbd></button>
+        </div>
+        <button id="photo-button" class="text-button">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5 6 8H3v12h18V8h-3l-2-3H8Z" />
+            <circle cx="12" cy="14" r="4" /></svg
+          >Take it in <kbd>P</kbd>
+        </button>
+      </footer>
+
+      <aside class="sea-card hud" id="sea-card">
+        <div class="sea-card-heading">
+          <span class="eyebrow">THE SEA, YOUR WAY</span
+          ><span class="tiny-spark">✧</span>
+        </div>
+        <div class="segmented" aria-label="Water treatment">
+          <button data-water="0" class="active" aria-pressed="true">
+            Illustrated</button
+          ><button data-water="1" aria-pressed="false">Natural</button>
+        </div>
+        <button id="weather-cycle" class="weather-button">
+          <span class="weather-sun">☀</span
+          ><span
+            ><b id="weather-title">First light voyage</b
+            ><small id="weather-description"
+              >Golden skies · rolling swells</small
+            ></span
+          ><span>↗</span>
+        </button>
+        <div class="cycle-line">
+          <span id="cycle-label">DAWN</span>
+          <div><i id="cycle-progress"></i></div>
+          <span>5 MIN CYCLE</span>
+        </div>
+      </aside>
+
+      <div
+        class="touch-controls hud"
+        id="touch-controls"
+        aria-label="Touch controls"
+      >
+        <div>
+          <button data-touch="left" aria-label="Steer left">←</button
+          ><button data-touch="right" aria-label="Steer right">→</button>
+        </div>
+        <div>
+          <button data-touch="down" aria-label="Lower power">−</button
+          ><button data-touch="up" aria-label="Raise power">+</button
+          ><button data-touch="brake" aria-label="Hold to slow">Ⅱ</button>
+        </div>
+      </div>
+      <button class="photo-exit" id="photo-exit" hidden>
+        Return to voyage <kbd>P</kbd>
+      </button>
+
+      <dialog id="settings-dialog" class="panel-dialog settings-dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">MAKE YOUR HORIZON</span>
+            <h2>Sea & sky</h2>
+          </div>
+          <button class="close-button" data-close aria-label="Close settings">
+            ×
+          </button>
+        </div>
+        <label class="field-label" for="weather-range"
+          >Sea state <span id="sea-state-value">Rolling swell</span></label
+        ><input
+          id="weather-range"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0.3"
+        />
+        <div class="range-caption">
+          <span>Gentle</span><span>High seas</span>
+        </div>
+        <div class="preset-row">
+          <button data-preset="dawn">First light</button
+          ><button data-preset="storm">Between storms</button
+          ><button data-preset="night">Aurora</button>
+        </div>
+        <label class="field-label" for="time-range"
+          >Celestial time <span id="time-value">Dawn</span></label
+        ><input
+          id="time-range"
+          type="range"
+          min="0"
+          max="299"
+          step="1"
+          value="0"
+        />
+        <label class="checkbox-row"
+          ><span>Five-minute celestial cycle</span
+          ><input id="cycle-enabled" type="checkbox" checked
+        /></label>
+        <label class="field-label" for="quality">Render detail</label
+        ><select id="quality">
+          <option value="high">High · full spray & soft light</option>
+          <option value="balanced">Balanced · lighter on your device</option>
+        </select>
+        <button class="secondary full-width" id="recover-button">
+          Return to the last safe water
+        </button>
+        <p class="dialog-note">
+          Every water treatment keeps the same triangular sea and sailing
+          physics.
+        </p>
+      </dialog>
+
+      <dialog id="chart-dialog" class="panel-dialog chart-dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">A FIELD GUIDE TO THE DAWN</span>
+            <h2>The lantern route</h2>
+          </div>
+          <button class="close-button" data-close aria-label="Close sea chart">
+            ×
+          </button>
+        </div>
+        <canvas
+          id="chart"
+          width="940"
+          height="570"
+          aria-label="Sea chart showing your position and three island beacons"
+        ></canvas>
+        <div class="chart-legend">
+          <span><i class="legend-vessel"></i>Your vessel</span
+          ><span><i class="legend-beacon"></i>Sleeping beacon</span
+          ><span><i class="legend-lit"></i>Light restored</span>
+        </div>
+        <p class="dialog-note">
+          Sail to the gold mooring ring, slow below 8 knots, then press
+          <kbd>E</kbd> to light each lighthouse. The sea waits while this chart
+          is open.
+        </p>
+      </dialog>
+
+      <dialog id="help-dialog" class="panel-dialog help-dialog">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">A FEW THINGS BEFORE THE HORIZON</span>
+            <h2>Find your sea legs.</h2>
+          </div>
+          <button class="close-button" data-close aria-label="Close controls">
+            ×
+          </button>
+        </div>
+        <div class="help-grid">
+          <span>Raise / ease sail power</span
+          ><span><kbd>W</kbd> <kbd>S</kbd> or <kbd>↑</kbd> <kbd>↓</kbd></span
+          ><span>Turn the rudder</span
+          ><span><kbd>A</kbd> <kbd>D</kbd> or <kbd>←</kbd> <kbd>→</kbd></span
+          ><span>Reef & slow down</span><span>Hold <kbd>Space</kbd></span
+          ><span>Auxiliary boost</span><span>Hold <kbd>Shift</kbd></span
+          ><span>Light a nearby beacon</span><span><kbd>E</kbd></span
+          ><span>Chase / bow / orbit camera</span
+          ><span><kbd>C</kbd> · drag to look</span><span>Water treatment</span
+          ><span><kbd>1</kbd> / <kbd>2</kbd></span
+          ><span>Chart / pause / recover</span
+          ><span><kbd>M</kbd> / <kbd>Esc</kbd> / <kbd>R</kbd></span
+          ><span>Hide the interface</span><span><kbd>P</kbd></span>
+        </div>
+        <p class="dialog-note">
+          Power stays where you leave it. Make small rudder adjustments and ride
+          the swell. A complete day passes in five minutes. Your restored lights
+          are saved on this device.
+        </p>
+        <button class="secondary full-width" data-close>
+          Back to the water ↗
+        </button>
+      </dialog>
+
+      <dialog id="pause-dialog" class="panel-dialog compact-dialog">
+        <span class="eyebrow">THE OCEAN CAN WAIT</span>
+        <h2>A moment ashore.</h2>
+        <p>Your voyage is paused.</p>
+        <button class="primary full-width" data-close>
+          Return to the sea <span>↗</span></button
+        ><button class="text-button full-width" id="restart-button">
+          Start a new voyage
+        </button>
+      </dialog>
+      <dialog id="complete-dialog" class="panel-dialog complete-dialog">
+        <span class="eyebrow">03 / 03 · ALL LIGHTS RESTORED</span>
+        <div class="completion-sun">☀</div>
+        <h2>You carried<br /><em>the dawn home.</em></h2>
+        <p>
+          The coast is awake again.<br />There is still a whole sea out there.
+        </p>
+        <div id="voyage-stats"></div>
+        <button class="primary full-width" data-close>
+          Keep sailing <span>↗</span></button
+        ><button class="text-button full-width" id="new-voyage-button">
+          Begin a new voyage
+        </button>
+      </dialog>
+      <div id="error" role="alert" hidden></div>
+      <noscript
+        ><div class="no-script">
+          Sunwake needs JavaScript and WebGL2 to set sail.
+        </div></noscript
+      >
+    </main>
+  </body>
+</html>

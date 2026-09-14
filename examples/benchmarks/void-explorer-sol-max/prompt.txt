@@ -1,0 +1,31 @@
+Generate the game concepts
+Generate concept art for a fully explorable procedural universe where every star and planet I can see is somewhere I can go. I should be able to accelerate toward them, fly from space into a planet's atmosphere, and see the ground below. Use simpler retro 3D with retro-futurist neon colors, strong contrast, and an evocative sense of deep space. Find a middle ground between too realistic and too simplistic. Show orbital flight, atmospheric descent, and high-speed flight with stars and dust rushing around the ship.
+
+Build the first vertical slice
+Build the first playable vertical slice of this procedural universe using the attached concept art as visual references. Assemble a basic procedural ship and connect flight, boost, travel between systems, waypoints, distance readouts, and continuous descent toward planetary terrain. Playtest the complete journey.
+
+Reference images:
+https://cdn.openai.com/devhub/showcase/void-explorer/concept-orbit-9ced0979a45d.webp
+https://cdn.openai.com/devhub/showcase/void-explorer/concept-descent-da2bf1f314ee.webp
+
+Make flight and navigation feel right
+Improve the flight feel and make travel between planets faster. Make navigation visual with star charts and direct targeting, while keeping destinations and distances consistent.
+
+Upgrade the rendering
+Upgrade the rendering to WebGPU with WebGL support. Preserve the procedural world and simulation, then improve lighting, planetary materials, bloom, and the transition from orbit to the surface.
+
+Refine the spacecraft concept
+Generate concept images to refine AURORA, the exploration spacecraft for Void Explorer. Explore its silhouette and generate several views of the same design. Keep the ivory and indigo hull, emerald canopy, twin cyan engines, and four separate angular wings with pink tip lights. Refine the concepts until the shape is clear enough to model in 3D.
+
+Build and integrate AURORA
+Build AURORA in Blender using the attached ship concepts. Treat the approved top view as the authority for the silhouette and proportions, with the front view as supporting reference. Preserve the four separate wings and open gaps, mirror the geometry, and integrate the finished spacecraft into Void Explorer.
+
+Reference images:
+https://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-top-5887bd0cbcce.webp
+https://cdn.openai.com/devhub/showcase/void-explorer/aurora-concept-front-ca54e31f4a37.webp
+
+Make exploration physical
+Let me land on the generated terrain, deploy the landing gear, leave through the ramp, walk around the ship, and reboard. Keep takeoff and the return to flight continuous.
+
+Keep the world coherent
+Playtest the complete journey from orbit to the surface and back. Keep terrain loading smooth and resilient, and check that rivers, water depth, and atmosphere behave consistently throughout flight and exploration.

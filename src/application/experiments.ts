@@ -31,6 +31,8 @@ const extensions = new Set([
   '.woff2',
   '.ttf',
   '.otf',
+  '.glb',
+  '.map',
   '.txt',
   '.zip',
 ]);

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#071629" />
+    <meta name="description" content="Sunwake: a procedural low-poly sailing voyage through changing seas." />
+    <title>Sunwake — First Light Voyage</title>
+    <script type="module" crossorigin src="./assets/index-CACKDM5A.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BrS_PiZB.css">
+  </head>
+  <body>
+    <main id="app" aria-label="Sunwake sailing game">
+      <canvas id="game" aria-label="3D sailing view"></canvas>
+
+      <div id="cinema" aria-hidden="true">
+        <div class="grade"></div>
+        <div class="grain"></div>
+        <div id="lens"></div>
+      </div>
+
+      <section id="intro" class="intro" aria-labelledby="game-title">
+        <div class="eyebrow"><span></span> A PROCEDURAL SEA VOYAGE <span></span></div>
+        <h1 id="game-title">SUN<span>WAKE</span></h1>
+        <p class="lede">Chase first light across a living, faceted ocean. Wake four ancient beacons before the stars return.</p>
+        <button id="begin" type="button"><span>Begin the voyage</span><i aria-hidden="true">→</i></button>
+        <p class="intro-hint">WASD / ARROWS TO SAIL&nbsp;&nbsp;·&nbsp;&nbsp;V TO CHANGE VIEW</p>
+      </section>
+
+      <div id="hud" class="hud is-hidden">
+        <header class="topbar">
+          <div class="brand"><b>SUNWAKE</b><span>FIRST LIGHT VOYAGE</span></div>
+          <div class="compass" aria-label="Boat heading">
+            <span id="compass-left">NW</span><b id="heading">N</b><span id="compass-right">NE</span>
+            <i></i>
+          </div>
+          <button id="pause" class="icon-button" type="button" aria-label="Pause game">Ⅱ</button>
+        </header>
+
+        <aside class="objective-card">
+          <p class="label">CURRENT PASSAGE</p>
+          <div class="objective-title"><span id="objective-index">01</span><h2 id="objective-name">Emberwatch</h2></div>
+          <p id="objective-copy">Follow the amber beam beyond the morning swell.</p>
+          <div class="range"><i id="range-fill"></i></div>
+          <div class="objective-meta"><span id="objective-distance">— nm</span><span id="beacon-count">0 / 4 lit</span></div>
+        </aside>
+
+        <aside class="telemetry">
+          <div class="dial"><span id="speed">0.0</span><small>KNOTS</small></div>
+          <div class="wind"><span class="wind-arrow" id="wind-arrow">↑</span><p><b id="wind-speed">14</b> kn<br /><small>WIND</small></p></div>
+          <div class="sea-state"><i></i><p><b id="sea-state">BUILDING</b><br /><small>SEA STATE</small></p></div>
+        </aside>
+
+        <aside class="mode-panel" aria-label="Visual controls">
+          <p class="label">WATER TREATMENT</p>
+          <div class="segmented" role="group" aria-label="Water treatment">
+            <button type="button" class="active" data-water="illustrated" aria-pressed="true">Illustrated</button>
+            <button type="button" data-water="natural" aria-pressed="false">Natural</button>
+          </div>
+          <div class="small-controls">
+            <button id="weather" type="button" title="Cycle weather"><span>WEATHER</span><b>DYNAMIC</b></button>
+            <button id="camera-mode" type="button" title="Change camera"><span>VIEW</span><b>CHASE</b></button>
+          </div>
+        </aside>
+
+        <div class="celestial">
+          <span id="time-icon">☼</span>
+          <div><b id="cycle-time">05:43</b><small>CELESTIAL CYCLE · 05:00</small></div>
+          <i><em id="cycle-progress"></em></i>
+        </div>
+
+        <div class="controls-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>SAIL</span><kbd>V</kbd><span>VIEW</span><kbd>R</kbd><span>WEATHER</span></div>
+
+        <div class="touch-controls" aria-label="Touch sailing controls">
+          <button type="button" data-control="left" aria-label="Turn left">‹</button>
+          <button type="button" data-control="forward" aria-label="Sail forward">↑</button>
+          <button type="button" data-control="right" aria-label="Turn right">›</button>
+        </div>
+      </div>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"><span>BEACON LIT</span><b>Emberwatch answers the dawn</b></div>
+
+      <section id="pause-menu" class="pause-menu is-hidden" aria-labelledby="pause-title">
+        <p class="eyebrow">THE SEA IS WAITING</p>
+        <h2 id="pause-title">Voyage paused</h2>
+        <button id="resume" type="button">Return to the helm</button>
+        <p>Illustrated and Natural water share the same wave field and sailing physics.</p>
+      </section>
+
+      <section id="complete" class="complete is-hidden" aria-labelledby="complete-title">
+        <p class="eyebrow">ALL LIGHTS ANSWER</p>
+        <h2 id="complete-title">The sea remembers<br />your wake.</h2>
+        <p>Four beacons burn from first light into the aurora.</p>
+        <button id="sail-on" type="button">Sail on</button>
+      </section>
+
+      <div id="fallback" class="fallback is-hidden" role="alert">
+        <h2>WebGL is needed for this voyage.</h2>
+        <p>Try a current browser with hardware acceleration enabled.</p>
+      </div>
+    </main>
+  </body>
+</html>

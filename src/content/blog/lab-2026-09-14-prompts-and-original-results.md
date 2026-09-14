@@ -1,7 +1,7 @@
 ---
 title: 实验区怎么玩：先看场景，再拿原题自己试
 slug: lab-2026-09-14-prompts-and-original-results
-description: 九份同题结果并列保留，下载时区分在线构建、原始工程和离线文件。
+description: 从体素场景到航海和太空游戏，查看题目来源、模型条件与可下载的原始工程。
 date: 2026-09-14
 category: tutorials
 tags:
@@ -10,9 +10,17 @@ draft: false
 places: []
 ---
 
-[实验区](https://blog.blankhoney.xyz/lab/)里现在放着三道题的不同结果：中国古典建筑群、体素山与瀑布、黑洞。打开以后可以转视角，也可以拿走题目和文件，换个模型再做一次。我想把这两种用法放在一起，省得看完一个漂亮场景，却不知道当初究竟要求了什么。
+[实验区](https://blog.blankhoney.xyz/lab/)里的首批实验是三道题的不同结果：中国古典建筑群、体素山与瀑布、黑洞。打开以后可以转视角，也可以拿走题目和文件，换个模型再做一次。我想把这两种用法放在一起，省得看完一个漂亮场景，却不知道当初究竟要求了什么。
 
-题目来自无机酸-_- / Atmeplz 的 [0903 公开题包](https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip)。九份结果分三组并列保留：Sol / max、Astra / max、最早的 Astra / high。列表按这个顺序展示，旧版没有被新版替掉。每份详情分别记模型、思考强度和执行条件。
+题目来自无机酸-_- / Atmeplz 的 [0903 公开题包](https://github.com/Atmeplz/ai-test-prompt/blob/1abf1817a670a1568ca1a861dc46f395d8aeac81/assets/prompts/prompts-0903.zip)。九份结果分三组并列保留：Sol / max、Astra / max、最早的 Astra / high。这三组旧版都继续保留。每份详情分别记模型、思考强度和执行条件。
+
+## 新来的航海和太空游戏
+
+这次又加了两道游戏题，每道分别用 Astra / max 和 Sol / max 生成，共四份结果。Sunwake 可以看 [Astra 版](https://blog.blankhoney.xyz/lab/sunwake-astra-max/)和 [Sol 版](https://blog.blankhoney.xyz/lab/sunwake-sol-max/)；Void Explorer 也有 [Astra 版](https://blog.blankhoney.xyz/lab/void-explorer-astra-max/)和 [Sol 版](https://blog.blankhoney.xyz/lab/void-explorer-sol-max/)。原项目都来自 Thomas Ricouard 在 OpenAI 的展示：[Sunwake 的构建过程](https://developers.openai.com/showcase/sunwake)围绕海浪、船只和灯塔展开；[Void Explorer 的构建过程](https://developers.openai.com/showcase/void-explorer)则从飞船航行延伸到降落、步行和重新登船。
+
+官方页面把多轮工作整理成了可展开的步骤，也注明提示词经过编辑。这里保留这些公开文字和参考图链接，合并成一个独立任务重新生成，并在详情中另列执行说明。Void Explorer 多加了一句“背景不要那么暗”。重跑时，两部分都要看；只复制概念图那一步，会漏掉后面的游戏要求。
+
+同一道游戏题的两份输入相同，适合并排看实现的取舍。每个组合目前只有一次生成，操作是否完整、画面是否喜欢，还是要打开实际试。原来的九份结果仍在，详情页继续提供模型、强度、完整题面和工程下载。
 
 ## 从建筑群这道题开始
 

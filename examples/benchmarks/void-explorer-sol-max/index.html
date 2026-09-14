@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#102b50" />
+    <meta name="description" content="Void Explorer — a continuous procedural voyage from orbit to footfall." />
+    <title>VOID EXPLORER // AURORA</title>
+    <script type="module" crossorigin src="./assets/index-wlEQR6wm.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/three.core-BL7ap6q5.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-DiwEecHA.css">
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="viewport" aria-label="Void Explorer 3D viewport"></canvas>
+      <div class="space-wash" aria-hidden="true"></div>
+
+      <header class="topbar hud hidden-until-start">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+          <div><b>VOID EXPLORER</b><small>AURORA // EXP-01</small></div>
+        </div>
+        <button class="target-chip glass" id="target-chip" type="button" aria-label="Open star chart">
+          <span class="eyebrow">ACTIVE WAYPOINT</span>
+          <strong id="target-name">LUMA PRIME</strong>
+          <span id="target-distance">182.4 km</span>
+        </button>
+        <div class="system-readout glass">
+          <span class="status-dot"></span>
+          <div><b id="renderer-label">INITIALIZING</b><small id="system-name">HELIX-7 SYSTEM</small></div>
+        </div>
+      </header>
+
+      <aside class="journey-panel glass hud hidden-until-start" aria-label="Journey progress">
+        <div class="panel-kicker"><span>EXPEDITION 01</span><span id="journey-percent">14%</span></div>
+        <h2>Touch the unknown.</h2>
+        <p id="mission-copy">Descend through Luma Prime's atmosphere and find the river landing site.</p>
+        <ol class="journey-list" id="journey-list">
+          <li class="active" data-step="orbit"><i></i><div><b>Leave orbit</b><small>Fly below 95 km</small></div><span>01</span></li>
+          <li data-step="atmosphere"><i></i><div><b>Atmospheric entry</b><small>Hold a controlled descent</small></div><span>02</span></li>
+          <li data-step="land"><i></i><div><b>Land AURORA</b><small>Gear down below 4 km</small></div><span>03</span></li>
+          <li data-step="eva"><i></i><div><b>First footfall</b><small>Lower ramp and disembark</small></div><span>04</span></li>
+          <li data-step="return"><i></i><div><b>Return to orbit</b><small>Reboard and lift off</small></div><span>05</span></li>
+        </ol>
+        <button class="panel-action" id="autopilot-button" type="button"><span>P</span> DESCENT ASSIST</button>
+      </aside>
+
+      <aside class="telemetry-panel glass hud hidden-until-start" aria-label="Flight telemetry">
+        <div class="telemetry-head"><span>FLIGHT TELEMETRY</span><button id="help-button" type="button" aria-label="Toggle controls">?</button></div>
+        <div class="telemetry-grid">
+          <div><span>VELOCITY</span><b><em id="speed-value">0.42</em> km/s</b></div>
+          <div><span>ALTITUDE</span><b><em id="altitude-value">182.4</em> km</b></div>
+          <div><span>HEADING</span><b id="heading-value">000° N</b></div>
+          <div><span>FLIGHT MODE</span><b id="mode-value" class="cyan">ORBITAL</b></div>
+        </div>
+        <div class="telemetry-bars">
+          <label><span>THRUST</span><span id="thrust-label">34%</span></label><div><i id="thrust-bar"></i></div>
+          <label><span>BOOST CELL</span><span id="boost-label">100%</span></label><div class="pink"><i id="boost-bar"></i></div>
+        </div>
+        <div class="radar" aria-hidden="true"><i class="sweep"></i><i class="blip one"></i><i class="blip two"></i><span>AURORA</span></div>
+      </aside>
+
+      <div class="reticle hud hidden-until-start" aria-hidden="true"><i></i><i></i><span></span></div>
+      <button class="world-marker hidden-until-start" id="world-marker" type="button" aria-label="Target landing site">
+        <i></i><span id="marker-name">RIVER DELTA</span><small id="marker-distance">42.8 km</small>
+      </button>
+      <div class="horizon-ladder hud hidden-until-start" aria-hidden="true"><span>−10</span><i></i><b></b><i></i><span>+10</span></div>
+
+      <div class="action-dock glass hud hidden-until-start" role="toolbar" aria-label="Ship controls">
+        <button id="chart-button" type="button"><kbd>M</kbd><span>STAR CHART</span></button>
+        <button id="target-button" type="button"><kbd>T</kbd><span>NEXT TARGET</span></button>
+        <button id="jump-button" type="button" class="primary"><kbd>J</kbd><span>PULSE JUMP</span></button>
+        <button id="gear-button" type="button"><kbd>G</kbd><span>GEAR</span></button>
+        <button id="ramp-button" type="button"><kbd>R</kbd><span>RAMP</span></button>
+        <button id="eva-button" type="button"><kbd>F</kbd><span>DISEMBARK</span></button>
+      </div>
+
+      <div class="controls-card glass hud hidden-until-start" id="controls-card">
+        <div><span>STEER</span><kbd>WASD</kbd></div><div><span>ASCEND / DESCEND</span><kbd>SPACE / C</kbd></div>
+        <div><span>ROLL</span><kbd>Q / E</kbd></div><div><span>BOOST / BRAKE</span><kbd>SHIFT / X</kbd></div>
+        <div><span>DESCENT ASSIST</span><kbd>P</kbd></div><div><span>CAMERA</span><kbd>V</kbd></div>
+      </div>
+
+      <section class="chart-overlay" id="chart-overlay" aria-label="Star chart" aria-hidden="true">
+        <div class="chart-backdrop"></div>
+        <div class="chart-shell glass">
+          <header>
+            <div><span class="eyebrow">AURORA NAVIGATION ARRAY</span><h2>KNOWN UNIVERSE</h2></div>
+            <button id="chart-close" type="button" aria-label="Close star chart">×</button>
+          </header>
+          <div class="chart-body">
+            <div class="chart-map" id="chart-map">
+              <svg viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M 80 410 Q 260 280 410 350 T 690 205 T 930 120" />
+                <path d="M 80 410 Q 305 510 510 455 T 865 505" />
+                <path d="M 410 350 Q 510 205 635 110" />
+              </svg>
+              <div class="chart-orbits" aria-hidden="true"><i></i><i></i><i></i></div>
+            </div>
+            <aside class="chart-detail">
+              <span class="eyebrow">SELECTED DESTINATION</span>
+              <div class="planet-preview" id="planet-preview"><i></i><b></b></div>
+              <h3 id="chart-destination">LUMA PRIME</h3>
+              <p id="chart-description">An ocean world cut by luminous river deltas and lavender highlands.</p>
+              <dl><div><dt>DISTANCE</dt><dd id="chart-distance">LOCAL ORBIT</dd></div><div><dt>CLASS</dt><dd id="chart-class">PELAGIC</dd></div><div><dt>ATMOSPHERE</dt><dd id="chart-atmosphere">BREATHABLE</dd></div></dl>
+              <button id="plot-course" class="plot-course" type="button">SET AS WAYPOINT <span>→</span></button>
+            </aside>
+          </div>
+          <footer><span><i></i> CLICK ANY CHARTED STAR TO EXPLORE</span><span>ALL DISPLAYED STARS ARE REACHABLE</span></footer>
+        </div>
+      </section>
+
+      <section class="intro" id="intro">
+        <div class="intro-grid" aria-hidden="true"></div>
+        <div class="intro-planet" aria-hidden="true"><i></i></div>
+        <div class="intro-copy">
+          <div class="intro-kicker"><span></span>AURORA FLIGHT SYSTEM // ONLINE</div>
+          <h1>VOID<br /><em>EXPLORER</em></h1>
+          <p>Every light is a place. Leave orbit, cross the atmosphere, touch down beside an alien river—and walk out beneath a new sky.</p>
+          <button id="launch-button" type="button"><span>BEGIN EXPEDITION</span><i>→</i></button>
+          <div class="intro-meta"><span>PROCEDURAL UNIVERSE</span><span>SEAMLESS PLANETFALL</span><span>WEBGPU / WEBGL</span></div>
+        </div>
+        <div class="intro-ship" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="intro-index">EXPEDITION<br /><b>01</b></div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"><i></i><div><span id="toast-title">NAVIGATION</span><b id="toast-message">Waypoint synchronized</b></div></div>
+      <div class="jump-overlay" id="jump-overlay" aria-hidden="true"><i></i><div><span>PULSE DRIVE</span><b id="jump-countdown">CHARGING</b><small id="jump-destination">VESPER REACH</small></div></div>
+      <div class="scanlines" aria-hidden="true"></div>
+    </div>
+  </body>
+</html>
