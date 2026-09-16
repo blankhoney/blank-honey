@@ -10,15 +10,17 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
 ---
 
 <div id="shell" transition:persist data-pagefind-ignore>
-  <button
-    id="nav-dot"
-    aria-label="打开导航与搜索"
-    aria-controls="navigation shell-search"
-    aria-expanded="false"
-  >
-    <span></span>
+  <button id="nav-dot" aria-label="打开导航" aria-controls="navigation" aria-expanded="false">
+    <span class="black-hole-core"></span>
+    <i class="accretion-disc" aria-hidden="true"></i>
+  </button>
+  <button id="open-search" aria-label="搜索文章" aria-controls="shell-search" aria-expanded="false">
+    搜索 ⌕
   </button>
   <section id="shell-search" aria-label="搜索文章" inert>
+    <button id="close-search" aria-label="收起搜索">
+      收起 ×
+    </button>
     <label class="search-label" for="search">
       搜索文章 <span>SEARCH</span>
     </label>

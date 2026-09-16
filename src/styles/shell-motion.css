@@ -13,14 +13,14 @@ html[data-navigation='open'] #main {
 #shell #navigation {
   width: var(--navigation-width);
   padding-inline: 24px;
+  padding-top: 82px;
   transform: none;
   transition: none;
   visibility: hidden;
   background: transparent;
   border: 0;
 }
-#shell.shell-active #navigation,
-#shell.shell-active #shell-search {
+#shell.shell-active #navigation {
   visibility: visible;
 }
 #shell #navigation::before {
@@ -62,7 +62,6 @@ html[data-navigation='open'] #main {
 #shell.shell-moving #navigation {
   overflow: visible;
 }
-#shell.shell-moving #shell-search,
 #shell.shell-moving #navigation .nav-top,
 #shell.shell-moving #navigation nav a,
 #shell.shell-moving #navigation .settings,
@@ -89,7 +88,7 @@ html[data-navigation='open'] #main {
     max-height: 36svh;
   }
   #shell #navigation {
-    top: calc(var(--shell-search-height, 150px) + 92px);
+    top: 82px;
     width: var(--navigation-width);
     padding: 20px 14px 32px;
   }
@@ -283,4 +282,101 @@ html[data-navigation='open'] #main {
     color: var(--muted);
     opacity: 0.55;
   }
+}
+
+/* Independent search: hidden panels never intercept reading or keyboard input. */
+#shell #shell-search {
+  opacity: 0;
+  transform: translate(50px, -35px) rotate(-4deg);
+  transition:
+    opacity 280ms ease,
+    transform 380ms ease,
+    visibility 380ms;
+}
+#shell #shell-search.search-open {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+#open-search {
+  position: fixed;
+  top: 28px;
+  right: 88px;
+  z-index: 102;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--fg);
+}
+[data-family='hero'] #open-search {
+  display: none;
+}
+#close-search {
+  float: right;
+  margin-left: 16px;
+}
+#shell #nav-dot .black-hole-core {
+  position: relative;
+  background: #111;
+  border: 1px solid transparent;
+  border-top-color: color-mix(in srgb, var(--fg) 65%, transparent);
+}
+#shell #nav-dot .accretion-disc {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 35px;
+  height: 35px;
+  margin: -17.5px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+  border-top-color: var(--fg);
+  transform: rotate(-25deg) rotateX(65deg);
+  transition:
+    scale 450ms ease,
+    opacity 250ms ease;
+  pointer-events: none;
+}
+#shell #nav-dot[aria-expanded='true'] .black-hole-core {
+  animation: hole-spin 12s linear infinite;
+}
+#shell #nav-dot[aria-expanded='true'] .accretion-disc {
+  animation: disc-orbit 9s linear infinite;
+}
+#shell #nav-dot:hover .accretion-disc {
+  opacity: 0.8;
+}
+#shell.shell-moving #nav-dot .accretion-disc {
+  scale: 0.8;
+}
+@keyframes hole-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes disc-orbit {
+  from {
+    transform: rotate(-25deg) rotateX(65deg) rotate(0deg);
+  }
+  to {
+    transform: rotate(-25deg) rotateX(65deg) rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #shell #shell-search {
+    transition: none;
+  }
+  #shell #nav-dot[aria-expanded] .black-hole-core,
+  #shell #nav-dot[aria-expanded] .accretion-disc {
+    animation: none;
+    transition: none;
+  }
+}
+[data-motion='reduced-motion'] #shell #shell-search {
+  transition: none;
+}
+[data-motion='reduced-motion'] #shell #nav-dot[aria-expanded] .black-hole-core,
+[data-motion='reduced-motion'] #shell #nav-dot[aria-expanded] .accretion-disc {
+  animation: none;
+  transition: none;
 }
