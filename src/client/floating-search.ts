@@ -1,16 +1,19 @@
-/** Search belongs to the persistent shell, independently of the reading navigation. */
+import { searchCloseDelay, searchTiming, searchTriggerHeight } from './search-policy';
+
+/** Independent search lifecycle for the persistent shell. */
 export function initFloatingSearch() {
   const panel = document.querySelector<HTMLElement>('#shell-search')!;
   const trigger = document.querySelector<HTMLButtonElement>('#open-search')!;
   const input = panel.querySelector<HTMLInputElement>('#search')!;
   const hoverPointer = matchMedia('(hover: hover) and (pointer: fine)');
   let visible = false;
-  let pointerInRegion = false;
+  let pointerInEdge = false;
+  let pointerInPanel = false;
   let suppressedUntilExit = false;
   let composing = false;
   let lastActivity = Date.now();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const retentionMs = 60_000;
+  let openTimer: ReturnType<typeof setTimeout> | undefined;
+  let closeTimer: ReturnType<typeof setTimeout> | undefined;
 
   function hasCriteria() {
     return Boolean(
@@ -18,27 +21,28 @@ export function initFloatingSearch() {
     );
   }
 
-  function interacting() {
-    return composing || panel.contains(document.activeElement) || panel.matches(':hover');
+  function protectedInteraction() {
+    return pointerInEdge || pointerInPanel || composing || panel.contains(document.activeElement);
   }
 
-  function schedule() {
-    clearTimeout(timer);
+  function scheduleClose() {
+    clearTimeout(closeTimer);
     if (!visible) return;
-    if (!hasCriteria() && !pointerInRegion && !interacting()) {
-      timer = setTimeout(close, 300);
-    } else {
-      timer = setTimeout(
-        () => {
-          if (interacting()) return; // Focus/pointer exit schedules the next check.
-          close();
-        },
-        Math.max(0, retentionMs - (Date.now() - lastActivity)),
-      );
+    const delay = searchCloseDelay({
+      protected: protectedInteraction(),
+      hasCriteria: hasCriteria(),
+      elapsed: Date.now() - lastActivity,
+    });
+    if (delay !== null) {
+      closeTimer = setTimeout(() => {
+        // A focus or pointer event may have arrived while the timer was queued.
+        if (!protectedInteraction()) close();
+      }, delay);
     }
   }
 
   function open(focus = false) {
+    clearTimeout(openTimer);
     if (document.documentElement.dataset.family === 'hero') return;
     if (!visible) lastActivity = Date.now();
     visible = true;
@@ -46,54 +50,70 @@ export function initFloatingSearch() {
     panel.classList.add('search-open');
     trigger.setAttribute('aria-expanded', 'true');
     if (focus) input.focus({ preventScroll: true });
-    schedule();
+    scheduleClose();
   }
 
   function close() {
-    clearTimeout(timer);
-    if (panel.contains(document.activeElement)) trigger.focus({ preventScroll: true });
+    clearTimeout(openTimer);
+    clearTimeout(closeTimer);
     visible = false;
-    suppressedUntilExit = pointerInRegion;
+    // Even closing by keyboard must not immediately reopen under the mouse.
+    suppressedUntilExit = true;
     panel.classList.remove('search-open');
     panel.inert = true;
     trigger.setAttribute('aria-expanded', 'false');
+    if (panel.contains(document.activeElement)) trigger.focus({ preventScroll: true });
   }
 
   function updatePointer(event: PointerEvent) {
     if (!hoverPointer.matches || event.pointerType !== 'mouse') return;
     const target = event.target;
-    const inside =
-      event.clientY <= window.innerHeight / 5 || (target instanceof Node && panel.contains(target));
-    const entered = inside && !pointerInRegion;
-    pointerInRegion = inside;
-    if (!inside) suppressedUntilExit = false;
-    if (entered && !suppressedUntilExit) open();
-    schedule();
+    const inPanel = visible && target instanceof Node && panel.contains(target);
+    const inControl =
+      target instanceof Element && Boolean(target.closest('#nav-dot, #open-search, #navigation'));
+    const inEdge =
+      event.clientY >= 0 && event.clientY <= searchTriggerHeight(innerHeight) && !inControl;
+    const enteredEdge = inEdge && !pointerInEdge;
+    const regionChanged = inEdge !== pointerInEdge || inPanel !== pointerInPanel;
+    pointerInEdge = inEdge;
+    pointerInPanel = inPanel;
+    if (!inEdge) clearTimeout(openTimer);
+    if (!inEdge && !inPanel) suppressedUntilExit = false;
+    if (enteredEdge && !visible && !suppressedUntilExit) {
+      openTimer = setTimeout(() => {
+        if (pointerInEdge && !suppressedUntilExit) open();
+      }, searchTiming.enter);
+    }
+    // Ordinary movement outside must not keep postponing the leave deadline.
+    if (regionChanged) scheduleClose();
   }
 
   document.addEventListener('pointermove', updatePointer);
   document.documentElement.addEventListener('pointerleave', () => {
-    pointerInRegion = false;
+    clearTimeout(openTimer);
+    pointerInEdge = false;
+    pointerInPanel = false;
     suppressedUntilExit = false;
-    schedule();
+    scheduleClose();
   });
   trigger.addEventListener('click', () => open(true));
   panel.querySelector('#close-search')!.addEventListener('click', close);
   for (const eventName of ['input', 'change', 'keydown', 'pointerdown']) {
     panel.addEventListener(eventName, () => {
       lastActivity = Date.now();
-      schedule();
+      scheduleClose();
     });
   }
+  panel.addEventListener('focusin', scheduleClose);
+  panel.addEventListener('focusout', () => queueMicrotask(scheduleClose));
   panel.addEventListener('compositionstart', () => {
     composing = true;
+    scheduleClose();
   });
   panel.addEventListener('compositionend', () => {
     composing = false;
     lastActivity = Date.now();
-    schedule();
+    scheduleClose();
   });
-  panel.addEventListener('focusout', () => queueMicrotask(schedule));
-  panel.addEventListener('pointerleave', schedule);
   return { open, close, isOpen: () => visible };
 }
