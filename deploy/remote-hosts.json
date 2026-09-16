@@ -9,7 +9,7 @@
     }
   },
   {
-    "targets": ["12.19.136.115:19100"],
+    "targets": ["205.186.67.177:19101"],
     "labels": {
       "publicId": "west-us",
       "displayName": "美国西部服务器",
@@ -18,7 +18,7 @@
     }
   },
   {
-    "targets": ["43.156.102.76:19100"],
+    "targets": ["tencent.blankhoney.xyz:8443"],
     "labels": {
       "publicId": "tencent",
       "displayName": "腾讯云服务器",

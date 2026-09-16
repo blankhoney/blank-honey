@@ -17,7 +17,7 @@ export async function mountProbe(signal: AbortSignal) {
       'p',
       failed || last.some((h) => h.stale)
         ? '部分采样已过期，保留最后一次状态。'
-        : '每 10 秒采样 · 占用 ≥75% 提醒，≥90% 高占用 · LOAD 为原始负载',
+        : '每 10 秒刷新 · 占用 ≥75% 提醒，≥90% 高占用 · LOAD 为原始负载',
       'probe-note',
     );
     note.setAttribute('role', 'status');
