@@ -26,6 +26,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/check-workflows.mjs
+      - name: Validate remote probe collector configuration
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL \
+            -v "$PWD/deploy/otel.yaml:/etc/otel.yaml:ro" \
+            -v "$PWD/deploy/remote-probes.yaml:/etc/remote-probes.yaml:ro" \
+            -v "$PWD/deploy/remote-hosts.json:/etc/remote-hosts.json:ro" \
+            -v "$PWD/deploy/probe-certificates.pem:/etc/probe-certificates.pem:ro" \
+            otel/opentelemetry-collector-contrib:0.160.0 validate \
+            --config=/etc/otel.yaml --config=/etc/remote-probes.yaml
       - run: npm run check
       - run: npm test
       - run: npm run build

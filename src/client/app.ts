@@ -1,3 +1,4 @@
+import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
 import { initNavigation } from './navigation';
 import { initFloatingSearch } from './floating-search';
 import { applyPreferences, commentTheme, store } from './preferences';
@@ -11,13 +12,13 @@ const navigation = initNavigation();
 const floatingSearch = initFloatingSearch();
 let previousFamily: string | undefined;
 document.addEventListener('astro:before-preparation', () => {
-  navigation.setOpen(false, false, true);
   floatingSearch.close();
 });
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   const pickerOpen =
-    CSS.supports('appearance', 'base-select') && shell.querySelector('select:open');
+    CSS.supports('appearance', 'base-select') &&
+    document.querySelector(':is(#shell, #main) select:open');
   if (pickerOpen) return;
   if (floatingSearch.isOpen()) floatingSearch.close();
   else navigation.setOpen(false);
@@ -50,7 +51,12 @@ setInterval(applyPreferences, 60000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) applyPreferences();
 });
-document.addEventListener('astro:before-swap', () => pageController?.abort());
+document.addEventListener('astro:before-swap', (event: TransitionBeforeSwapEvent) => {
+  pageController?.abort();
+  // The persistent sidebar and the replacement document must share layout state.
+  event.newDocument.documentElement.dataset.navigation =
+    document.documentElement.dataset.navigation;
+});
 async function mount() {
   pageController?.abort();
   const controller = (pageController = new AbortController());
@@ -64,7 +70,7 @@ async function mount() {
     else a.removeAttribute('aria-current');
   });
   const family = document.documentElement.dataset.family;
-  if (family === 'hero') navigation.setOpen(false, false, true);
+  if (family === 'hero') navigation.setOpen(false, false);
   else if (
     (previousFamily === 'hero' || previousFamily === undefined) &&
     /^\/(articles|blog|category)\//.test(location.pathname)

@@ -11,20 +11,39 @@ services:
   worker:
     mem_limit: 128m
     image: ${WORKER_IMAGE:?Set a release image tag}
+    environment:
+      REMOTE_HOSTS_FILE: /app/deploy/remote-hosts.json
     volumes:
       - ${STATE_DIR:?Set private deployment state}/hosts.json:/app/deploy/hosts.json:ro
+      - ./deploy/remote-hosts.json:/app/deploy/remote-hosts.json:ro
       - ${STATE_DIR}/logs:/logs
   otel:
     mem_limit: 192m
+    command: ['--config=/etc/otel.yaml', '--config=/etc/remote-probes.yaml']
+    networks: [metrics, probe-egress]
     volumes:
       - ${STATE_DIR}/otel.yaml:/etc/otel.yaml:ro
+      - ./deploy/remote-probes.yaml:/etc/remote-probes.yaml:ro
+      - ./deploy/remote-hosts.json:/etc/remote-hosts.json:ro
+      - ./deploy/probe-certificates.pem:/etc/probe-certificates.pem:ro
   prometheus:
     mem_limit: 256m
   node-exporter:
     mem_limit: 64m
-    command: ['--path.rootfs=/host', '--collector.disable-defaults', '--collector.cpu', '--collector.meminfo', '--collector.filesystem', '--collector.loadavg', '--collector.time']
+    command:
+      [
+        '--path.rootfs=/host',
+        '--collector.disable-defaults',
+        '--collector.cpu',
+        '--collector.meminfo',
+        '--collector.filesystem',
+        '--collector.loadavg',
+        '--collector.time',
+      ]
     volumes: ['/:/host:ro,rslave']
 networks:
+  # Only the collector needs outbound HTTPS. Metrics storage remains internal.
+  probe-egress: {}
   production-edge:
     external: true
     name: ${EDGE_NETWORK:?Set the existing proxy network}

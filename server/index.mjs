@@ -1,8 +1,22 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { createProbe } from './probe.mjs';
+import { createProbe, validateHosts } from './probe.mjs';
 import { createLog, validateError } from './log.mjs';
+
+/** Share the remote inventory with Prometheus file discovery; keep local deployment state intact. */
+export async function loadProbeHosts(hostsFile, remoteHostsFile) {
+  const hosts = JSON.parse(await readFile(hostsFile, 'utf8'));
+  if (!remoteHostsFile) return validateHosts(hosts);
+  const groups = JSON.parse(await readFile(remoteHostsFile, 'utf8'));
+  if (!Array.isArray(groups)) throw new Error('Invalid remote host list');
+  const remoteHosts = groups.map((group) => {
+    if (!Array.isArray(group.targets) || group.targets.length !== 1)
+      throw new Error('Each remote host needs exactly one scrape target');
+    return { ...group.labels, instance: group.targets[0] };
+  });
+  return validateHosts([...hosts, ...remoteHosts]);
+}
 
 export function createApp({ probe, writeLog, allowedOrigin, now = Date.now }) {
   let windowStart = 0,
@@ -74,7 +88,10 @@ export function createApp({ probe, writeLog, allowedOrigin, now = Date.now }) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const hosts = JSON.parse(await readFile(process.env.HOSTS_FILE || 'deploy/hosts.json', 'utf8'));
+  const hosts = await loadProbeHosts(
+    process.env.HOSTS_FILE || 'deploy/hosts.json',
+    process.env.REMOTE_HOSTS_FILE,
+  );
   const server = createApp({
     probe: createProbe({
       hosts,

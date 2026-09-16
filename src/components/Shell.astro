@@ -14,9 +14,12 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
     <span class="black-hole-core"></span>
     <i class="accretion-disc" aria-hidden="true"></i>
   </button>
-  <button id="open-search" aria-label="搜索文章" aria-controls="shell-search" aria-expanded="false">
-    搜索 ⌕
-  </button>
+  <button
+    id="search-edge"
+    aria-label="展开搜索，快捷键斜杠"
+    aria-controls="shell-search"
+    aria-expanded="false"
+  ></button>
   <section id="shell-search" aria-label="搜索文章" inert>
     <button id="close-search" aria-label="收起搜索">
       收起 ×

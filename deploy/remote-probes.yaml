@@ -1,0 +1,19 @@
+# Merged with the existing private collector config, preserving the local receiver.
+receivers:
+  prometheus/remote:
+    config:
+      scrape_configs:
+        - job_name: node
+          scrape_interval: 5s
+          scrape_timeout: 4s
+          scheme: https
+          tls_config:
+            ca_file: /etc/probe-certificates.pem
+            min_version: TLS12
+          file_sd_configs:
+            - files: ['/etc/remote-hosts.json']
+              refresh_interval: 30s
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus, prometheus/remote]

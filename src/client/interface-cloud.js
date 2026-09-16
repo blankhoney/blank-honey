@@ -2,17 +2,6 @@ import Phenomenon from 'phenomenon';
 import { capability } from './preferences';
 import { vertexShader, fragmentShader } from './interface-cloud-shaders';
 
-/** Bounded scroll inertia; native content and point ink converge exactly at rest.
- * @param {number} current
- * @param {number} target
- * @param {number} elapsed
- */
-export function followScroll(current, target, elapsed) {
-  const distance = Math.max(-32, Math.min(32, current - target));
-  const position = target + distance * Math.exp(-Math.max(0, elapsed) / 65);
-  return Math.abs(position - target) < 0.025 ? target : position;
-}
-
 /**
  * Live DOM point surface from the user-provided acceptance HTML (BHInterfaceCloud).
  * Phenomenon owns the WebGL buffers; native text remains accessible beneath the ink.
@@ -150,7 +139,6 @@ export const interfaceCloud = (() => {
       groupIndex = -1,
       groupKind = 0,
       groupRect = null;
-    let renderedScroll = scrollY;
     let boxes = new Float32Array(64 * 4),
       flow = 0,
       clock = 0,
@@ -497,7 +485,7 @@ export const interfaceCloud = (() => {
           uLight: { type: 'float', value: light ? 1 : 0 },
           uProgress: { type: 'float', value: progress },
           uPixelRatio: { type: 'float', value: renderer.devicePixelRatio },
-          uScroll: { type: 'float', value: renderedScroll },
+          uScroll: { type: 'float', value: scrollY },
           uViewport: { type: 'vec2', value: [width, height] },
           uPointer: { type: 'vec2', value: pointer },
           uBarsA: { type: 'vec4', value: values.slice(0, 4) },
@@ -541,7 +529,7 @@ export const interfaceCloud = (() => {
       if (dead || !instance || renderer.gl.isContextLost()) return;
       const u = instance.uniforms;
       u.uProgress.value = progress;
-      u.uScroll.value = renderedScroll;
+      u.uScroll.value = scrollY;
       u.uViewport.value = [canvas.clientWidth, canvas.clientHeight];
       u.uPointer.value = pointer;
       u.uBoxes.value = boxes;
@@ -566,8 +554,6 @@ export const interfaceCloud = (() => {
       previous = now;
       lastRender = now;
       clock += dt / 1000;
-      // A bounded 65 ms catch-up gives scrolling slight inertia, then exact alignment.
-      renderedScroll = followScroll(renderedScroll, scrollY, dt);
       if (!settled) {
         if (!started) started = now;
         progress = clamp((now - started) / duration, 0, 1);
@@ -645,7 +631,7 @@ export const interfaceCloud = (() => {
         if (item.tint[3] < 0.01 || (bar >= 0 && fraction > values[bar])) continue;
         const z0 = item.xyz[2];
         let x = box[0] + lx * (relative > 0.5 ? box[2] : 1),
-          y = box[1] + ly * (relative > 0.5 ? box[3] : 1) - renderedScroll,
+          y = box[1] + ly * (relative > 0.5 ? box[3] : 1) - scrollY,
           z = z0;
         x = (x - width * 0.5) * (1 - z / focal) + width * 0.5;
         y = (y - height * 0.5) * (1 - z / focal) + height * 0.5;
@@ -777,6 +763,7 @@ export const interfaceCloud = (() => {
         window,
         'scroll',
         () => {
+          lastRender = 0; // Scroll must render at the next frame, without the ambient frame cap.
           wake();
         },
         { passive: true },

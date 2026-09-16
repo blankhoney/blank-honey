@@ -64,6 +64,10 @@ export function initSearch(open: () => void) {
         if (url.origin !== location.origin || !url.pathname.startsWith('/blog/')) continue;
         const a = document.createElement('a');
         a.href = url.href;
+        a.style.setProperty(
+          '--arrival-delay',
+          `${Math.min(output.childElementCount - 1, 5) * 25}ms`,
+        );
         const h = document.createElement('h3');
         h.textContent = result.meta.title || '文章';
         const p = document.createElement('p');

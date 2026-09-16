@@ -216,8 +216,8 @@ html[data-navigation='open'] #main {
   font: 13px/1.5 var(--reader);
   cursor: pointer;
 }
-#shell select:hover,
-#shell select:focus-visible {
+:is(#shell, #main) select:hover,
+:is(#shell, #main) select:focus-visible {
   border-color: var(--accent);
 }
 #shell #search-filters label {
@@ -226,22 +226,22 @@ html[data-navigation='open'] #main {
   font-size: 12px;
 }
 @supports (appearance: base-select) {
-  #shell select,
-  #shell select::picker(select) {
+  :is(#shell, #main) select,
+  :is(#shell, #main) select::picker(select) {
     appearance: base-select;
   }
   #shell #search-filters select {
     display: flex;
   }
-  #shell select::picker-icon {
+  :is(#shell, #main) select::picker-icon {
     margin-left: auto;
     padding-left: 12px;
     color: var(--accent);
   }
-  #shell select:open {
+  :is(#shell, #main) select:open {
     border-color: var(--accent);
   }
-  #shell select::picker(select) {
+  :is(#shell, #main) select::picker(select) {
     min-width: max(anchor-size(width), 220px);
     max-width: calc(100vw - 32px);
     max-height: min(340px, 50svh);
@@ -256,29 +256,29 @@ html[data-navigation='open'] #main {
     scrollbar-color: var(--line) var(--bg);
     overscroll-behavior: contain;
   }
-  #shell select option {
+  :is(#shell, #main) select option {
     min-height: 42px;
     padding: 9px 12px;
     gap: 12px;
     border-radius: 2px;
     white-space: normal;
   }
-  #shell select option:checked {
+  :is(#shell, #main) select option:checked {
     background: var(--soft);
     color: var(--accent);
   }
-  #shell select option:hover,
-  #shell select option:focus {
+  :is(#shell, #main) select option:hover,
+  :is(#shell, #main) select option:focus {
     background: color-mix(in srgb, var(--accent) 13%, var(--bg));
   }
-  #shell select option:focus-visible {
+  :is(#shell, #main) select option:focus-visible {
     outline: 1px solid var(--accent);
     outline-offset: -2px;
   }
-  #shell select option::checkmark {
+  :is(#shell, #main) select option::checkmark {
     color: var(--accent);
   }
-  #shell select option:disabled {
+  :is(#shell, #main) select option:disabled {
     color: var(--muted);
     opacity: 0.55;
   }
@@ -289,26 +289,31 @@ html[data-navigation='open'] #main {
   opacity: 0;
   transform: translate(50px, -35px) rotate(-4deg);
   transition:
-    opacity 280ms ease,
-    transform 380ms ease,
-    visibility 380ms;
+    opacity 550ms ease,
+    transform 550ms cubic-bezier(0.22, 0.7, 0.24, 1),
+    visibility 550ms;
 }
 #shell #shell-search.search-open {
   visibility: visible;
   opacity: 1;
   transform: none;
+  transition-duration: 650ms;
 }
-#open-search {
+#search-edge {
   position: fixed;
-  top: 28px;
-  right: 88px;
-  z-index: 102;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  color: var(--fg);
+  inset: 0 80px auto 0;
+  height: 16px;
+  z-index: 100;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
 }
-[data-family='hero'] #open-search {
+#search-edge:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -4px;
+}
+[data-family='hero'] #search-edge {
   display: none;
 }
 #close-search {
@@ -379,4 +384,82 @@ html[data-navigation='open'] #main {
 [data-motion='reduced-motion'] #shell #nav-dot[aria-expanded] .accretion-disc {
   animation: none;
   transition: none;
+}
+
+/* Native picker transitions retain keyboard semantics and top-layer behavior. */
+:root {
+  --list-duration: 280ms;
+}
+@supports (appearance: base-select) {
+  :is(#shell, #main) select::picker(select) {
+    opacity: 0;
+    transform: translateY(-7px);
+    transition:
+      opacity var(--list-duration) ease,
+      transform var(--list-duration) ease,
+      display var(--list-duration) allow-discrete,
+      overlay var(--list-duration) allow-discrete;
+  }
+  :is(#shell, #main) select:open::picker(select) {
+    opacity: 1;
+    transform: none;
+  }
+  @starting-style {
+    :is(#shell, #main) select:open::picker(select) {
+      opacity: 0;
+      transform: translateY(-7px);
+    }
+  }
+}
+#search-filters:not([hidden]),
+#search-results > *,
+.graph-relations > p:not([hidden]) {
+  animation: list-arrive var(--list-duration) ease both;
+}
+#search-results > a {
+  animation-delay: var(--arrival-delay, 0ms);
+}
+@keyframes list-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@supports selector(details::details-content) {
+  details::details-content {
+    opacity: 0;
+    transition:
+      opacity var(--list-duration) ease,
+      content-visibility var(--list-duration) allow-discrete;
+  }
+  details[open]::details-content {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --list-duration: 0ms;
+  }
+}
+[data-motion='reduced-motion'] {
+  --list-duration: 0ms;
+}
+[data-motion='reduced-motion'] #search-results > a {
+  animation-delay: 0ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  #search-results > a {
+    animation-delay: 0ms;
+  }
+}
+
+/* Hover detection is global: the transparent keyboard entry must not intercept links. */
+@media (hover: hover) and (pointer: fine) {
+  #search-edge {
+    pointer-events: none;
+  }
 }

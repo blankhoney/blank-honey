@@ -3,7 +3,7 @@ import { searchCloseDelay, searchTiming, searchTriggerHeight } from './search-po
 /** Independent search lifecycle for the persistent shell. */
 export function initFloatingSearch() {
   const panel = document.querySelector<HTMLElement>('#shell-search')!;
-  const trigger = document.querySelector<HTMLButtonElement>('#open-search')!;
+  const trigger = document.querySelector<HTMLButtonElement>('#search-edge')!;
   const input = panel.querySelector<HTMLInputElement>('#search')!;
   const hoverPointer = matchMedia('(hover: hover) and (pointer: fine)');
   let visible = false;
@@ -54,6 +54,7 @@ export function initFloatingSearch() {
   }
 
   function close() {
+    const restoreFocus = panel.contains(document.activeElement);
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
     visible = false;
@@ -62,15 +63,14 @@ export function initFloatingSearch() {
     panel.classList.remove('search-open');
     panel.inert = true;
     trigger.setAttribute('aria-expanded', 'false');
-    if (panel.contains(document.activeElement)) trigger.focus({ preventScroll: true });
+    if (restoreFocus) trigger.focus({ preventScroll: true });
   }
 
   function updatePointer(event: PointerEvent) {
     if (!hoverPointer.matches || event.pointerType !== 'mouse') return;
     const target = event.target;
     const inPanel = visible && target instanceof Node && panel.contains(target);
-    const inControl =
-      target instanceof Element && Boolean(target.closest('#nav-dot, #open-search, #navigation'));
+    const inControl = target instanceof Element && Boolean(target.closest('#nav-dot, #navigation'));
     const inEdge =
       event.clientY >= 0 && event.clientY <= searchTriggerHeight(innerHeight) && !inControl;
     const enteredEdge = inEdge && !pointerInEdge;
@@ -97,6 +97,23 @@ export function initFloatingSearch() {
     scheduleClose();
   });
   trigger.addEventListener('click', () => open(true));
+  document.addEventListener('keydown', (event) => {
+    const target = event.target;
+    const editing =
+      target instanceof HTMLElement &&
+      (target.isContentEditable || Boolean(target.closest('input, textarea, select')));
+    if (
+      event.key === '/' &&
+      !event.metaKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !editing &&
+      document.documentElement.dataset.family !== 'hero'
+    ) {
+      event.preventDefault();
+      open(true);
+    }
+  });
   panel.querySelector('#close-search')!.addEventListener('click', close);
   for (const eventName of ['input', 'change', 'keydown', 'pointerdown']) {
     panel.addEventListener(eventName, () => {

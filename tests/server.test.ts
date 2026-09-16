@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createProbe, validateHosts } from '../server/probe.mjs';
-import { createApp } from '../server/index.mjs';
+import { createApp, loadProbeHosts } from '../server/index.mjs';
 import { createLog } from '../server/log.mjs';
 
 const hosts = [
@@ -16,6 +16,68 @@ const hosts = [
     instance: 'secret-host:9100',
   },
 ];
+test('remote inventory extends local hosts and rejects ambiguous or duplicate identities', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'blank-honey-hosts-'));
+  const localFile = join(directory, 'local.json');
+  const remoteFile = join(directory, 'remote.json');
+  const labels = {
+    publicId: 'remote',
+    displayName: 'Remote',
+    regionLabel: 'Test',
+    timeZone: 'UTC',
+  };
+  try {
+    await writeFile(localFile, JSON.stringify(hosts));
+    await writeFile(remoteFile, JSON.stringify([{ targets: ['remote:19100'], labels }]));
+    assert.deepEqual(await loadProbeHosts(localFile), hosts);
+    assert.deepEqual(await loadProbeHosts(localFile, remoteFile), [
+      ...hosts,
+      { ...labels, instance: 'remote:19100' },
+    ]);
+    await writeFile(remoteFile, JSON.stringify([{ targets: ['a:19100', 'b:19100'], labels }]));
+    await assert.rejects(loadProbeHosts(localFile, remoteFile), /exactly one/);
+    await writeFile(
+      remoteFile,
+      JSON.stringify([{ targets: ['remote:19100'], labels: { ...labels, publicId: 'local' } }]),
+    );
+    await assert.rejects(loadProbeHosts(localFile, remoteFile), /publicId/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('one unavailable remote host does not hide healthy hosts or expose scrape targets', async () => {
+  const remote = { ...hosts[0], publicId: 'remote', instance: 'remote-private:19100' };
+  const probe = createProbe({
+    hosts: [...hosts, remote],
+    prometheusUrl: 'http://private:9090',
+    now: () => 100000,
+    fetcher: async (input: string | URL | Request) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      const expression = url.searchParams.get('query')!;
+      if (expression.includes(remote.instance)) throw new Error('unreachable private target');
+      const value = expression.startsWith('timestamp')
+        ? 100
+        : expression.startsWith('up{')
+          ? 1
+          : expression.startsWith('node_memory_SwapTotal')
+            ? 0
+            : 42;
+      return Response.json({
+        status: 'success',
+        data: { resultType: 'vector', result: [{ value: [100, String(value)] }] },
+      });
+    },
+  });
+  const result = await probe();
+  assert.deepEqual(
+    result.hosts.map((host: { status: string }) => host.status),
+    ['ok', 'unavailable'],
+  );
+  assert.equal(JSON.stringify(result).includes('private'), false);
+  assert.equal(JSON.stringify(result).includes('secret-host'), false);
+});
+
 test('probe projects private metrics, caches queries, distinguishes down from failure and stale', async () => {
   let time = 100000,
     calls = 0,
