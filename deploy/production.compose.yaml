@@ -19,6 +19,9 @@ services:
       - ${STATE_DIR}/logs:/logs
   otel:
     mem_limit: 192m
+    # A checkout replaces mounted config files; recreate the collector to remount them.
+    labels:
+      xyz.blankhoney.config-release: ${WORKER_IMAGE:?Set a release image tag}
     command: ['--config=/etc/otel.yaml', '--config=/etc/remote-probes.yaml']
     networks: [metrics, probe-egress]
     volumes:
