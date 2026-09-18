@@ -1,11 +1,19 @@
-import { searchCloseDelay, searchTiming, searchTriggerHeight } from './search-policy';
+import {
+  searchCloseDelay,
+  searchPanelTop,
+  searchTiming,
+  searchTriggerHeight,
+} from './search-policy';
 
 /** Independent search lifecycle for the persistent shell. */
-export function initFloatingSearch() {
+export function initFloatingSearch(signal?: AbortSignal) {
+  if (signal?.aborted)
+    return { open: (_focus = false) => {}, close: () => {}, isOpen: () => false };
   const panel = document.querySelector<HTMLElement>('#shell-search')!;
   const trigger = document.querySelector<HTMLButtonElement>('#search-edge')!;
   const input = panel.querySelector<HTMLInputElement>('#search')!;
   const hoverPointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const listenerOptions = { signal };
   let visible = false;
   let pointerInEdge = false;
   let pointerInPanel = false;
@@ -14,6 +22,26 @@ export function initFloatingSearch() {
   let lastActivity = Date.now();
   let openTimer: ReturnType<typeof setTimeout> | undefined;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  let positionFrame = 0;
+
+  function positionPanel() {
+    const back = document.querySelector<HTMLElement>('#main[data-article] .reading-page > .back');
+    const top = searchPanelTop(back?.getBoundingClientRect() ?? null, innerHeight);
+    panel.style.setProperty('--search-top', `${top}px`);
+  }
+
+  function cancelPositionFrame() {
+    if (positionFrame) cancelAnimationFrame(positionFrame);
+    positionFrame = 0;
+  }
+
+  function schedulePosition() {
+    if (!visible || signal?.aborted || positionFrame) return;
+    positionFrame = requestAnimationFrame(() => {
+      positionFrame = 0;
+      if (visible && !signal?.aborted) positionPanel();
+    });
+  }
 
   function hasCriteria() {
     return Boolean(
@@ -43,7 +71,8 @@ export function initFloatingSearch() {
 
   function open(focus = false) {
     clearTimeout(openTimer);
-    if (document.documentElement.dataset.family === 'hero') return;
+    if (signal?.aborted || document.documentElement.dataset.family === 'hero') return;
+    positionPanel();
     if (!visible) lastActivity = Date.now();
     visible = true;
     panel.inert = false;
@@ -54,9 +83,10 @@ export function initFloatingSearch() {
   }
 
   function close() {
-    const restoreFocus = panel.contains(document.activeElement);
+    const restoreFocus = !signal?.aborted && panel.contains(document.activeElement);
     clearTimeout(openTimer);
     clearTimeout(closeTimer);
+    cancelPositionFrame();
     visible = false;
     // Even closing by keyboard must not immediately reopen under the mouse.
     suppressedUntilExit = true;
@@ -70,7 +100,14 @@ export function initFloatingSearch() {
     if (!hoverPointer.matches || event.pointerType !== 'mouse') return;
     const target = event.target;
     const inPanel = visible && target instanceof Node && panel.contains(target);
-    const inControl = target instanceof Element && Boolean(target.closest('#nav-dot, #navigation'));
+    // Controls keep their own pointer intent, even when a child occupies the edge.
+    const inControl =
+      target instanceof Element &&
+      Boolean(
+        target.closest(
+          '#nav-dot, #navigation, a[href], button, input, textarea, select, summary, [role="button"], [contenteditable]:not([contenteditable="false"])',
+        ),
+      );
     const inEdge =
       event.clientY >= 0 && event.clientY <= searchTriggerHeight(innerHeight) && !inControl;
     const enteredEdge = inEdge && !pointerInEdge;
@@ -88,49 +125,80 @@ export function initFloatingSearch() {
     if (regionChanged) scheduleClose();
   }
 
-  document.addEventListener('pointermove', updatePointer);
-  document.documentElement.addEventListener('pointerleave', () => {
-    clearTimeout(openTimer);
-    pointerInEdge = false;
-    pointerInPanel = false;
-    suppressedUntilExit = false;
-    scheduleClose();
-  });
-  trigger.addEventListener('click', () => open(true));
-  document.addEventListener('keydown', (event) => {
-    const target = event.target;
-    const editing =
-      target instanceof HTMLElement &&
-      (target.isContentEditable || Boolean(target.closest('input, textarea, select')));
-    if (
-      event.key === '/' &&
-      !event.metaKey &&
-      !event.ctrlKey &&
-      !event.altKey &&
-      !editing &&
-      document.documentElement.dataset.family !== 'hero'
-    ) {
-      event.preventDefault();
-      open(true);
-    }
-  });
-  panel.querySelector('#close-search')!.addEventListener('click', close);
+  document.addEventListener('pointermove', updatePointer, listenerOptions);
+  document.addEventListener('pointerdown', () => clearTimeout(openTimer), listenerOptions);
+  document.documentElement.addEventListener(
+    'pointerleave',
+    () => {
+      clearTimeout(openTimer);
+      pointerInEdge = false;
+      pointerInPanel = false;
+      suppressedUntilExit = false;
+      scheduleClose();
+    },
+    listenerOptions,
+  );
+  trigger.addEventListener('click', () => open(true), listenerOptions);
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      const target = event.target;
+      const editing =
+        target instanceof HTMLElement &&
+        (target.isContentEditable || Boolean(target.closest('input, textarea, select')));
+      if (
+        event.key === '/' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !editing &&
+        document.documentElement.dataset.family !== 'hero'
+      ) {
+        event.preventDefault();
+        open(true);
+      }
+    },
+    listenerOptions,
+  );
+  panel.querySelector('#close-search')!.addEventListener('click', close, listenerOptions);
   for (const eventName of ['input', 'change', 'keydown', 'pointerdown']) {
-    panel.addEventListener(eventName, () => {
+    panel.addEventListener(
+      eventName,
+      () => {
+        lastActivity = Date.now();
+        scheduleClose();
+      },
+      listenerOptions,
+    );
+  }
+  panel.addEventListener('focusin', scheduleClose, listenerOptions);
+  panel.addEventListener('focusout', () => queueMicrotask(scheduleClose), listenerOptions);
+  panel.addEventListener(
+    'compositionstart',
+    () => {
+      composing = true;
+      scheduleClose();
+    },
+    listenerOptions,
+  );
+  panel.addEventListener(
+    'compositionend',
+    () => {
+      composing = false;
       lastActivity = Date.now();
       scheduleClose();
-    });
-  }
-  panel.addEventListener('focusin', scheduleClose);
-  panel.addEventListener('focusout', () => queueMicrotask(scheduleClose));
-  panel.addEventListener('compositionstart', () => {
-    composing = true;
-    scheduleClose();
-  });
-  panel.addEventListener('compositionend', () => {
-    composing = false;
-    lastActivity = Date.now();
-    scheduleClose();
-  });
+    },
+    listenerOptions,
+  );
+  window.addEventListener('scroll', schedulePosition, { signal, passive: true });
+  window.addEventListener('resize', schedulePosition, listenerOptions);
+  signal?.addEventListener(
+    'abort',
+    () => {
+      close();
+      panel.style.removeProperty('--search-top');
+    },
+    { once: true },
+  );
   return { open, close, isOpen: () => visible };
 }

@@ -5,3 +5,7 @@ examples/benchmarks/voxel-mountain-max/assets/* -text -whitespace linguist-gener
 examples/benchmarks/*/fonts/OFL-*.txt -text -whitespace
 examples/benchmarks/*-sol-max/assets/* -text -whitespace linguist-generated=true
 examples/benchmarks/*-astra-max/assets/* -text -whitespace linguist-generated=true
+
+# Keep upstream JSDoc/CSS string spaces and unified-patch blank context reproducible.
+src/client/vendor/page-flip.js whitespace=-blank-at-eol
+src/client/vendor/page-flip.patch whitespace=-blank-at-eol

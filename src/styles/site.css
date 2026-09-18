@@ -751,8 +751,8 @@ fieldset button[aria-pressed='true'] {
   background: var(--soft);
 }
 /* Original paper figures use dark labels on a transparent or white canvas. */
-.prose img[src*="paper-"],
-.prose img[src*="heuristic-learning"] {
+.prose img[src*='paper-'],
+.prose img[src*='heuristic-learning'] {
   background: #fff;
   border: 1px solid var(--line);
 }
@@ -1074,45 +1074,6 @@ fieldset button[aria-pressed='true'] {
 #fx-stage:empty {
   display: none;
 }
-.page-ghost,
-.turning-sheet {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.page-ghost {
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--fg);
-}
-.turning-sheet {
-  transform-origin: left center;
-  transform-style: preserve-3d;
-}
-.paper-strip {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  transform-origin: left center;
-  transform-style: preserve-3d;
-}
-.sheet-front,
-.sheet-back {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  backface-visibility: hidden;
-}
-.sheet-back {
-  transform: rotateY(180deg);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--bg) 80%, #000),
-    var(--soft) 20%,
-    var(--bg) 75%,
-    color-mix(in srgb, var(--bg) 85%, #000)
-  );
-}
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -1361,24 +1322,6 @@ html[data-motion='reduced-motion'] *::after {
   border-top: 1px solid var(--line);
 }
 
-/* The paper bends from a travelling corner; shades belong to the fold, not a rigid card. */
-.paper-shade {
-  position: absolute;
-  inset: 0;
-  background: #000;
-  opacity: 0;
-  pointer-events: none;
-}
-.paper-contact-shadow {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  filter: blur(22px);
-  background: #000;
-  pointer-events: none;
-}
-
 /* Supporting terminal text should remain readable beside the display heading. */
 .terminal .crumb,
 .terminal-head > small,
@@ -1427,25 +1370,14 @@ html[data-motion='reduced-motion'] *::after {
 .pc-track > span {
   background: transparent !important;
 }
-#terminal-atmosphere {
-  position: fixed;
-  inset: 18% -12% -28%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.45;
-  transform: perspective(1000px) rotateX(24deg);
-}
-#terminal-atmosphere canvas {
-  width: 100%;
-  height: 100%;
-}
 html[data-family='terminal'] #main {
   position: relative;
   z-index: 1;
 }
 @media print {
   #interface-cloud,
-  #terminal-atmosphere {
+  #atmosphere-stage,
+  #fx-stage {
     display: none;
   }
   .pc-ink,

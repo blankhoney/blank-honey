@@ -1,0 +1,163 @@
+--- a/src/PageFlip.ts
++++ b/src/PageFlip.ts
+@@ -34,6 +34,8 @@
+     private render: Render;
+ 
+     private ui: UI;
++    private disposed = false;
++    private initTimeout = 0;
+ 
+     /**
+      * Create a new PageFlip instance
+@@ -53,7 +55,11 @@
+      * Destructor. Remove a root HTML element and all event handlers
+      */
+     public destroy(): void {
+-        this.ui.destroy();
++        if (this.disposed) return;
++        this.disposed = true;
++        window.clearTimeout(this.initTimeout);
++        this.render?.destroy();
++        this.ui?.destroy();
+         this.block.remove();
+     }
+ 
+@@ -86,7 +92,8 @@
+         this.pages.show(this.setting.startPage);
+ 
+         // safari fix
+-        setTimeout(() => {
++        this.initTimeout = window.setTimeout(() => {
++            if (this.disposed) return;
+             this.ui.update();
+             this.trigger('init', this, {
+                 page: this.setting.startPage,
+@@ -115,7 +122,8 @@
+         this.pages.show(this.setting.startPage);
+ 
+         // safari fix
+-        setTimeout(() => {
++        this.initTimeout = window.setTimeout(() => {
++            if (this.disposed) return;
+             this.ui.update();
+             this.trigger('init', this, {
+                 page: this.setting.startPage,
+--- a/src/Render/Render.ts
++++ b/src/Render/Render.ts
+@@ -82,6 +82,8 @@
+ 
+     /** Timer started from start of rendering */
+     protected timer = 0;
++    private frame = 0;
++    private disposed = false;
+ 
+     /**
+      * Safari browser definitions for resolving a bug with a css property clip-area
+@@ -130,21 +132,33 @@
+         }
+ 
+         this.timer = timer;
+-        this.drawFrame();
++        // A completion handler may have disposed the route overlay during this frame.
++        if (!this.disposed) this.drawFrame();
+     }
+ 
+     /**
+      * Running requestAnimationFrame, and rendering process
+      */
+     public start(): void {
++        if (this.disposed || this.frame) return;
+         this.update();
+ 
+         const loop = (timer: number): void => {
++            this.frame = 0;
++            if (this.disposed) return;
+             this.render(timer);
+-            requestAnimationFrame(loop);
+-        };
+-
+-        requestAnimationFrame(loop);
++            if (!this.disposed) this.frame = requestAnimationFrame(loop);
++        };
++
++        this.frame = requestAnimationFrame(loop);
++    }
++
++    /** Local lifecycle patch: a route-scoped book must not retain a render loop. */
++    public destroy(): void {
++        this.disposed = true;
++        cancelAnimationFrame(this.frame);
++        this.frame = 0;
++        this.animation = null;
+     }
+ 
+     /**
+@@ -159,6 +173,7 @@
+         duration: number,
+         onAnimateEnd: AnimationSuccessAction
+     ): void {
++        if (this.disposed) return;
+         this.finishAnimation(); // finish the previous animation process
+ 
+         this.animation = {
+--- a/src/UI/UI.ts
++++ b/src/UI/UI.ts
+@@ -21,6 +21,8 @@
+ 
+     private touchPoint: SwipeData = null;
+     private readonly swipeTimeout = 250;
++    private touchTimeout = 0;
++    private disposed = false;
+     private readonly swipeDistance: number;
+ 
+     private onResize = (): void => {
+@@ -71,8 +73,12 @@
+      * Destructor. Remove all HTML elements and all event handlers
+      */
+     public destroy(): void {
+-        if (this.app.getSettings().useMouseEvents) this.removeHandlers();
+-
++        if (this.disposed) return;
++        this.disposed = true;
++        window.clearTimeout(this.touchTimeout);
++        this.touchPoint = null;
++        // Resize is registered even when programmatic-only flipping disables mouse input.
++        this.removeHandlers();
+         this.distElement.remove();
+         this.wrapper.remove();
+     }
+@@ -198,8 +204,9 @@
+                 };
+ 
+                 // part of swipe detection
+-                setTimeout(() => {
+-                    if (this.touchPoint !== null) {
++                window.clearTimeout(this.touchTimeout);
++                this.touchTimeout = window.setTimeout(() => {
++                    if (!this.disposed && this.touchPoint !== null) {
+                         this.app.startUserTouch(pos);
+                     }
+                 }, this.swipeTimeout);
+--- a/src/Style/stPageFlip.css
++++ b/src/Style/stPageFlip.css
+@@ -8,7 +8,7 @@
+   touch-action: pan-y;
+ }
+ 
+-.sft__wrapper {
++.stf__wrapper {
+   position: relative;
+   width: 100%;
+   box-sizing: border-box;
+--- a/src/Flip/Flip.ts
++++ b/src/Flip/Flip.ts
+@@ -399,7 +399,8 @@
+     private getAnimationDuration(size: number): number {
+         const defaultTime = this.app.getSettings().flippingTime;
+
+-        if (size >= 1000) return defaultTime;
++        // Programmatic route turns retain their configured duration on narrow screens.
++        if (!this.app.getSettings().useMouseEvents || size >= 1000) return defaultTime;
+
+         return (size / 1000) * defaultTime;
+     }

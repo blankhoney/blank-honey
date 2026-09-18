@@ -1,9 +1,24 @@
+/* The persistent host survives Astro's body exchange. Each scene pins its own palette. */
+#atmosphere-stage,
+.atmosphere-scene {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#atmosphere-stage {
+  z-index: 0;
+  user-select: none;
+}
+.atmosphere-scene {
+  contain: layout paint;
+}
 /* Decorative paper ink stays below the reading surface and outside its measured columns. */
 html[data-family='paper'] #main {
   position: relative;
   z-index: 1;
 }
-#paper-atmosphere {
+.paper-atmosphere {
   --leaf-rust: #a66742;
   --leaf-gold: #b68c3f;
   --leaf-moss: #778164;
@@ -13,12 +28,10 @@ html[data-family='paper'] #main {
   overflow: hidden;
   pointer-events: none;
   user-select: none;
-  opacity: 1;
-  transition: opacity 1.1s ease;
   contain: layout paint;
 }
-#paper-atmosphere::before,
-#paper-atmosphere::after {
+.paper-atmosphere::before,
+.paper-atmosphere::after {
   content: '';
   position: absolute;
   inset: -12%;
@@ -30,7 +43,7 @@ html[data-family='paper'] #main {
   opacity: 0.55;
   animation: paper-light-drift 58s ease-in-out infinite alternate;
 }
-#paper-atmosphere::after {
+.paper-atmosphere::after {
   background: radial-gradient(
     ellipse at 88% 80%,
     color-mix(in srgb, var(--leaf-moss) 12%, transparent),
@@ -70,26 +83,19 @@ html[data-family='paper'] #main {
   animation: paper-leaf-sway var(--leaf-sway-duration) ease-in-out var(--leaf-delay) infinite
     alternate;
 }
-#paper-atmosphere[data-mode='light'] .paper-leaf {
+.paper-atmosphere[data-mode='light'] .paper-leaf {
   width: calc(var(--leaf-size) * 0.72);
 }
-html[data-tone='dark'] #paper-atmosphere {
+.paper-atmosphere[data-tone='dark'] {
   --leaf-rust: #bc886a;
   --leaf-gold: #b59a64;
   --leaf-moss: #9ba087;
 }
-/* The ghost owns the foreground during a page turn. Resume without restarting the leaves. */
-body:has(#fx-stage[data-effect]) #paper-atmosphere {
-  opacity: 0;
-}
-body:has(#fx-stage[data-effect]) #paper-atmosphere::before,
-body:has(#fx-stage[data-effect]) #paper-atmosphere::after,
-body:has(#fx-stage[data-effect]) #paper-atmosphere .paper-leaf,
-body:has(#fx-stage[data-effect]) #paper-atmosphere .paper-leaf svg,
-#paper-atmosphere[data-paused='true']::before,
-#paper-atmosphere[data-paused='true']::after,
-#paper-atmosphere[data-paused='true'] .paper-leaf,
-#paper-atmosphere[data-paused='true'] .paper-leaf svg {
+/* Departing scenes freeze, but remain visible until the scene owner finishes fading. */
+.paper-atmosphere[data-paused='true']::before,
+.paper-atmosphere[data-paused='true']::after,
+.paper-atmosphere[data-paused='true'] .paper-leaf,
+.paper-atmosphere[data-paused='true'] .paper-leaf svg {
   animation-play-state: paused;
 }
 @keyframes paper-light-drift {
@@ -122,11 +128,11 @@ body:has(#fx-stage[data-effect]) #paper-atmosphere .paper-leaf svg,
     transform: translateX(var(--leaf-sway)) rotate(calc(var(--leaf-turn) + 58deg)) scaleX(1);
   }
 }
-html[data-motion='reduced-motion'] #paper-atmosphere {
+html[data-motion='reduced-motion'] .paper-atmosphere {
   display: none;
 }
 @media (prefers-reduced-motion: reduce), print {
-  #paper-atmosphere {
+  #atmosphere-stage {
     display: none;
   }
 }

@@ -1,0 +1,60 @@
+.terminal-atmosphere,
+.binary-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.binary-rain {
+  opacity: 0.55;
+  /* Preserve stronger rain at the margins; never lay bright glyphs over reading ink. */
+  mask-image: linear-gradient(90deg, #000 0%, #0004 20%, #0002 48%, #0005 78%, #000 100%);
+}
+.binary-rain canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cipher-line {
+  position: absolute;
+  right: 3%;
+  top: 22%;
+  font:
+    16px/1.5 'VT323',
+    monospace;
+  letter-spacing: 0.16em;
+  color: #35b59d;
+  opacity: 0.44;
+  white-space: nowrap;
+  transition:
+    color 400ms,
+    text-shadow 400ms;
+}
+.cipher-line:nth-of-type(2) {
+  top: 64%;
+  right: auto;
+  left: 1.5%;
+  writing-mode: vertical-rl;
+}
+.cipher-line:nth-of-type(3) {
+  top: auto;
+  bottom: 7%;
+}
+.cipher-active {
+  color: #d383c6;
+  text-shadow:
+    2px 0 #34ceb678,
+    -2px 0 #bd69b278;
+}
+.terminal-atmosphere[data-mode='light'] .binary-rain {
+  opacity: 0.4;
+}
+@media (max-width: 700px) {
+  .binary-rain {
+    opacity: 0.4;
+  }
+  .cipher-line {
+    font-size: 13px;
+    opacity: 0.3;
+  }
+}

@@ -1,0 +1,24 @@
+.page-ghost {
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  color: var(--fg);
+  pointer-events: none;
+}
+/* Ordinary foreground crossfades leave the independent atmosphere visible. */
+#fx-stage[data-effect='terminal-to-paper'] > .page-ghost,
+.page-turn .page-ghost {
+  background: var(--bg);
+}
+.page-turn.stf__parent,
+.page-turn {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+}
+.page-turn > .stf__wrapper {
+  height: 100%;
+}
+.page-turn .stf__item {
+  overflow: hidden;
+}

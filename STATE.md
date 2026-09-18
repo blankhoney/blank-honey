@@ -272,3 +272,30 @@ CI 对 push/PR 执行检查、测试、生产构建与 Docker 构建。Deploy �
 - 可见性/导航：目录实际点击、焦点、原生 window.find/选区保护通过；关闭动效删除所有阅读标记/变量/叶层。离页清除全部 35 个旧节点的标记/样式，工具页不增强；历史回退经过 36 条翻纸分片，最终正文 opacity=1、非 inert、单层落叶、分片无残留。测试曾错误清空 Astro history.state，修正测试并正常重载/往返后通过，未为此改应用路由。
 - 边界：beforeprint/afterprint 只验证合成事件与 CSS/单测；真实后台页签、系统打印、实体设备、Safari/Firefox 未验收。超高块与错误/晚回调由单测覆盖，不冒充全部实机验证或用户视觉认可。
 - 发布前范围与空白检查通过；CI/Deploy 与公网滚动复核在本提交推送后执行，以本提交的 Actions 结果及后续交付回执为准，不沿用上一提交的上线结论。
+
+## 阅读与科技页面动效重做（2026-09-19，发布候选）
+
+- 用户纠正：返回按钮受搜索热区妨碍，正文淡变在页面内感觉不到，跨族背景突变、旧翻页效果差，希望增加 01 数字瀑布与赛博乱码。旧数值验收不能代替这轮视觉要求，也不代表用户认可。
+- 主模型完成方案并经本轮计划确认：修复 16px 搜索热区与返回行避让；正文淡变移至视口内部；背景延迟销毁/交叉过渡；以 MIT StPageFlip 软页实现替换分条翻页；复用同版本 tsParticles Matrix 与 MIT Baffle。不改文章和真实探针数据，不接管其他工作区。
+- 已核实根因：返回按钮公网 y=32–63px 与原最高 64px 热区重叠，且控件排除遗漏正文链接；短块渐变带受块高/2限制；旧背景 before-swap 同步销毁；翻页按视口宽复制 20/36 份正文，背面并无正文。
+- 来源研究：查看 StPageFlip 约 420ms 软页折叠中间帧、Rezmason 数字雨现场；核实 tsParticles Matrix 4.4.0 发布包和源码（字形集硬编码，需本地 0/1 drawer），不把其文档页称为运行演示。StPageFlip 上游 RAF/resize 清理缺口须在固定版本中修补。两次资料代理遇到接口 400 提前结束，由主模型接手；代理未承担设计。
+- 实现进展：搜索与阅读由同模型执行代理按既定契约施工，27/27 专项通过；两次映射施工代理也因相同接口 400 退出，没有反复重试。主模型接入持久化背景场景、软页适配器、Matrix 0/1 drawer 与受控 Baffle；精确安装 Matrix 4.4.0、Baffle 0.3.6。StPageFlip 固定上游 commit 的可读 bundle/五文件补丁和三份完整 MIT 许可已纳入本地文件；第五项为后续容器验收发现的程序化窄屏翻页时长修补，详见下文。
+- 生命周期专项：翻页/背景 22/22 通过，包括直接加载真实 vendor 验证销毁取消 RAF、初始化计时器及非交互 resize 监听；快速切换最大双场景、晚加载/失败/减少动效清理。初次 Astro 检查发现 `addShape` 名称需要数组（1 error），已修正，最终全量结果待后文记录。Baffle 的 `reveal()` 有不可取消的延迟启动，改用公开 start/stop/text 配合受控计时器，来源文件已说明。
+- 开发态 Chrome 初验：已有一个数字雨 canvas；真实 tools→articles 路由采到双背景 opacity 0.840/0.160、0.314/0.686，结束仅单场景；StPageFlip 过场有折面 clip-path/阴影，结束 ghost=0、main.inert=false。另克隆 550ms 中间 DOM 做静态截图观察，随即移除该 QA 副本；未拦截应用 RAF。此处不是容器/公网验收，也不代表用户视觉认可。用户原有 Docker 项目保持不动，本轮 dev daemon 使用 24319。
+- 浏览器驱动的修正（不是仅凭单测调整）：搜索 visibility 过渡导致 `/` 同步 focus 失败并在 450ms 后收回，改为打开立即可见、仅关闭延后隐藏；Astro 重挂常驻 Shell 使 CSS 颜色过渡丢失起始色，新增先捕获旧配色、统一测量目标再 WAAPI 的 `shell-palette.ts`；StPageFlip 上游按 `size/1000` 缩短行程，230px 页约 280ms 即结束，程序化无鼠标模式改为保持配置的 750/1100ms，交互手势和折面几何不改。
+- 主模型生命周期审查：场景 `pause(false)` 与 provider 的 document.hidden 分离，避免后台初载后永久 held；翻页 destroy 抛错也结算 Promise；main 的 ResizeObserver 处理侧栏改变正文宽度而没有 window.resize 的情况；app 监听 700px 断点重新应用 light/full 预算。Baffle 只使用公开 start/stop/text，自有等待/burst timer 可清理。
+- 失败与最终检查：初次完整测试 195/196，失败来自旧 paper 测试桩缺 documentElement.dataset，补真实接口和 host/handle 生命周期；另一次 check 因新 cipher 测试局部变量 TS7022，增加明确 FakeBaffle 类型。追加播放修复前 `npm run check` **110 files，0 errors / 0 warnings / 7 hints**（5 个原有、2 个生成 vendor 提示）；`npm test` **212/212，0 failed/skipped/cancelled**；`git diff --check` 通过。包含真实 vendor 的 RAF/初始化/resize 清理、销毁发生于完成回调、230×844/750ms 在 375ms 和 700ms 仍 flipping、完成后资源清零，以及 Shell 配色两阶段测量等回归。
+- 生产容器：本轮独立 `blank-honey-motion-qa` 五服务、合成环境、24320/24321 双源，多次生产构建完成，最后构建已包含全部修补。Astro 84 页、Pagefind 59 文章为本地开发树，不用于覆盖远端 main 的 70 文章内容；QA 主站/工具均 HTTP 200。原有用户服务未重启。本轮没有修改五工具业务，不把上轮输入/下载验收当作此次重新执行。
+- 搜索容器实测：悬停返回按钮不误开；返回 top=32/bottom=63，`/` 打开后 activeElement=search、面板 top=75，hit-test 仍命中返回链接；未注入临时 QA CSS。390px 面板 top=76，返回行独立可点击，实际返回路由结束 main 可见且非 inert。
+- 正文容器实测：真实 PageDown 普通滚动后看过内部淡变截图；稳定位置采样 entry20/50/80% opacity=0.1038/0.502/0.8958，中心=1，exit80/50/20%=0.8967/0.4987/0.1047，full 位移约 ±28px，反向恢复同值；选择段落强制 opacity=1，取消后恢复约0.502。最初仅等两 RAF 的跳跃样本尚未被 IO 重新增强，未用旧值冒充结果；随后等待稳定并检查几何。
+- 背景/翻页容器实测：背景双层中间 opacity=0.840/0.160、0.314/0.686，结束单层；侧栏经过 rgb(11,13,14)→(14,15,15)→(26,25,22)→(39,36,30)→(41,37,31)，不是硬切。桌面与真正 emulate 390×844 看到软页折线、背面、clip-path 和阴影；修复后手机400ms仍有 book，width=230.09375 与 main 一致、portrait=true、快照 padding=18px。已查看约20/50/80%三帧联系图；取样克隆仅用于观察，随后移除，没有改全局 RAF。库 portrait 会临时克隆折面，不能把应用两份输入快照说成库内永远只有两个节点。
+- 数字雨/乱码：真实画布字形仅0/1，light backing=390×844、不乘DPR，1200ms采样约16帧、24粒子，符合15fps预算；full稳定一个雨canvas和一个字面点云canvas。真实 Baffle 出现一条 aria-hidden 乱码并轮换；离页恢复原文、节点断开且不再变化。浅色手机正文可读、无横向溢出。
+- 打断/清理容器实测：180ms间隔交替切换5次，场景最多2层，稳定 scene=1/rain=1/cloud=1/ghost=0/fx=0、finiteAnimations=0、main opacity=1/inert=false；手机翻页中收起侧栏触发 main 宽度变化，翻页取消并恢复正文；翻页中关闭动效后 scene/canvas/fx均0。最终 console error/warn=0，45条请求均成功或缓存命中，QA覆盖/临时原型/hidden getter均已恢复。
+- 暂停诊断与追加修复：工具切换页签未触发实际 visibilitychange，不能算真实后台测试；合成 hidden 初看400ms仍有240次调用，分段复测 OffscreenCanvas 1280×800 在102/404/1006/2007ms均120、恢复600ms累计1200，说明没有持续绘制，却不能判为调度正确。继续读4.4.0源码确认 play() 即使已播放也会排新 RAF，pause()只取消最后保存的ID；当前加载自动play后又在初始化/manager恢复中重复play。可见分支改为公开 animationStatus=false 才play，避免重复调度链；不再把有限残留解释成没有证据的异步渲染。追加8项真实入口生命周期测试（仅mock公开load），专项8/8；最终全套 **220/220，0 failed/skipped/cancelled**，check **111 files，0 errors / 0 warnings / 7 hints**。重新生产构建后，连续3轮合成 hidden 各600ms绘字均0；每轮恢复并重复发送5次visible事件，600ms均1200次，未随重复事件放大。再次200ms间隔切换4次后仍为单场景/单雨层，fx=0、main可见非inert，console error/warn=0。
+- 验收边界：未做实体设备、Safari/Firefox、系统打印、真正BFCache恢复与真实后台页签完整测试。当前为助手检查，不是用户视觉认可；尚未以本轮公网结果替代下面的待发布状态。
+- 发布准备：远端 main 已复核仍为 `377838d`。直接 GitHub clone 因网络超时 exit128，失败目录已消失；从本地已核实的 origin/main 对象创建本任务独立 Git 副本，HEAD精确一致，再配置原 origin。不是 worktree、不接管旧发布目录；只同步明确代码/测试/许可/依赖和本节记录，保留远端内容树，不复制本项目 skill/AGENTS 或 QA 材料。
+- 暂存检查纠正：此前工作树 `git diff --check` 不含未跟踪 vendor，暂存后才报告上游 JS 注释/CSS字符串的尾空格与统一补丁空上下文前缀。一次 `set -e` 批次未按预期阻止后续本地 commit，已用 Python subprocess 确认检查 exit2；尚未推送。保留上游字节和可复现补丁，仅为两个精确 vendor 文件豁免 blank-at-eol（其余规则不关闭），README说明原因；后续所有发布前置步骤用 check=True 明确阻断，重新验证完整差异后才发布。
+- 发布树独立复验：从当前 main 的70文章树只同步41个明确代码/测试/依赖/许可/属性文件，再合并本节记录；项目skill、AGENTS、QA与私有内容均不进入差异。Node24-Alpine生产构建成功，Pagefind **70 pages / 5152 words**，工作流与受限SSH检查通过，check **111 files，0 errors / 0 warnings / 7 hints**，test **220/220，0 failed/skipped/cancelled**。汇总脚本最初只识别Node22的TAP尾部，遇到Node24的spec格式断言失败；检查实际输出后按正确格式核实，不将汇总脚本误报当作测试失败或跳过门禁。完整暂存差异空白检查通过，等待本提交CI/Deploy及公网复验。
+- [x] 实现、分项测试与许可证/来源记录。
+- [x] 全套检查、生产构建、独立 Docker 和 Chrome 过程验收（限制如上）。
+- [ ] 精确提交、快进发布、同提交 CI/Deploy、公网复测和资源清理；不继承前次通过结果。

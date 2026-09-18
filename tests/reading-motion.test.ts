@@ -187,9 +187,9 @@ type HarnessOptions = {
 };
 
 const defaultSpecs: BlockSpec[] = [
-  { tag: 'HEADER', top: 0, height: 120 },
+  { tag: 'HEADER', top: 160, height: 120 },
   { top: 200, height: 200 },
-  { top: -152, height: 200 },
+  { top: -65, height: 200 },
   { top: 2000, height: 300 },
 ];
 
@@ -410,71 +410,71 @@ function closeTo(actual: number, expected: number, digits = 6) {
 
 /* ---------- 1. pure geometry -------------------------------------------- */
 
-test('readingFrame fades only while a block crosses a viewport edge', () => {
-  const entering = readingFrame(852, 200, 900, 18);
-  closeTo(entering.opacity, 0.5);
-  closeTo(entering.translateY, 9);
+test('readingFrame has visible in-viewport entry and exit bands with a clear center', () => {
+  const samples = [
+    { top: 940, opacity: 0, y: 28 },
+    { top: 830, opacity: 0.5, y: 14 },
+    { top: 720, opacity: 1, y: 0 },
+    { top: 300, opacity: 1, y: 0 },
+    { top: 30, opacity: 0.5, y: -14 },
+    { top: -80, opacity: 0, y: -28 },
+  ];
+  for (const { top, opacity, y } of samples) {
+    const frame = readingFrame(top, 120, 1000);
+    closeTo(frame.opacity, opacity);
+    closeTo(frame.translateY, y);
+  }
 
-  const leaving = readingFrame(-152, 200, 900, 18);
-  closeTo(leaving.opacity, 0.5);
-  closeTo(leaving.translateY, -9);
-
-  const middle = readingFrame(200, 200, 900);
-  closeTo(middle.opacity, 1);
-  closeTo(middle.translateY, 0);
-
-  const below = readingFrame(2000, 200, 900);
+  const below = readingFrame(2000, 200, 1000);
   closeTo(below.opacity, 0);
-  closeTo(below.translateY, 18);
-
-  const above = readingFrame(-400, 200, 900);
+  closeTo(below.translateY, 28);
+  const above = readingFrame(-400, 200, 1000);
   closeTo(above.opacity, 0);
-  closeTo(above.translateY, -18);
+  closeTo(above.translateY, -28);
 });
 
 /* ---------- 2. purity --------------------------------------------------- */
 
 test('the same geometry yields the same frame whether the reader moves forward or back', () => {
-  const first = readingFrame(852, 200, 900, 18);
+  const first = readingFrame(830, 120, 1000);
   // An unrelated geometry in between proves the result is recomputed, not remembered.
-  readingFrame(2000, 200, 900, 18);
-  readingFrame(-400, 200, 900, 18);
-  const again = readingFrame(852, 200, 900, 18);
+  readingFrame(2000, 120, 1000);
+  readingFrame(-400, 120, 1000);
+  const again = readingFrame(830, 120, 1000);
   assert.deepEqual(again, first);
 
-  const mirrored = readingFrame(-152, 200, 900, 18);
-  const back = readingFrame(-152, 200, 900, 18);
+  const mirrored = readingFrame(30, 120, 1000);
+  const back = readingFrame(30, 120, 1000);
   assert.deepEqual(back, mirrored);
   assert.ok(
     Object.is(back.opacity, mirrored.opacity) && Object.is(back.translateY, mirrored.translateY),
   );
 
   // Scaling distance scales the shift only, never the opacity.
-  assert.equal(readingFrame(852, 200, 900, 9).opacity, first.opacity);
+  assert.equal(readingFrame(830, 120, 1000, 18).opacity, first.opacity);
 });
 
 /* ---------- 3. band and degenerate geometry ------------------------------ */
 
 test('short, tall, degenerate and light-mode geometries stay readable', () => {
-  // A 20px block fades across its own half-height band (10px): 5px inside is half way.
-  const short = readingFrame(895, 20, 900, 18);
+  // Short headings retain the same visible 22%-viewport band as paragraphs.
+  const short = readingFrame(830, 20, 1000);
   closeTo(short.opacity, 0.5);
-  closeTo(short.translateY, 9);
-  // Half way with the light-mode distance of 9.
-  const shortLight = readingFrame(895, 20, 900, 9);
+  closeTo(short.translateY, 14);
+  const shortLight = readingFrame(830, 20, 1000, 18);
   closeTo(shortLight.opacity, 0.5);
-  closeTo(shortLight.translateY, 4.5);
-  closeTo(readingFrame(852, 200, 900, 9).translateY, 4.5);
-  // Half the block inside the bottom edge: the half-height band is already fully entered.
-  closeTo(readingFrame(890, 20, 900, 18).opacity, 1);
-  closeTo(readingFrame(890, 20, 900, 18).translateY, 0);
+  closeTo(shortLight.translateY, 9);
+  closeTo(readingFrame(30, 120, 1000, 18).translateY, -9);
+  closeTo(readingFrame(720, 20, 1000).opacity, 1);
+  closeTo(readingFrame(720, 20, 1000).translateY, 0);
 
-  const tall = readingFrame(-500, 2000, 900);
+  const tall = readingFrame(-500, 2000, 1000);
   closeTo(tall.opacity, 1);
   closeTo(tall.translateY, 0);
 
   for (const geometry of [
     [0, 0, 900],
+    [0, -1, 900],
     [200, 200, 0],
     [200, 200, -900],
     [NaN, 200, 900],
@@ -493,9 +493,11 @@ test('short, tall, degenerate and light-mode geometries stay readable', () => {
     closeTo(frame.translateY, 0, 9);
   }
 
-  const negative = readingFrame(852, 200, 900, -12);
-  closeTo(negative.opacity, 0.5);
-  closeTo(negative.translateY, 0);
+  for (const distance of [-12, 0]) {
+    const frame = readingFrame(830, 120, 1000, distance);
+    closeTo(frame.opacity, 0.5);
+    closeTo(frame.translateY, 0);
+  }
 });
 
 /* ---------- 4. aborted and non-article pages ----------------------------- */
@@ -547,15 +549,15 @@ test('nothing is hidden before the first measurement frame, and scrolls coalesce
 
     harness.flush();
     assert.equal(harness.frames.size, 0);
-    // Header (0,120) and the block at 200 are fully inside; the block crossing the top
-    // edge is half way out; the far block is out of view below.
+    // The header and the block at 200 occupy the clear reading band. The next block's
+    // bottom is at 15% of the viewport, half faded; the far block is out of view below.
     assert.equal(harness.blocks[0].opacity(), '1.0000');
     assert.equal(harness.blocks[0].y(), '0.000px');
     assert.equal(harness.blocks[1].opacity(), '1.0000');
     assert.equal(harness.blocks[2].opacity(), '0.5000');
-    assert.equal(harness.blocks[2].y(), '-9.000px');
+    assert.equal(harness.blocks[2].y(), '-14.000px');
     assert.equal(harness.blocks[3].opacity(), '0.0000');
-    assert.equal(harness.blocks[3].y(), '18.000px');
+    assert.equal(harness.blocks[3].y(), '28.000px');
 
     for (let step = 1; step <= 5; step++) {
       harness.setScroll(step * 12);
@@ -609,7 +611,7 @@ test('the intersection set scopes a frame to nearby blocks and keeps the final e
     harness.observe([{ target: near, isIntersecting: false }]);
     harness.flush();
     assert.equal(near.opacity(), '0.0000');
-    assert.equal(near.y(), '-18.000px');
+    assert.equal(near.y(), '-28.000px');
   } finally {
     harness.dispose();
   }
@@ -618,20 +620,20 @@ test('the intersection set scopes a frame to nearby blocks and keeps the final e
 /* ---------- 7. no feedback, stable repeats ------------------------------- */
 
 test('the written translate is subtracted again, so repeated frames stay stable', () => {
-  const harness = createHarness({ specs: [defaultSpecs[0], { top: 895, height: 20 }] });
+  const harness = createHarness({ specs: [defaultSpecs[0], { top: 747, height: 20 }] });
   try {
     harness.mount();
     harness.flush();
     const edge = harness.blocks[1];
     assert.equal(edge.opacity(), '0.5000');
-    assert.equal(edge.y(), '9.000px');
+    assert.equal(edge.y(), '14.000px');
 
     // The double mirrors the stylesheet: the rect includes the translate just written.
     for (let repeat = 0; repeat < 3; repeat++) {
       harness.fireWindow('resize');
       harness.flush();
       assert.equal(edge.opacity(), '0.5000', 'the same layout top keeps the same opacity');
-      assert.equal(edge.y(), '9.000px', 'the shift must not accumulate across frames');
+      assert.equal(edge.y(), '14.000px', 'the shift must not accumulate across frames');
     }
 
     // A stale translate from a protected frame must be subtracted, not added on top.
@@ -639,7 +641,7 @@ test('the written translate is subtracted again, so repeated frames stay stable'
     harness.fireWindow('resize');
     harness.flush();
     assert.equal(edge.opacity(), '0.5000');
-    assert.equal(edge.y(), '9.000px');
+    assert.equal(edge.y(), '14.000px');
   } finally {
     harness.dispose();
   }
@@ -706,7 +708,7 @@ test('focus, a hash target or a selection shows content whole, then hands it bac
     assert.equal(edge.opacity(), '0.5000');
 
     // focusin from a node inside the block.
-    const inside = new ElementStub('A', { top: -152, height: 20 });
+    const inside = new ElementStub('A', { top: -65, height: 20 });
     edge.append(inside);
     harness.focus(inside);
     harness.protect(edge, true);
@@ -721,7 +723,7 @@ test('focus, a hash target or a selection shows content whole, then hands it bac
     harness.fireDocument('focusout');
     harness.flush();
     assert.equal(edge.opacity(), '0.5000', 'protection release returns the block to its position');
-    assert.equal(edge.y(), '-9.000px');
+    assert.equal(edge.y(), '-14.000px');
 
     // hashchange with a percent-encoded fragment resolves an element inside a block.
     const far = harness.blocks[3];
@@ -741,7 +743,7 @@ test('focus, a hash target or a selection shows content whole, then hands it bac
     assert.doesNotThrow(() => harness.fireWindow('hashchange'));
     harness.flush();
     assert.equal(far.opacity(), '0.0000');
-    assert.equal(far.y(), '18.000px');
+    assert.equal(far.y(), '28.000px');
 
     harness.setHash('');
     harness.fireWindow('hashchange');
@@ -760,7 +762,7 @@ test('focus, a hash target or a selection shows content whole, then hands it bac
     harness.fireDocument('selectionchange');
     harness.flush();
     assert.equal(harness.blocks[2].opacity(), '0.5000');
-    assert.equal(harness.blocks[2].y(), '-9.000px');
+    assert.equal(harness.blocks[2].y(), '-14.000px');
     assert.equal(harness.blocks[3].opacity(), '0.0000');
   } finally {
     harness.dispose();
@@ -771,34 +773,34 @@ test('focus, a hash target or a selection shows content whole, then hands it bac
 
 test('a resize re-measures every block and picks up the current motion distance', () => {
   const harness = createHarness({
-    specs: [defaultSpecs[0], { top: 895, height: 20 }, { top: 200, height: 200 }],
+    specs: [defaultSpecs[0], { top: 747, height: 20 }, { top: 200, height: 200 }],
   });
   try {
     harness.mount();
     harness.flush();
     const edge = harness.blocks[1];
-    assert.equal(edge.y(), '9.000px');
+    assert.equal(edge.y(), '14.000px');
 
     // A block that was fully inside the old viewport now straddles the new bottom edge.
     assert.equal(harness.blocks[2].opacity(), '1.0000');
     harness.setViewport(700);
     harness.setMotion('light');
-    edge.layout.top = 695;
-    harness.blocks[2].layout.top = 658;
+    edge.layout.top = 581;
+    harness.blocks[2].layout.top = 581;
     harness.ro[0].callback();
     assert.equal(harness.frames.size, 1);
     harness.flush();
-    assert.equal(edge.y(), '4.500px', 'light mode uses the 9px distance');
+    assert.equal(edge.y(), '9.000px', 'light mode uses the 18px distance');
     assert.equal(edge.opacity(), '0.5000');
     assert.equal(harness.blocks[2].opacity(), '0.5000', 'the changed geometry is re-measured');
-    assert.equal(harness.blocks[2].y(), '4.500px');
+    assert.equal(harness.blocks[2].y(), '9.000px');
 
     // Same geometry, full motion: only the distance changes.
     harness.setMotion('full');
     harness.fireWindow('resize');
     harness.flush();
     assert.equal(edge.opacity(), '0.5000');
-    assert.equal(edge.y(), '9.000px');
+    assert.equal(edge.y(), '14.000px');
 
     assert.ok(harness.ro[0].targets.includes(harness.prose), 'prose growth is observed');
     assert.ok(harness.ro[0].targets.includes(harness.header), 'header growth is observed');

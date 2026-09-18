@@ -1,13 +1,12 @@
 import { capability } from './preferences';
 
-/** Fade only at the viewport edges, including blocks taller than the viewport. */
-export function readingFrame(top: number, height: number, viewport: number, distance = 18) {
+/** Fade inside the viewport while keeping the central reading band fully clear. */
+export function readingFrame(top: number, height: number, viewport: number, distance = 28) {
   if (![top, height, viewport, distance].every(Number.isFinite) || height <= 0 || viewport <= 0)
     return { opacity: 1, translateY: 0 };
 
-  const band = Math.min(height / 2, Math.max(48, Math.min(96, viewport * 0.12)));
-  const entering = (viewport - top) / band;
-  const leaving = (top + height) / band;
+  const entering = (viewport * 0.94 - top) / (viewport * 0.22);
+  const leaving = (top + height - viewport * 0.04) / (viewport * 0.22);
   const progress = Math.max(0, Math.min(1, entering, leaving));
   const opacity = progress * progress * (3 - 2 * progress);
   const direction = leaving < entering ? -1 : 1;
@@ -120,7 +119,7 @@ export function mountReadingMotion(signal: AbortSignal) {
         selecting || block.contains(document.activeElement) || (target && block.contains(target));
       const state = protectedContent
         ? { opacity: 1, translateY: 0 }
-        : readingFrame(bounds.top - shift, bounds.height, innerHeight, mode === 'light' ? 9 : 18);
+        : readingFrame(bounds.top - shift, bounds.height, innerHeight, mode === 'light' ? 18 : 28);
       return { block, ...state };
     });
     for (const { block, opacity, translateY } of updates) {

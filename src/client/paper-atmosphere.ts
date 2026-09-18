@@ -1,4 +1,5 @@
 import { capability } from './preferences';
+import type { AtmosphereHandle } from './atmosphere';
 
 type Span = { left: number; right: number };
 type Gutter = { left: number; width: number };
@@ -59,13 +60,19 @@ function leaf(index: number, side: number) {
 }
 
 /** CSS does the idle animation; JS only responds to layout, visibility and route changes. */
-export function mountPaperAtmosphere(signal: AbortSignal) {
+export function mountPaperAtmosphere(
+  signal: AbortSignal,
+  host?: HTMLElement,
+): AtmosphereHandle | undefined {
   if (signal.aborted || capability() === 'reduced-motion') return;
   const main = document.querySelector<HTMLElement>('#main');
   if (!main) return;
   const layer = document.createElement('div');
-  layer.id = 'paper-atmosphere';
+  layer.className = 'paper-atmosphere';
+  layer.dataset.tone = document.documentElement.dataset.tone;
   layer.setAttribute('aria-hidden', 'true');
+  let held = false;
+  let disposed = false;
   const bands = [0, 1].map((side) => {
     const band = document.createElement('div');
     band.className = 'paper-gutter';
@@ -73,14 +80,15 @@ export function mountPaperAtmosphere(signal: AbortSignal) {
     layer.append(band);
     return band;
   });
-  document.body.append(layer);
+  (host ?? document.body).append(layer);
 
   const reading = main.querySelector<HTMLElement>('.reading-column');
   const journal = main.querySelector<HTMLElement>('.journal');
   const toc = main.querySelector<HTMLElement>('.article-toc-rail');
   const back = main.querySelector<HTMLElement>('.reading-page > .back');
   function updateLayout() {
-    if (signal.aborted) return;
+    // A departing scene keeps its old geometry after Astro removes the old main.
+    if (disposed || signal.aborted || held) return;
     const quiet: Span[] = [];
     for (const element of [reading, toc, back]) {
       if (element && element.getClientRects().length) quiet.push(element.getBoundingClientRect());
@@ -112,7 +120,7 @@ export function mountPaperAtmosphere(signal: AbortSignal) {
     });
   }
   const visibility = () => {
-    layer.dataset.paused = String(document.hidden);
+    layer.dataset.paused = String(held || document.hidden);
   };
   const observer = new ResizeObserver(updateLayout);
   for (const element of [main, reading, journal, toc, back]) {
@@ -120,14 +128,26 @@ export function mountPaperAtmosphere(signal: AbortSignal) {
   }
   document.addEventListener('visibilitychange', visibility, { signal });
   window.addEventListener('resize', updateLayout, { signal });
-  signal.addEventListener(
-    'abort',
-    () => {
-      observer.disconnect();
-      layer.remove();
-    },
-    { once: true },
-  );
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    observer.disconnect();
+    document.removeEventListener('visibilitychange', visibility);
+    window.removeEventListener('resize', updateLayout);
+    signal.removeEventListener('abort', dispose);
+    layer.remove();
+  }
+  signal.addEventListener('abort', dispose, { once: true });
   updateLayout();
   visibility();
+  return {
+    element: layer,
+    pause(paused) {
+      if (disposed) return;
+      held = paused;
+      visibility();
+      if (!held) updateLayout();
+    },
+    dispose,
+  };
 }

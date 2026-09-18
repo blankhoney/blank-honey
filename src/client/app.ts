@@ -42,11 +42,12 @@ initAudio();
 initTransitions();
 window.addEventListener('error', (e) => report('frontend', e.error));
 window.addEventListener('unhandledrejection', (e) => report('frontend', e.reason));
-const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-reduce.addEventListener('change', () => {
-  applyPreferences();
-  document.dispatchEvent(new Event('bh:motion'));
-});
+for (const query of ['(prefers-reduced-motion: reduce)', '(max-width: 700px)']) {
+  matchMedia(query).addEventListener('change', () => {
+    applyPreferences();
+    document.dispatchEvent(new Event('bh:motion'));
+  });
+}
 setInterval(applyPreferences, 60000);
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) applyPreferences();
