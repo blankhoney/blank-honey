@@ -261,4 +261,14 @@ CI 对 push/PR 执行检查、测试、生产构建与 Docker 构建。Deploy �
 - 阅读：Docker 页面单层背景、4 片轻量叶在 700ms 内移动约 22.6px，正文 opacity=1、canvas=0、无粒子引擎请求。此前生产静态产物另已覆盖桌面/窄屏、明暗、翻纸中间帧、快速切页、工具新标签音乐不中断，以及更完整的恶意文件/口令/取消/像素/异步竞争测试。
 - HTTP：五工具、WASM（application/wasm）、许可与源码说明 200；主源工具工作台与工具源 API 均 404；主源 probe 指标新鲜。发现并修复压缩页遗漏空 favicon 导致的 404，统一明暗 color-scheme 后重新 Docker 构建，最终该页控制台 error/warn 为 0。
 - 边界：真实后台页签暂停、打印、OS 文件夹拖拽、实体手机及 Safari/Firefox 未验收；模拟视口和截图不是设备认证或用户视觉认可。既有 8080/8081 和其他项目容器未改动。
-- [ ] 同提交 CI、Deploy 与公网核对待推送后执行；本候选通过不冒称已上线。后续正文滚动淡入淡出另立提交，不混入本轮。
+- [x] 发布提交 `29265825154e03412a27908b074ddddf6071490e`；同提交 CI `35362514162` 与 Deploy `35363052278` 均 success。公网五工具/WASM/许可/源码均 200，四机探针全部 ok 且采样新鲜；Chrome 公网压缩包实际读取/下载无 console error/warn，公网阅读背景单层且叶片 500ms 移动约 17.1px。正文滚动淡入淡出在后续独立提交实施。
+
+## 正文边缘浮动淡入淡出（2026-09-19，发布候选）
+
+- 范围：仅文章 header 与 prose 直接块，保留原始语义 DOM 和原生滚动；进入/离开视口边缘连续渐变、反向可逆，正文中段完全清晰，full/light 位移上限 18/9px。不加动画依赖，不改文章、目录/评论结构、粒子、翻纸、探针或部署链路。
+- 实现：文章按需加载 `reading-motion.ts`，复用 pageController/AbortSignal；单 IntersectionObserver + 按事件合并 RAF，读几何时扣除实际 translate，ResizeObserver 覆盖正文和目录折叠产生的位置重排。首次测量后才增强；focus/hash/selection、减少动效、打印、后台、异常、abort 和 BFCache 均有恢复/清理路径。
+- 自动化（发布树、Node 24.21.0）：新增专项 14/14；最终全套 **159/159，0 skipped**。工作流/受限 SSH 检查通过；类型检查 0 errors / 0 warnings / 5 hints；生产构建、Docker web/worker 更新通过，Pagefind 保持 70 篇文章。临时 Alpine 检查容器安装 Bash，不改生产 Dockerfile。
+- Chrome 桌面真实滚动：同段落下缘进入 opacity `0 → 0.1555 → 0.505 → 1`，上缘离开 `1 → 0.5188 → 0`，回滚同值；中段平移为 0，静止 900ms 新 RAF 0。390px 暗色长文章的 7 代码块/7 图片增强正确，light 位移上限 9px，PageDown、目录开合正常，无页面横向溢出或 console error/warn。已查看动效中间帧截图。
+- 可见性/导航：目录实际点击、焦点、原生 window.find/选区保护通过；关闭动效删除所有阅读标记/变量/叶层。离页清除全部 35 个旧节点的标记/样式，工具页不增强；历史回退经过 36 条翻纸分片，最终正文 opacity=1、非 inert、单层落叶、分片无残留。测试曾错误清空 Astro history.state，修正测试并正常重载/往返后通过，未为此改应用路由。
+- 边界：beforeprint/afterprint 只验证合成事件与 CSS/单测；真实后台页签、系统打印、实体设备、Safari/Firefox 未验收。超高块与错误/晚回调由单测覆盖，不冒充全部实机验证或用户视觉认可。
+- 发布前范围与空白检查通过；CI/Deploy 与公网滚动复核在本提交推送后执行，以本提交的 Actions 结果及后续交付回执为准，不沿用上一提交的上线结论。

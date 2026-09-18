@@ -1,0 +1,19 @@
+/* No pre-hidden content: these markers only exist after a successful measurement. */
+#main[data-article] [data-reading-motion] {
+  opacity: var(--reading-opacity, 1);
+  translate: 0 var(--reading-y, 0px);
+}
+
+/* Reading and navigation take priority over decorative edge motion. */
+#main[data-article] [data-reading-motion]:is(:focus-within, :target, :has(:target)),
+html[data-motion='reduced-motion'] #main[data-article] [data-reading-motion] {
+  opacity: 1;
+  translate: none;
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  #main[data-article] [data-reading-motion] {
+    opacity: 1;
+    translate: none;
+  }
+}

@@ -87,6 +87,11 @@ async function mount() {
     if (signal.aborted) return;
     if (document.querySelector('#graph')) await (await import('./graph')).mountGraph(signal);
     if (signal.aborted) return;
+    if (document.querySelector('#main[data-article]')) {
+      const { mountReadingMotion } = await import('./reading-motion');
+      if (signal.aborted) return;
+      mountReadingMotion(signal);
+    }
     const comments = document.querySelector<HTMLElement>('#giscus');
     if (comments) {
       const observer = new IntersectionObserver(
