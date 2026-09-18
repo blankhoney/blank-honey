@@ -1,0 +1,722 @@
+/* 独立工具工作台共享样式。
+ *
+ * 只服务于 src/tools/<slug>/ 下的工具页：除 :root 变量外，每条规则都限定在
+ * body[data-tool] 内，绝不落到博客主站。类名契约见 src/tools/README.md。
+ *
+ * 视觉基调：奶油纸面 + 墨色圆角描边 + 软纸片阴影 + 每款工具的暖/冷点缀色。
+ * 点缀色由 body[data-tool] 决定，工具自己的 style.css 覆盖 --accent 即可。
+ */
+
+:root {
+  /* 纸面与墨色 */
+  --paper: #fbf3e2;
+  --paper-2: #f6ead4;
+  --paper-3: #fffaf0;
+  --ink: #33281f;
+  --ink-soft: #6d5b4c;
+  --ink-faint: #9a8a7a;
+  --line: #33281f;
+  --line-soft: rgba(51, 40, 31, 0.16);
+
+  /* 纸片阴影：一层贴纸、一层抬起 */
+  --shadow-sticker: 0 1px 0 rgba(51, 40, 31, 0.1), 0 6px 14px -8px rgba(51, 40, 31, 0.45);
+  --shadow-lift: 0 2px 0 rgba(51, 40, 31, 0.08), 0 14px 26px -14px rgba(51, 40, 31, 0.5);
+  --shadow-press: inset 0 2px 4px rgba(51, 40, 31, 0.16);
+
+  --stroke: 2px;
+  --stroke-thin: 1.5px;
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+
+  --font-ui:
+    ui-rounded, 'Hiragino Sans GB', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --tap: 44px; /* 可触摸最小边长 */
+
+  /* 默认点缀色；每款工具用 body[data-tool='<slug>'] 覆盖 */
+  --accent: #e2724c;
+  --accent-2: #6fb3a0;
+  --accent-ink: #3a2418;
+
+  color-scheme: light;
+}
+
+/* 每款工具一支点缀色：暖色与冷色交替，与其他工具页区分。 */
+body[data-tool='archive'] {
+  --accent: #df8a44;
+  --accent-2: #7f9fc0;
+  --accent-ink: #40270f;
+}
+
+body[data-tool='image-crop'] {
+  --accent: #4f9ec4;
+  --accent-2: #e2955f;
+  --accent-ink: #10293a;
+}
+
+body[data-tool='markdown'] {
+  --accent: #5f9d8f;
+  --accent-2: #d98f6b;
+  --accent-ink: #123029;
+}
+
+body[data-tool='luck'] {
+  --accent: #e2724c;
+  --accent-2: #6fb3a0;
+  --accent-ink: #3a2418;
+}
+
+body[data-tool='fortune'] {
+  --accent: #b1679b;
+  --accent-2: #7f9fc0;
+  --accent-ink: #33153f;
+}
+
+body[data-tool] {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--paper);
+  /* 奶油纸的极淡纹理：纯 CSS 渐变，没有远程资源 */
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.7), transparent 45%),
+    radial-gradient(circle at 82% 78%, rgba(226, 114, 76, 0.07), transparent 40%),
+    repeating-linear-gradient(45deg, rgba(51, 40, 31, 0.014) 0 2px, transparent 2px 4px);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+body[data-tool] *,
+body[data-tool] *::before,
+body[data-tool] *::after {
+  box-sizing: border-box;
+}
+
+body[data-tool] :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 上面给 .field 之类设了 display:flex，会盖掉浏览器对 [hidden] 的默认隐藏，
+ * 所以这里统一补一条：hidden 属性在工具页里始终生效。 */
+body[data-tool] [hidden] {
+  display: none !important;
+}
+
+/* ---------- 页架：标题区在首屏，不做巨大宣传页 ---------- */
+
+body[data-tool] .tool-shell {
+  width: min(100% - 32px, 880px);
+  margin: 0 auto;
+  padding: 20px 0 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+body[data-tool] .tool-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px 16px;
+  align-items: center;
+  padding: 16px 18px;
+  background: var(--paper-3);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sticker);
+}
+
+body[data-tool] .tool-header:not(:has(.tool-mascot)) {
+  grid-template-columns: 1fr;
+}
+
+body[data-tool] .tool-eyebrow {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+body[data-tool] .tool-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+body[data-tool] .tool-description {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+/* 原创小图标：内联 SVG 放在这个圆框里，由各工具自己画 */
+body[data-tool] .tool-mascot {
+  grid-row: 2;
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--paper-2);
+  border: var(--stroke) solid var(--line);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sticker);
+  color: var(--accent);
+}
+
+body[data-tool] .tool-mascot svg {
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+
+/* ---------- 工作区 ---------- */
+
+body[data-tool] .workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+body[data-tool] .panel {
+  padding: 18px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--paper-3);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sticker);
+}
+
+body[data-tool] .panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+body[data-tool] .panel-header p,
+body[data-tool] .panel-header small {
+  margin: 0;
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+/* ---------- 表单 ---------- */
+
+body[data-tool] .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+body[data-tool] .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+body[data-tool] .field > label,
+body[data-tool] .field-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+body[data-tool] .field small,
+body[data-tool] .field-hint {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+}
+
+body[data-tool] .field input[type='text'],
+body[data-tool] .field input[type='number'],
+body[data-tool] .field input[type='date'],
+body[data-tool] .field input[type='time'],
+body[data-tool] .field input[type='password'],
+body[data-tool] .field input[type='search'],
+body[data-tool] .field select,
+body[data-tool] .field textarea,
+body[data-tool] input.field-input,
+body[data-tool] select.field-input,
+body[data-tool] textarea.field-input {
+  min-height: var(--tap);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper-3);
+  border: var(--stroke-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-press);
+}
+
+body[data-tool] .field textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* 选择组：分段按钮（面数、颗数、模式这类小选择） */
+body[data-tool] .choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body[data-tool] .choice {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sticker);
+  cursor: pointer;
+}
+
+body[data-tool] .choice:hover {
+  background: var(--paper-3);
+}
+
+body[data-tool] .choice[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------- 动作 ---------- */
+
+body[data-tool] .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+body[data-tool] .button {
+  min-height: var(--tap);
+  padding: 10px 20px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: var(--stroke) solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sticker);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+body[data-tool] .button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lift);
+}
+
+body[data-tool] .button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-press);
+}
+
+body[data-tool] .button:disabled,
+body[data-tool] .button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  filter: saturate(0.5);
+}
+
+body[data-tool] .button--secondary {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+body[data-tool] .button--secondary:hover:not(:disabled) {
+  background: var(--paper-3);
+}
+
+body[data-tool] .button--danger {
+  background: #c9553f;
+  color: #fff6ee;
+}
+
+/* ---------- 拖放区（只作为文件输入的增强） ---------- */
+
+body[data-tool] .drop-zone {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 26px 18px;
+  text-align: center;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border: var(--stroke-thin) dashed var(--line);
+  border-radius: var(--radius);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+body[data-tool] .drop-zone.is-dragging {
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
+  border-color: var(--accent);
+}
+
+body[data-tool] .drop-zone svg {
+  width: 38px;
+  height: 38px;
+  color: var(--accent);
+}
+
+body[data-tool] .drop-zone input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+body[data-tool] .drop-zone:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ---------- 状态与提示 ---------- */
+
+body[data-tool] .status {
+  margin: 0;
+  min-height: 1.4em;
+  padding: 2px 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+body[data-tool] .status:not(:empty) {
+  padding: 10px 14px;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+body[data-tool] .status[data-tone='busy'] {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+body[data-tool] .status[data-tone='error'],
+body[data-tool] [role='alert'] {
+  color: #8f2f1d;
+}
+
+body[data-tool] .status[data-tone='error'] {
+  background: #fbe6dd;
+  border-color: #d98b6f;
+}
+
+body[data-tool] .status[data-tone='ok'] {
+  color: #1f5a4b;
+  background: #e2f0ea;
+  border-color: #8fbfae;
+}
+
+body[data-tool] .privacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+body[data-tool] .privacy-note::before {
+  content: '🔒';
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+body[data-tool] .empty-state {
+  margin: 0;
+  padding: 26px 18px;
+  text-align: center;
+  color: var(--ink-faint);
+  background: var(--paper-2);
+  border: var(--stroke-thin) dashed var(--line-soft);
+  border-radius: var(--radius);
+}
+
+/* ---------- 结果 ---------- */
+
+body[data-tool] .result-card {
+  padding: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--paper-2);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sticker);
+}
+
+body[data-tool] .result-card__label {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+
+body[data-tool] .result-card__value {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+body[data-tool] .result-card img,
+body[data-tool] .result-card canvas,
+body[data-tool] .result-card svg {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+body[data-tool] .result-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+body[data-tool] .result-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+body[data-tool] .result-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+body[data-tool] .result-list b {
+  font-family: var(--font-mono);
+}
+
+/* ---------- 页脚与返回链接 ---------- */
+
+body[data-tool] .tool-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+body[data-tool] .back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 8px 14px;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sticker);
+}
+
+body[data-tool] .back-link:hover {
+  background: var(--paper-3);
+  transform: translateY(-1px);
+}
+
+/* ---------- 历史（最近几轮，只在内存） ---------- */
+
+body[data-tool] .history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+body[data-tool] .history li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+body[data-tool] .history li > b {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+/* 视觉隐藏、仍可被辅助技术读取 */
+body[data-tool] .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+/* ---------- 手机 ---------- */
+
+@media (max-width: 560px) {
+  body[data-tool] .tool-shell {
+    width: min(100% - 20px, 880px);
+    padding-top: 12px;
+    gap: 14px;
+  }
+
+  body[data-tool] .tool-header,
+  body[data-tool] .panel {
+    padding: 14px;
+  }
+
+  body[data-tool] .tool-mascot {
+    width: 48px;
+    height: 48px;
+  }
+
+  body[data-tool] .button,
+  body[data-tool] .choice {
+    flex: 1 1 auto;
+  }
+}
+
+/* ---------- 暗色 ---------- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #211b16;
+    --paper-2: #2a2320;
+    --paper-3: #332a25;
+    --ink: #f4e8d6;
+    --ink-soft: #c8b7a5;
+    --ink-faint: #9d8b7b;
+    --line: #0f0c0a;
+    --line-soft: rgba(244, 232, 214, 0.16);
+    --shadow-sticker: 0 1px 0 rgba(0, 0, 0, 0.4), 0 6px 14px -8px rgba(0, 0, 0, 0.7);
+    --shadow-lift: 0 2px 0 rgba(0, 0, 0, 0.4), 0 14px 26px -14px rgba(0, 0, 0, 0.8);
+    --shadow-press: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+
+  body[data-tool='archive'] {
+    --accent: #e8a05c;
+    --accent-2: #8fb0cf;
+    --accent-ink: #2a1706;
+  }
+
+  body[data-tool='image-crop'] {
+    --accent: #6bb4d8;
+    --accent-2: #eba874;
+    --accent-ink: #0b2231;
+  }
+
+  body[data-tool='markdown'] {
+    --accent: #79b8a7;
+    --accent-2: #e2a179;
+    --accent-ink: #0d2620;
+  }
+
+  body[data-tool='luck'] {
+    --accent: #f0875f;
+    --accent-2: #7ec4af;
+    --accent-ink: #2c190d;
+  }
+
+  body[data-tool='fortune'] {
+    --accent: #c883b4;
+    --accent-2: #8fb0cf;
+    --accent-ink: #2a1130;
+  }
+
+  body[data-tool] {
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.05), transparent 45%),
+      radial-gradient(circle at 82% 78%, rgba(240, 135, 95, 0.06), transparent 40%);
+  }
+
+  body[data-tool] .status[data-tone='error'] {
+    color: #ffcbb9;
+    background: #4a231a;
+    border-color: #8b4a36;
+  }
+
+  body[data-tool] .status[data-tone='ok'] {
+    color: #bde6d5;
+    background: #1d3a31;
+    border-color: #4d7d6d;
+  }
+
+  body[data-tool] .button--danger {
+    background: #b04530;
+    color: #ffece4;
+  }
+}
+
+/* ---------- 减少动效 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-tool] *,
+  body[data-tool] *::before,
+  body[data-tool] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

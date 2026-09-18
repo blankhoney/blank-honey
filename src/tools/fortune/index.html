@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>今日小签 · 四柱与节气 | BLANK HONEY 工具箱</title>
+    <meta
+      name="description"
+      content="按北京时间看目标日期的农历与节气，排出生日期的四柱，再抽一份仅供娱乐的今日小签。姓名与生日只在本机内存里。"
+    />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body data-tool="fortune">
+    <div class="tool-shell">
+      <header class="tool-header">
+        <p class="tool-eyebrow">TOOLBOX · FORTUNE</p>
+        <span class="tool-mascot" aria-hidden="true">
+          <!-- 原创小图标：一只签筒，里面插着三支签 -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12h14l-1.6 15a2.4 2.4 0 0 1-2.4 2.1h-6a2.4 2.4 0 0 1-2.4-2.1L9 12z" />
+            <path d="M11 12V8.6M16 12V5.4M21 12V9.4" stroke-linecap="round" />
+            <path d="M8 12h16" stroke-linecap="round" />
+            <path d="M13.4 19.5h5.2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <h1 class="tool-title">今日小签</h1>
+        <p class="tool-description">
+          先看目标日期的农历与节气，再看生辰的四柱，最后抽一份小签。历法部分按传统口径算，签文只是娱乐。
+        </p>
+      </header>
+
+      <p class="fortune-banner">
+        <span aria-hidden="true">✦</span>
+        传统文化与娱乐用途，非科学预测
+      </p>
+
+      <main class="workspace">
+        <div class="fortune-grid">
+          <section class="panel" aria-labelledby="form-heading">
+            <h2 class="panel-header" id="form-heading">
+              输入
+              <small>只在本机内存里</small>
+            </h2>
+
+            <form id="fortune-form" novalidate>
+              <div class="form-grid">
+                <label class="field fortune-field-wide">
+                  <span>姓名</span>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    maxlength="80"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="只用来选签，怎么写都行"
+                  />
+                  <small>姓名只参与娱乐区的选签，不参与任何干支推算。</small>
+                </label>
+
+                <label class="field">
+                  <span>目标日期</span>
+                  <input type="date" id="target" name="target" required />
+                  <small>要看哪一天，默认北京时间的今天。</small>
+                </label>
+
+                <label class="field">
+                  <span>出生日期</span>
+                  <input type="date" id="birth" name="birth" required />
+                  <small>公历，1900-01-01 至 2100-12-31。</small>
+                </label>
+
+                <div class="field fortune-field-wide">
+                  <label class="fortune-check">
+                    <input type="checkbox" id="unknown-hour" name="unknown-hour" checked />
+                    <span>不知道出生时辰</span>
+                  </label>
+                  <small>不知道就保持勾选：时柱会写成「未定」，不会拿默认时刻顶替。</small>
+                </div>
+
+                <label class="field" id="time-field" hidden>
+                  <span>出生时刻</span>
+                  <input type="time" id="time" name="time" />
+                  <small>按北京时间填，精确到分钟即可。</small>
+                </label>
+              </div>
+
+              <div class="actions">
+                <button class="button" type="submit" id="submit">看今日小签</button>
+                <button class="button button--secondary" type="reset" id="reset">清空</button>
+              </div>
+            </form>
+
+            <p class="status" id="error" role="alert"></p>
+
+            <p class="privacy-note">
+              姓名与生日只在这台设备的内存里参与计算，不上传、不写入网址、日志或本地存储；离开页面或点「清空」会清除。
+            </p>
+          </section>
+
+          <section class="panel" aria-labelledby="result-heading">
+            <h2 class="panel-header" id="result-heading">
+              结果
+              <small>历法区与娱乐区分开看</small>
+            </h2>
+
+            <div id="result-slot" aria-live="polite">
+              <p class="empty-state">还没有结果。填好左边的信息，按「看今日小签」。</p>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel" aria-labelledby="notes-heading">
+          <h2 class="panel-header" id="notes-heading">口径与边界</h2>
+          <details class="fortune-notes">
+            <summary>这套结果是怎么算出来的</summary>
+            <ul>
+              <li>所有日期与时刻都按北京时间（UTC+8）解释，不随你的本机时区变化。</li>
+              <li>
+                不做真太阳时修正，也不按出生地经度换算历史时区；库没有这项能力，这里不假装精准。
+              </li>
+              <li>年柱与月柱以节气交接时刻为界，立春换年；农历正月初一不换年柱。</li>
+              <li>
+                子时流派显式采用流派 2：晚子时（23:00—23:59）日柱仍算当天，时柱按库的算法给出。
+              </li>
+              <li>
+                可计算范围：1900-01-01 至 2100-12-31，出生日期不能晚于目标日期，也不能在未来。
+              </li>
+              <li>姓名只用于娱乐区的小签，换名字不会改变任何干支。</li>
+            </ul>
+            <p>
+              签文是随机挑选的娱乐内容，只给日常建议，不做疾病、财富或吉凶应验的预测，也不代表任何准确度。
+            </p>
+          </details>
+        </section>
+      </main>
+
+      <footer class="tool-footer">
+        <p class="privacy-note">
+          历法部分按传统口径推算，仅供参考；签文纯属娱乐，请勿据此做重要决定。历法数据来自
+          lunar-typescript，<a href="../licenses/">第三方许可</a>。
+        </p>
+        <a class="back-link" href="__SITE_RETURN__">← 返回博客工具箱</a>
+      </footer>
+    </div>
+  </body>
+</html>

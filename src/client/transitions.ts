@@ -28,8 +28,15 @@ export function initTransitions() {
   const refreshAtmosphere = async () => {
     atmosphereController?.abort();
     const controller = (atmosphereController = new AbortController());
-    if (document.documentElement.dataset.family === 'terminal')
-      await (await import('./terminal-atmosphere')).mountAtmosphere(controller.signal);
+    const family = document.documentElement.dataset.family;
+    if (capability() === 'reduced-motion') return;
+    if (family === 'terminal') {
+      const { mountAtmosphere } = await import('./terminal-atmosphere');
+      if (!controller.signal.aborted) await mountAtmosphere(controller.signal);
+    } else if (family === 'paper') {
+      const { mountPaperAtmosphere } = await import('./paper-atmosphere');
+      if (!controller.signal.aborted) mountPaperAtmosphere(controller.signal);
+    }
   };
   document.addEventListener('astro:before-swap', () => atmosphereController?.abort());
   for (const event of ['astro:page-load', 'bh:motion', 'bh:theme'])

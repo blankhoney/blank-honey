@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { experimentsSchema, type Experiment } from '../src/domain/experiments';
 import { experimentFiles } from '../src/application/experiments';
+import { config } from '../src/config';
 
 const benchmark: Experiment = {
   slug: 'sample',
@@ -71,8 +72,30 @@ test('benchmark packaging preserves bytes and JS module trees, excludes private 
     await writeFile(join(base, 'assets/boat.glb'), model);
     const sourceMap = '{"version":3,"sources":["main.js"],"mappings":""}\n';
     await writeFile(join(base, 'assets/main.js.map'), sourceMap);
-    for (const name of ['json', 'timer', 'text', 'paper'])
-      await writeFile(join(root, `examples/${name}.html`), '<a href="__SITE_RETURN__">Return</a>');
+    // The registered experiment is the only static lab page this build copies.
+    for (const experiment of config.experiments)
+      await writeFile(
+        join(root, experiment.html),
+        '<a href="__SITE_RETURN__">Return</a>',
+      );
+    // Every registered local tool builds from its own source tree, so the fixture
+    // provides one minimal page per slug rather than the tools under construction.
+    await mkdir(join(root, 'src/tools/shared'), { recursive: true });
+    await writeFile(join(root, 'src/tools/shared/style.css'), 'body { color: black }');
+    for (const tool of config.tools) {
+      await mkdir(join(root, 'src/tools', tool.slug), { recursive: true });
+      await writeFile(
+        join(root, 'src/tools', tool.slug, 'index.html'),
+        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">' +
+          `<title>${tool.name}</title></head><body data-tool="${tool.slug}">` +
+          '<a class="back-link" href="__SITE_RETURN__">Return</a>' +
+          '<script type="module" src="./main.ts"></script></body></html>',
+      );
+      await writeFile(
+        join(root, 'src/tools', tool.slug, 'main.ts'),
+        `document.body.dataset.tool = ${JSON.stringify(tool.slug)};\n`,
+      );
+    }
     const run = spawnSync(
       process.execPath,
       ['--import', import.meta.resolve('tsx'), resolve('scripts/build-lab.ts')],
@@ -82,10 +105,8 @@ test('benchmark packaging preserves bytes and JS module trees, excludes private 
           ...process.env,
           SITE_URL: 'http://localhost:8080',
           LAB_ORIGIN: 'http://localhost:8081',
-          TOOL_JSON_URL: '',
-          TOOL_TIMER_URL: '',
-          TOOL_TEXT_URL: '',
           LAB_PAPER_URL: '',
+          ...Object.fromEntries(config.tools.map((tool) => [tool.urlEnv, ''])),
         },
         encoding: 'utf8',
       },

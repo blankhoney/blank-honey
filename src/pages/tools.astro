@@ -4,7 +4,7 @@ import { destinations } from '../application/destinations';
 const tools = destinations('tools');
 ---
 
-<Terminal title="工具" en="TOOLBOX" description="一些小工具。打开，做完，然后离开。">
+<Terminal title="工具" en="TOOLBOX" description="五张小工作台。文件留在本机，做完就可以离开。">
   <div class="directory" data-cohort="frame">
     {tools.map((t, i) => (
       <a class="directory-row" href={t.url} target="_blank" rel="noopener noreferrer">
@@ -12,7 +12,7 @@ const tools = destinations('tools');
         <div>
           <h2>{t.name}</h2>
           <p>{t.description}</p>
-          <small>独立站点 / {new URL(t.url).host}</small>
+          <small>独立工作台 / {new URL(t.url).host}</small>
         </div>
         <span>↗</span>
       </a>

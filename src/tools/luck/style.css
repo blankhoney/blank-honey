@@ -1,0 +1,171 @@
+/* 公平好运自己的样式：投掷台、骰子与硬币。
+ *
+ * 这个文件只被 luck/main.ts 导入，即只在这一个工具页加载，所以选择器不做额外前缀。
+ * 颜色、圆角和阴影都取 shared/style.css 的变量：幸运色是暖橘（--accent），
+ * 硬币的背面用偏冷的青绿（--accent-2）。
+ */
+
+.luck-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 16px;
+  min-height: 190px;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line-soft);
+  border-radius: var(--radius);
+}
+
+.luck-stage.is-rolling {
+  background: color-mix(in srgb, var(--accent) 10%, var(--paper-2));
+}
+
+/* 开局没有投掷时，空状态铺满整行，不占额外高度 */
+.luck-stage > .empty-state {
+  flex: 1 1 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* ---------- 骰子 ---------- */
+
+.die {
+  width: clamp(46px, 19vw, 92px);
+  height: auto;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 5px 0 var(--line-soft)) drop-shadow(0 10px 12px rgba(51, 40, 31, 0.24));
+}
+
+/* 只投一颗时给足戏份 */
+.luck-stage .die:only-child {
+  width: clamp(88px, 34vw, 124px);
+}
+
+.die-body {
+  fill: var(--paper-3);
+  stroke: var(--line);
+  stroke-width: 3;
+}
+
+.die-pips circle {
+  fill: var(--accent);
+  stroke: var(--line);
+  stroke-width: 1.6;
+}
+
+.die-number {
+  fill: var(--accent);
+  stroke: var(--line);
+  stroke-width: 1.2;
+  paint-order: stroke; /* 先描边再填色，数字在骰面上更清楚 */
+  font-family: var(--font-ui);
+  font-weight: 900;
+}
+
+.luck-stage.is-rolling .die {
+  /* 每颗错开一点，看上去像先后落桌；单颗总时长 760ms，仍留在 0.8 秒内 */
+  animation: die-tumble 760ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  animation-delay: calc(var(--die-index, 0) * 40ms);
+}
+
+@keyframes die-tumble {
+  0% {
+    transform: translateY(-16px) rotate(-24deg) scale(0.86);
+  }
+  45% {
+    transform: translateY(2px) rotate(10deg) scale(1.04);
+  }
+  70% {
+    transform: translateY(-4px) rotate(-4deg) scale(0.99);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+/* ---------- 硬币 ---------- */
+
+.coin {
+  width: clamp(96px, 34vw, 128px);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: var(--stroke) solid var(--line);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #fff6e2, var(--accent) 72%);
+  /* 内圈双层纸边 + 两层投影：硬币自己也是一张贴纸 */
+  box-shadow:
+    inset 0 0 0 6px var(--paper-3),
+    inset 0 0 0 8px var(--line-soft),
+    0 5px 0 var(--line-soft),
+    0 12px 16px rgba(51, 40, 31, 0.24);
+  color: var(--accent-ink);
+  will-change: transform;
+}
+
+.coin.is-tails {
+  background: radial-gradient(circle at 34% 28%, #f2fbf7, var(--accent-2) 72%);
+}
+
+.coin-label {
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.luck-stage.is-rolling .coin.is-flipping {
+  /* 三整圈 rotateY：结束时正面朝前，正反靠底色和字区分 */
+  animation: coin-flip 780ms cubic-bezier(0.3, 0.9, 0.3, 1) both;
+}
+
+@keyframes coin-flip {
+  0% {
+    transform: rotateY(0deg) translateY(0);
+  }
+  45% {
+    transform: rotateY(-540deg) translateY(-22px);
+  }
+  100% {
+    transform: rotateY(-1080deg) translateY(0);
+  }
+}
+
+/* ---------- 手机 ---------- */
+
+@media (max-width: 560px) {
+  .luck-stage {
+    gap: 10px;
+    padding: 16px 12px;
+    min-height: 168px;
+  }
+
+  .die-number {
+    stroke-width: 1;
+  }
+}
+
+/* ---------- 减少动效 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* shared/style.css 已把时长压到近零；这里再关掉位移与装饰光晕，结果直接呈现 */
+  .luck-stage.is-rolling .die,
+  .luck-stage.is-rolling .coin.is-flipping {
+    animation: none;
+  }
+
+  .die,
+  .coin {
+    filter: none;
+  }
+
+  .coin {
+    box-shadow:
+      inset 0 0 0 6px var(--paper-3),
+      inset 0 0 0 8px var(--line-soft);
+  }
+}

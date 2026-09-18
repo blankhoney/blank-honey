@@ -1,0 +1,189 @@
+/* 压缩小箱的模式切换与条目清单；颜色复用共享的明暗主题变量。 */
+.mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  background: var(--paper-2);
+}
+
+.mode-tabs button {
+  flex: 1;
+  min-height: var(--tap);
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.mode-tabs button[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
+.panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.panel-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.entries {
+  margin: 1rem 0;
+}
+
+.entries__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.entries__head p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px dashed var(--line-soft);
+}
+
+.entry:last-child {
+  border-bottom: 0;
+}
+
+.entry__label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 0.3rem 0.55rem;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.entry__name {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.entry__meta {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.entry--unsafe .entry__name {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.entry--unsafe .entry__meta {
+  color: var(--accent);
+}
+
+.actions--compact {
+  gap: 0.4rem;
+}
+
+body[data-tool='archive'] .button--ghost {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  background: var(--paper-3);
+  color: var(--ink);
+  border: 1px solid var(--line-soft);
+}
+
+/* 保留透明原生输入，整个按钮仍可键盘聚焦和点选。 */
+.file-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-button input[type='file'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-button:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.drop-zone[data-drag='true'] {
+  border-color: var(--accent);
+  background: var(--paper-2);
+}
+
+.limits,
+.tool-footer__note {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.limits {
+  margin: 0.6rem 0 0;
+}
+
+.tool-footer__note a {
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .entry-list {
+    max-height: 20rem;
+  }
+
+  .entry__label {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  /* 元信息单独占第二行，不用 width:100% 挤掉同排文件名。 */
+  .entry__label .entry__meta {
+    grid-column: 2;
+  }
+}

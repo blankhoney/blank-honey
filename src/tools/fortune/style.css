@@ -1,0 +1,232 @@
+/* 今日小签自己的样式：签卡、四柱格与提示条。
+ *
+ * 这个文件只被 fortune/main.ts 导入，即只在这一个工具页加载；shared/style.css 给 .field
+ * 设了 display:flex，其 [hidden] 规则已经统一兜住 [hidden]，这里不用再补。
+ * 颜色、圆角、阴影都取共享变量：主色是青瓷紫（--accent），第二色是冷蓝（--accent-2），
+ * 签卡单独用固定的珊瑚红（--fortune-coral），暗色下不跟着点缀色变，仍旧像一张红签纸。
+ */
+
+body[data-tool='fortune'] {
+  --fortune-coral: #d4574a;
+  --fortune-coral-ink: #fff4ef;
+  --fortune-coral-soft: #f7d9d2;
+}
+
+@media (prefers-color-scheme: dark) {
+  body[data-tool='fortune'] {
+    --fortune-coral: #e07a68;
+    --fortune-coral-ink: #2a110c;
+    --fortune-coral-soft: #4a231c;
+  }
+}
+
+/* 顶部提示：传统文化与娱乐的边界，第一眼就能看见。 */
+body[data-tool='fortune'] .fortune-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 22%, var(--paper-3));
+  border: var(--stroke) solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sticker);
+}
+
+/* 桌面上左输入右结果；手机上回到一列。 */
+body[data-tool='fortune'] .fortune-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+body[data-tool='fortune'] #fortune-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+body[data-tool='fortune'] .fortune-field-wide {
+  grid-column: 1 / -1;
+}
+
+body[data-tool='fortune'] .fortune-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+body[data-tool='fortune'] .fortune-check input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+
+/* ---------- 结果 ---------- */
+
+body[data-tool='fortune'] .fortune-card {
+  background: var(--paper-3);
+}
+
+body[data-tool='fortune'] .fortune-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding-bottom: 6px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+body[data-tool='fortune'] .fortune-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+body[data-tool='fortune'] .fortune-row__key {
+  color: var(--ink-soft);
+}
+
+body[data-tool='fortune'] .fortune-row__value {
+  font-family: var(--font-mono);
+  text-align: right;
+  word-break: break-word;
+}
+
+body[data-tool='fortune'] .fortune-line {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+/* 四柱：桌面四格，手机两格。 */
+body[data-tool='fortune'] .fortune-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body[data-tool='fortune'] .fortune-pillar {
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+  text-align: center;
+  background: var(--paper-2);
+}
+
+body[data-tool='fortune'] .fortune-pillar__value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* 未定与跨节气的两值柱：虚线描边，提示这不是一个确定值。 */
+body[data-tool='fortune'] .fortune-pillar__value[data-state='undetermined'] {
+  color: var(--ink-soft);
+}
+
+body[data-tool='fortune'] .fortune-pillar:has(.fortune-pillar__value[data-state='undetermined']) {
+  border-style: dashed;
+}
+
+body[data-tool='fortune'] .fortune-pillar__wuxing {
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+body[data-tool='fortune'] .fortune-warnings {
+  margin: 0;
+  padding: 10px 14px 10px 30px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border: var(--stroke-thin) dashed var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* 娱乐签卡：奶油纸上压一张珊瑚红签。 */
+body[data-tool='fortune'] .fortune-sign {
+  background: var(--fortune-coral-soft);
+}
+
+body[data-tool='fortune'] .fortune-sign .fortune-row {
+  border-bottom-color: color-mix(in srgb, var(--fortune-coral) 35%, transparent);
+}
+
+body[data-tool='fortune'] .fortune-sign__title {
+  margin: 0;
+  padding: 6px 12px;
+  align-self: flex-start;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--fortune-coral-ink);
+  background: var(--fortune-coral);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sticker);
+}
+
+body[data-tool='fortune'] .fortune-sign__for,
+body[data-tool='fortune'] .fortune-sign__note {
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ---------- 口径说明 ---------- */
+
+body[data-tool='fortune'] .fortune-notes {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+body[data-tool='fortune'] .fortune-notes summary {
+  min-height: var(--tap);
+  padding: 8px 12px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+body[data-tool='fortune'] .fortune-notes ul {
+  margin: 12px 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
+
+body[data-tool='fortune'] .fortune-notes p {
+  margin: 0;
+}
+
+/* ---------- 手机 ---------- */
+
+@media (max-width: 700px) {
+  body[data-tool='fortune'] .fortune-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  body[data-tool='fortune'] .fortune-pillars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-tool='fortune'] .fortune-banner {
+    border-radius: var(--radius);
+    font-size: 0.84rem;
+  }
+}

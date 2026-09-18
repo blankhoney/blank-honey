@@ -9,6 +9,7 @@ import {
   type Article,
 } from '../src/domain/content';
 import { enclosure, httpUrl } from '../scripts/build-radio';
+import { config } from '../src/config';
 const article = (id: string, date: string, category = 'daily', draft = false): Article => ({
   id,
   data: articleSchema.parse({ title: id, description: id, date, category, draft }),
@@ -93,21 +94,20 @@ test('Article picture output includes real AVIF/WebP files and retains dimension
   }
 });
 
-test('Lab build copies relative assets, injects return links, and rejects traversal', async () => {
+test('Lab build bundles tool pages, injects return links, and rejects traversal', async () => {
   const { mkdtemp, mkdir, writeFile, readFile, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join, resolve } = await import('node:path');
   const { spawnSync } = await import('node:child_process');
+  const { tools, experiments } = config;
   const root = await mkdtemp(join(tmpdir(), 'blog-lab-'));
   const script = resolve('scripts/build-lab.ts');
   const env = {
     ...process.env,
     SITE_URL: 'http://localhost:8080',
     LAB_ORIGIN: 'http://localhost:8081',
-    TOOL_JSON_URL: '',
-    TOOL_TIMER_URL: '',
-    TOOL_TEXT_URL: '',
     LAB_PAPER_URL: '',
+    ...Object.fromEntries(tools.map((tool) => [tool.urlEnv, ''])),
   };
   const run = () =>
     spawnSync(process.execPath, ['--import', import.meta.resolve('tsx'), script], {
@@ -116,39 +116,66 @@ test('Lab build copies relative assets, injects return links, and rejects traver
       encoding: 'utf8',
     });
   try {
-    await mkdir(join(root, 'examples'));
-    for (const name of ['json', 'timer', 'text', 'paper'])
+    // The lab build reads config for its slugs but the sources from the working
+    // directory, so a minimal tool per registered slug stands in for the real ones.
+    await mkdir(join(root, 'src/tools/shared'), { recursive: true });
+    await writeFile(join(root, 'src/tools/shared/style.css'), 'body { color: black }');
+    for (const tool of tools) {
+      await mkdir(join(root, 'src/tools', tool.slug), { recursive: true });
       await writeFile(
-        join(root, `examples/${name}.html`),
+        join(root, 'src/tools', tool.slug, 'index.html'),
+        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">' +
+          `<title>${tool.name}</title><link href="../shared/style.css" rel="stylesheet"></head>` +
+          `<body data-tool="${tool.slug}"><a class="back-link" href="__SITE_RETURN__">Return</a>` +
+          '<script type="module" src="./main.ts"></script></body></html>',
+      );
+      await writeFile(
+        join(root, 'src/tools', tool.slug, 'main.ts'),
+        `document.body.dataset.tool = ${JSON.stringify(tool.slug)};\n`,
+      );
+    }
+    await mkdir(join(root, 'examples'));
+    for (const experiment of experiments)
+      await writeFile(
+        join(root, experiment.html),
         '<a href="__SITE_RETURN__">Return</a><link href="style.css" rel="stylesheet">',
       );
     await writeFile(join(root, 'examples/style.css'), 'body { color: black }');
-    await writeFile(
-      join(root, 'examples/json.html'),
-      '<a href="__SITE_RETURN__">Return</a><link href="style.css" rel="stylesheet"><a href="second.html">Next</a>',
-    );
-    await writeFile(join(root, 'examples/second.html'), '<a href="json.html">Back</a>');
-    assert.equal(run().status, 0);
+    const built = run();
+    assert.equal(built.status, 0, built.stderr);
+    for (const tool of tools) {
+      const html = await readFile(join(root, 'lab-dist/tools', tool.slug, 'index.html'), 'utf8');
+      assert.match(html, /http:\/\/localhost:8080\/tools\//);
+      assert.doesNotMatch(html, /__SITE_RETURN__/);
+      assert.doesNotMatch(html, /\.\.\/shared\/style\.css/);
+      const assets = [...html.matchAll(/(?:src|href)="(\.\.\/assets\/[^"?#]+)"/g)].map(
+        (match) => match[1],
+      );
+      assert.ok(
+        assets.some((name) => name.endsWith('.css')),
+        `${tool.slug} has bundled CSS`,
+      );
+      assert.ok(
+        assets.some((name) => name.endsWith('.js')),
+        `${tool.slug} has bundled JS`,
+      );
+      for (const asset of assets)
+        assert.ok((await readFile(resolve(root, 'lab-dist/tools', tool.slug, asset))).length > 0);
+    }
+    for (const experiment of experiments)
+      assert.match(
+        await readFile(join(root, 'lab-dist/experiments', experiment.slug, 'index.html'), 'utf8'),
+        /http:\/\/localhost:8080\/lab\//,
+      );
     assert.match(
-      await readFile(join(root, 'lab-dist/tools/json/index.html'), 'utf8'),
-      /http:\/\/localhost:8080\/tools\//,
-    );
-    assert.match(
-      await readFile(join(root, 'lab-dist/tools/json/style.css'), 'utf8'),
+      await readFile(join(root, 'lab-dist/experiments/paper/style.css'), 'utf8'),
       /color: black/,
     );
-    // The entry is published as index.html, but sibling links still use its original name.
-    assert.match(
-      await readFile(join(root, 'lab-dist/tools/json/json.html'), 'utf8'),
-      /href="second.html"/,
-    );
-    assert.match(
-      await readFile(join(root, 'lab-dist/tools/json/second.html'), 'utf8'),
-      /href="json.html"/,
-    );
+    // The static experiment copy still refuses to follow a reference out of its own
+    // directory, even though the tool build has its own boundary.
     await writeFile(join(root, 'outside.css'), 'private');
     await writeFile(
-      join(root, 'examples/json.html'),
+      join(root, 'examples/paper.html'),
       '<link href="../outside.css" rel="stylesheet">',
     );
     const rejected = run();

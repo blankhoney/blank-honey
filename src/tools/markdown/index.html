@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Markdown 书桌 · 在本机读 .md 文件 | BLANK HONEY 工具箱</title>
+    <meta
+      name="description"
+      content="把 .md 或 .markdown 文件放进书桌，在本机读成排版好的正文，也能切回原文。文件不上传、不保存，图片不会自动加载。"
+    />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body data-tool="markdown">
+    <div class="tool-shell">
+      <header class="tool-header">
+        <p class="tool-eyebrow">TOOLBOX · MARKDOWN</p>
+        <span class="tool-mascot" aria-hidden="true">
+          <!-- 原创小图标：一本摊开的书，书页上有几行字 -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+            <path
+              d="M16 8.6C13.2 6.6 9.5 5.7 5 5.7v18.6c4.5 0 8.2.9 11 2.9 2.8-2 6.5-2.9 11-2.9V5.7c-4.5 0-8.2.9-11 2.9Z"
+              fill="#fffaf0"
+            />
+            <path d="M16 8.6v18.6" />
+            <path d="M8.6 11h3.6M8.6 14.6h5M19.8 11h3.6M18.4 14.6h5" stroke-linecap="round" />
+          </svg>
+        </span>
+        <h1 class="tool-title">Markdown 书桌</h1>
+        <p class="tool-description">把 .md 或 .markdown 放在这里，文件只在本机阅读。</p>
+      </header>
+
+      <main class="workspace">
+        <section class="panel" aria-labelledby="input-heading">
+          <h2 class="panel-header" id="input-heading">
+            放一份文件
+            <small>只在这台设备上读，不保存</small>
+          </h2>
+
+          <!-- 拖入是增强：文件输入本身是唯一入口，键盘也能打开 -->
+          <label class="drop-zone" id="drop-zone">
+            <input
+              type="file"
+              id="file-input"
+              accept=".md,.markdown"
+              aria-describedby="drop-hint"
+            />
+            <span class="drop-zone__icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" width="40" height="40" focusable="false">
+                <path
+                  d="M13 5h14l9 9v29H13z"
+                  fill="currentColor"
+                  opacity="0.2"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M27 5v9h9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M24 22v14m0-14-5 5m5-5 5 5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </span>
+            <span class="drop-zone__title">拖入 Markdown 文件，或点这里选择</span>
+            <span class="drop-zone__hint" id="drop-hint">
+              支持 .md、.markdown；UTF-8 编码，单个文件不超过 2 MiB
+            </span>
+          </label>
+
+          <div class="actions">
+            <button class="button" type="button" id="mode-render" aria-pressed="true" disabled>
+              渲染
+            </button>
+            <button
+              class="button button--secondary"
+              type="button"
+              id="mode-source"
+              aria-pressed="false"
+              disabled
+            >
+              原文
+            </button>
+            <button class="button button--secondary" type="button" id="clear">清空</button>
+          </div>
+
+          <p class="markdown-meta" id="metadata" hidden></p>
+          <p class="status" id="status" role="status">还没有打开文件。放一份 .md 进来试试。</p>
+          <p class="status" id="error" role="alert" hidden></p>
+        </section>
+
+        <section class="panel" aria-labelledby="reading-heading">
+          <h2 class="panel-header" id="reading-heading">
+            阅读
+            <small id="reading-file"></small>
+          </h2>
+
+          <p class="empty-state" id="empty-state">
+            这里会出现排版好的正文。放一份 Markdown 文件进来，就能读到渲染结果。
+          </p>
+          <!-- 渲染结果由 main.ts 写入；原始 HTML 只作为文字显示，图片不会自动加载 -->
+          <article class="markdown-body" id="preview" data-preview hidden></article>
+          <pre
+            class="markdown-source"
+            id="source-view"
+            data-source
+            hidden
+          ><code id="source-code"></code></pre>
+        </section>
+      </main>
+
+      <footer class="tool-footer">
+        <p class="privacy-note">
+          文件只在本机读取，不上传、不进网址、不写本地存储，也不请求任何外部站点。原始 HTML
+          会原样显示成文字，图片默认不加载，只留下它的位置和地址。只接受 UTF-8 编码、不超过 2 MiB 的
+          .md / .markdown 文件。
+        </p>
+        <div class="foot-links">
+          <a class="foot-link" href="../licenses/">第三方许可</a>
+          <a class="back-link" href="__SITE_RETURN__">← 返回博客工具箱</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

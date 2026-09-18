@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>图片裁切 · 转一转、裁一裁再下载 | BLANK HONEY 工具箱</title>
+    <meta
+      name="description"
+      content="在本机裁切 PNG、JPEG、WebP 图片：拖动裁切框或输入选框坐标，旋转、缩放，再按需要的像素尺寸导出。图片不上传，也不进网址或本地存储。"
+    />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body data-tool="image-crop">
+    <div class="tool-shell">
+      <header class="tool-header">
+        <p class="tool-eyebrow">TOOLBOX · IMAGE CROP</p>
+        <span class="tool-mascot" aria-hidden="true">
+          <!-- 原创小图标：一把剪刀停在一只画框边上 -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="9" width="20" height="17" rx="3" fill="#fffaf0" />
+            <path d="M2 14h20" stroke-linecap="round" />
+            <path d="M8 9v17M16 9v17" opacity="0.4" stroke-linecap="round" />
+            <path d="M21.5 5.5 27.5 9.5l-6 4" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="28.6" cy="14.4" r="2" fill="#fffaf0" />
+          </svg>
+        </span>
+        <h1 class="tool-title">图片裁切</h1>
+        <p class="tool-description">
+          转一转、裁一裁，留下刚刚好的画面，再下载。<br />
+          图片只在这台设备的内存里处理：不上传、不进网址，也不写进本地存储。
+        </p>
+      </header>
+
+      <main class="workspace">
+        <section class="panel" aria-labelledby="upload-heading">
+          <h2 class="panel-header" id="upload-heading">
+            放一张图片
+            <small>PNG / JPEG / WebP（静态），单张 ≤ 20 MiB、32 MP</small>
+          </h2>
+
+          <!-- 拖入只是增强：下面的文件输入始终可以用鼠标、键盘或读屏软件操作 -->
+          <div class="drop-zone" id="drop">
+            <svg
+              viewBox="0 0 32 32"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="5" width="26" height="22" rx="4" fill="#fffaf0" />
+              <circle cx="11" cy="13" r="2.6" />
+              <path
+                d="M5 25l7.5-7 5 4.5L22 18l5 6.5"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+              />
+            </svg>
+            <!-- label 借共享按钮的样式，点它一样能打开文件选择；原生 input 仍然在页面上可聚焦 -->
+            <label class="button drop-label" for="file">选择一张图片</label>
+            <input
+              type="file"
+              id="file"
+              accept="image/png,image/jpeg,image/webp"
+              aria-describedby="drop-hint"
+            />
+            <small class="field-hint" id="drop-hint">
+              也可以直接把图片拖进这个框里。文件名只用来生成下载名，页面不会记录它。
+            </small>
+          </div>
+        </section>
+
+        <div class="crop-layout">
+          <section class="panel" aria-labelledby="stage-heading">
+            <h2 class="panel-header" id="stage-heading">
+              裁切工作区
+              <small id="stage-meta">还没有图片</small>
+            </h2>
+
+            <!-- 图片与裁切框都由 cropperjs 渲染在这个容器里；未载入图片时只显示空状态。 -->
+            <div class="crop-stage" id="stage">
+              <p class="empty-state" id="stage-empty">
+                选择或拖入一张图片后，这里会出现可以拖动、缩放的裁切框。
+              </p>
+            </div>
+
+            <div id="preview-slot" hidden>
+              <div class="result-card">
+                <span class="result-card__label">预览</span>
+                <!-- 预览是导出后的真实位图，尺寸与字节数写在下边，不看图片的显示大小 -->
+                <img id="preview-image" alt="裁切结果预览" decoding="async" />
+                <p class="preview-meta" id="preview-meta"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="controls-heading">
+            <h2 class="panel-header" id="controls-heading">
+              调整与导出
+              <small id="image-meta">未载入图片</small>
+            </h2>
+
+            <!-- 一条 fieldset 负责整组控件的可用性：图片没载入或正在读取时统一禁用 -->
+            <fieldset class="controls" id="controls" disabled>
+              <legend class="visually-hidden">裁切范围与导出设置</legend>
+
+              <div class="field">
+                <span class="field-label" id="ratio-label">裁切比例</span>
+                <div class="choice-group" role="group" aria-labelledby="ratio-label" id="ratios">
+                  <button class="choice ratio" type="button" data-ratio="free" aria-pressed="true">
+                    自由
+                  </button>
+                  <button class="choice ratio" type="button" data-ratio="1" aria-pressed="false">
+                    1:1
+                  </button>
+                  <button
+                    class="choice ratio"
+                    type="button"
+                    data-ratio="1.3333333333333333"
+                    aria-pressed="false"
+                  >
+                    4:3
+                  </button>
+                  <button
+                    class="choice ratio"
+                    type="button"
+                    data-ratio="1.7777777777777777"
+                    aria-pressed="false"
+                  >
+                    16:9
+                  </button>
+                  <button class="choice ratio" type="button" data-ratio="0.75" aria-pressed="false">
+                    3:4
+                  </button>
+                </div>
+                <small class="field-hint"
+                  >选固定比例会重新框出一块居中的选区，图片本身不变形。</small
+                >
+              </div>
+
+              <div class="field">
+                <span class="field-label" id="view-label">转视图</span>
+                <div class="actions" role="group" aria-labelledby="view-label">
+                  <button class="button button--secondary" type="button" id="rotate-left">
+                    向左转 90°
+                  </button>
+                  <button class="button button--secondary" type="button" id="rotate-right">
+                    向右转 90°
+                  </button>
+                  <button class="button button--secondary" type="button" id="zoom-out">缩小</button>
+                  <button class="button button--secondary" type="button" id="zoom-in">放大</button>
+                  <button class="button button--secondary" type="button" id="reset">
+                    重置视图
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="field">
+                  <label for="sel-x">左侧 X（CSS 像素）</label>
+                  <input type="number" id="sel-x" inputmode="numeric" step="1" min="0" />
+                </div>
+                <div class="field">
+                  <label for="sel-y">顶部 Y（CSS 像素）</label>
+                  <input type="number" id="sel-y" inputmode="numeric" step="1" min="0" />
+                </div>
+                <div class="field">
+                  <label for="sel-w">选区宽（CSS 像素）</label>
+                  <input type="number" id="sel-w" inputmode="numeric" step="1" min="1" />
+                </div>
+                <div class="field">
+                  <label for="sel-h">选区高（CSS 像素）</label>
+                  <input type="number" id="sel-h" inputmode="numeric" step="1" min="1" />
+                </div>
+              </div>
+              <small class="field-hint"
+                >这四个数是裁切框在工作区里的位置和大小，改完立刻生效。</small
+              >
+
+              <div class="form-grid">
+                <div class="field">
+                  <label for="export-width">导出宽度（像素）</label>
+                  <input
+                    type="number"
+                    id="export-width"
+                    inputmode="numeric"
+                    step="1"
+                    min="1"
+                    max="8192"
+                  />
+                </div>
+                <div class="field">
+                  <label for="export-height">导出高度（像素）</label>
+                  <!-- 高度由选区比例与导出宽度算出来，只读展示，免得两个数字互相矛盾 -->
+                  <input type="number" id="export-height" readonly aria-readonly="true" />
+                </div>
+                <div class="field">
+                  <label for="format">导出格式</label>
+                  <select id="format">
+                    <option value="image/png" selected>PNG（保留透明）</option>
+                    <option value="image/jpeg">JPEG（白底）</option>
+                    <option value="image/webp">WebP（保留透明）</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="quality">品质（JPEG / WebP）</label>
+                  <input type="range" id="quality" min="0.1" max="1" step="0.05" value="0.9" />
+                  <small class="field-hint"
+                    >当前 <output id="quality-value" for="quality">0.9</output></small
+                  >
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="button" type="button" id="generate">生成预览</button>
+                <button class="button button--secondary" type="button" id="download" disabled>
+                  下载裁切图
+                </button>
+                <button class="button button--danger" type="button" id="clear">清空图片</button>
+              </div>
+            </fieldset>
+
+            <p class="status" id="status" role="status">
+              选择一张图片后，这里会说明裁切与导出的结果。
+            </p>
+            <!-- 错误单独播报，并且留到下一次操作，不和成功提示混在一起 -->
+            <p class="status" id="error" role="alert" hidden></p>
+          </section>
+        </div>
+      </main>
+
+      <footer class="tool-footer">
+        <p class="privacy-note">
+          只在本机处理：图片不会上传，也不会写进网址、日志或本地存储。单张上限 20 MiB、32
+          MP，导出单边不超过 8192 像素、总量不超过 32 MP。只支持 PNG、JPEG 与静态 WebP。
+        </p>
+        <a href="../licenses/">第三方许可</a>
+        <a class="back-link" href="__SITE_RETURN__">← 返回博客工具箱</a>
+      </footer>
+    </div>
+  </body>
+</html>

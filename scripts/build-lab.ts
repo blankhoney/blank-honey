@@ -2,6 +2,7 @@ import { mkdir, readFile, realpath, rm, writeFile, copyFile } from 'node:fs/prom
 import { dirname, relative, resolve, sep } from 'node:path';
 import { config } from '../src/config';
 import { httpUrl } from './build-radio';
+import { buildTools } from './build-tools';
 import { experiments, experimentFiles } from '../src/application/experiments';
 const root = await realpath('.');
 const output = resolve('lab-dist');
@@ -25,6 +26,9 @@ for (const kind of ['tools', 'experiments'] as const) {
         throw new Error('Tool destination must use a separate origin');
       continue;
     }
+    // Local tools build from their own source tree; only experiments use the static
+    // HTML copy, which follows relative references and refuses paths outside the page.
+    if (kind === 'tools') continue;
     const source = await realpath(resolve(item.html));
     if (!inside(root, source)) throw new Error('HTML outside project');
     const base = dirname(source),
@@ -65,6 +69,10 @@ for (const kind of ['tools', 'experiments'] as const) {
     await copy(source, resolve(target, 'index.html'));
   }
 }
+
+// Local tools are Vite multi-page graphs rooted at `src/tools`; entries that stay
+// external through `urlEnv` are registered above but not built here.
+await buildTools({ root, output, site });
 
 // Benchmark outputs are immutable artifacts: copy the whole vetted tree, without substitutions.
 for (const experiment of await experiments(root)) {

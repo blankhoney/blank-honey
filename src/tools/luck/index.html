@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>公平好运 · 投骰子与抛硬币 | BLANK HONEY 工具箱</title>
+    <meta
+      name="description"
+      content="在本机投骰子、抛硬币：d4 到 d100，一次可投六颗。每一面的机会相同，随机数只来自浏览器的 Web Crypto。"
+    />
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body data-tool="luck">
+    <div class="tool-shell">
+      <header class="tool-header">
+        <p class="tool-eyebrow">TOOLBOX · LUCK</p>
+        <span class="tool-mascot" aria-hidden="true">
+          <!-- 原创小图标：一颗骰子上叠一枚硬币 -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="10" width="18" height="18" rx="5" fill="#fffaf0" />
+            <circle cx="8" cy="16" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="14" cy="22" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="8" cy="22" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="14" cy="16" r="1.6" fill="currentColor" stroke="none" />
+            <circle cx="23" cy="9" r="7.5" fill="#fffaf0" />
+            <path d="M23 5.6v6.8M21 7.2h4" stroke-linecap="round" />
+          </svg>
+        </span>
+        <h1 class="tool-title">公平好运</h1>
+        <p class="tool-description">投骰子，抛硬币。每一面都有相同的机会——包括你不想看到的那些。</p>
+      </header>
+
+      <main class="workspace">
+        <section class="panel" aria-labelledby="stage-heading">
+          <h2 class="panel-header" id="stage-heading">
+            投掷台
+            <small id="stage-mode">骰子模式 · d6 · 1 颗</small>
+          </h2>
+
+          <!-- 只画图形：骰子与硬币内部标了 aria-hidden，结果统一由下面的 status 播报 -->
+          <div class="luck-stage" id="stage">
+            <!-- 具体骰子/硬币由 main.ts 渲染 -->
+            <p class="empty-state">还没有投掷。选好面数与颗数，然后按下面的按钮。</p>
+          </div>
+
+          <p class="status" id="status" role="status">结果会在这里用文字说明，方便读屏软件朗读。</p>
+        </section>
+
+        <section class="panel" aria-labelledby="controls-heading">
+          <h2 class="panel-header" id="controls-heading">
+            选择
+            <small>只在本机计算</small>
+          </h2>
+
+          <div class="form-grid">
+            <div class="field">
+              <span class="field-label" id="mode-label">投掷什么</span>
+              <div class="choice-group" role="group" aria-labelledby="mode-label">
+                <button class="choice" type="button" id="mode-dice" aria-pressed="true">
+                  骰子
+                </button>
+                <button class="choice" type="button" id="mode-coin" aria-pressed="false">
+                  硬币
+                </button>
+              </div>
+            </div>
+
+            <div class="field" id="faces-field">
+              <span class="field-label" id="faces-label">骰子面数</span>
+              <div class="choice-group" role="group" aria-labelledby="faces-label" id="faces">
+                <button class="choice" type="button" data-faces="4" aria-pressed="false">d4</button>
+                <button class="choice" type="button" data-faces="6" aria-pressed="true">d6</button>
+                <button class="choice" type="button" data-faces="8" aria-pressed="false">d8</button>
+                <button class="choice" type="button" data-faces="10" aria-pressed="false">
+                  d10
+                </button>
+                <button class="choice" type="button" data-faces="12" aria-pressed="false">
+                  d12
+                </button>
+                <button class="choice" type="button" data-faces="20" aria-pressed="false">
+                  d20
+                </button>
+                <button class="choice" type="button" data-faces="100" aria-pressed="false">
+                  d100
+                </button>
+              </div>
+            </div>
+
+            <div class="field" id="count-field">
+              <span class="field-label" id="count-label">骰子颗数</span>
+              <div class="choice-group" role="group" aria-labelledby="count-label" id="counts">
+                <button class="choice" type="button" data-count="1" aria-pressed="true">1</button>
+                <button class="choice" type="button" data-count="2" aria-pressed="false">2</button>
+                <button class="choice" type="button" data-count="3" aria-pressed="false">3</button>
+                <button class="choice" type="button" data-count="4" aria-pressed="false">4</button>
+                <button class="choice" type="button" data-count="5" aria-pressed="false">5</button>
+                <button class="choice" type="button" data-count="6" aria-pressed="false">6</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="button" type="button" id="roll">投骰子</button>
+            <button class="button button--secondary" type="button" id="clear">清空记录</button>
+          </div>
+
+          <p class="privacy-note">
+            随机数由浏览器 Web Crypto
+            的拒绝采样生成，只在这台设备上计算，不上传、不写入网址或本地存储。
+          </p>
+        </section>
+
+        <section class="panel" aria-labelledby="history-heading">
+          <h2 class="panel-header" id="history-heading">
+            最近记录
+            <small id="history-count">最近 0 / 12 轮</small>
+          </h2>
+          <div id="history-slot">
+            <p class="empty-state">这一轮还没有记录。每投一次，这里留下最近 12 轮。</p>
+          </div>
+        </section>
+      </main>
+
+      <footer class="tool-footer">
+        <p class="privacy-note">
+          机会平等不等于好运。这里不做预测，也不声称能改变运气，只是把随机弄得干净一点。
+        </p>
+        <a class="back-link" href="__SITE_RETURN__">← 返回博客工具箱</a>
+      </footer>
+    </div>
+  </body>
+</html>

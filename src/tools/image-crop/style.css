@@ -1,0 +1,136 @@
+/* 图片裁切自己的样式：上传框之外的两栏布局、裁切工作区与导出控件。
+ *
+ * 这个文件只被 image-crop/main.ts 导入，即只在这一个工具页加载，所以选择器不做额外前缀。
+ * 颜色、圆角、阴影都取 shared/style.css 的变量：本工具的点缀色是浅蓝（--accent 由
+ * body[data-tool='image-crop'] 给出，暗色下有另一套），蜜黄（--accent-2）留作次要提示。
+ */
+
+/* ---------- 上传 ---------- */
+
+.drop-label {
+  /* 用共享按钮的外观承载 label：点击仍然打开文件选择，键盘焦点留在下面的 input 上 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- 两栏：左边裁切、右边控制 ---------- */
+
+.crop-layout {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .crop-layout {
+    /* minmax(0, …) 防止内容撑破列宽，手机与窄窗口下自动回落成一列 */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* 一条 fieldset 负责整组控件的禁用状态，但它不参与布局：
+   display: contents 让里面的控件照旧按面板的列流排列（禁用语义由表单层负责）。 */
+.controls {
+  display: contents;
+}
+
+/* ---------- 裁切工作区 ---------- */
+
+.crop-stage {
+  /* 高度写死：cropperjs 的 cropper-canvas 需要一个尺寸确定的父元素
+     （它自带 min-width: 200px / min-height: 100px 的兜底样式）。
+     手机 320px，宽屏 420px；宽度始终 100%，不会把页面撑出横向滚动。 */
+  position: relative;
+  width: 100%;
+  height: 320px;
+  display: grid;
+  overflow: hidden;
+  background: var(--paper-2);
+  border: var(--stroke-thin) solid var(--line-soft);
+  border-radius: var(--radius);
+}
+
+@media (min-width: 720px) {
+  .crop-stage {
+    height: 420px;
+  }
+}
+
+/* 原图只是 cropperjs 的输入源：它自己会设为 display:none，这里再兜一层，
+   避免构造失败时一张巨图把页面撑出横向滚动条。 */
+.crop-stage > img {
+  display: none;
+}
+
+.crop-stage > .empty-state {
+  align-self: center;
+  margin: 0 auto;
+  max-width: 32ch;
+  background: transparent;
+  border: 0;
+}
+
+/* cropperjs 的元素都在 shadow DOM 里，这里只能控外层尺寸。
+   cropper-canvas 自己不产生高度，必须撑满工作区，否则会缩到它 100px 的兜底高度。 */
+.crop-stage cropper-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius);
+}
+
+/* ---------- 预览 ---------- */
+
+#preview-slot .result-card {
+  margin-top: 14px;
+}
+
+.preview-meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+#preview-image {
+  /* 透明底也要看得清边界：给预览铺一层浅格，JPEG 的白底同样看得出来 */
+  background-color: var(--paper-3);
+  background-image:
+    linear-gradient(45deg, var(--line-soft) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--line-soft) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--line-soft) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--line-soft) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0;
+  border: var(--stroke-thin) solid var(--line-soft);
+}
+
+/* ---------- 导出控件 ---------- */
+
+#quality {
+  width: 100%;
+  min-height: var(--tap);
+  /* 原生滑块按点缀色着色，亮暗两种配色都跟着走 */
+  accent-color: var(--accent);
+}
+
+#export-height[readonly] {
+  /* 只读的高度是算出来的，压暗一点，和可编辑的宽度区分开 */
+  color: var(--ink-soft);
+  background: var(--paper-2);
+}
+
+/* ---------- 手机 ---------- */
+
+@media (max-width: 560px) {
+  /* 手机上维持 320px 的工作区高度（基础值就是它），只收紧空状态的内边距 */
+  .crop-stage > .empty-state {
+    padding: 18px 12px;
+  }
+}
