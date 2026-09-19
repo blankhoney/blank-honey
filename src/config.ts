@@ -7,6 +7,7 @@ export const config = {
   demoContent: false,
   sayings: ['Tempus fugit', 'Labor omnia vincit', 'Ars longa, vita brevis', 'Per aspera ad astra'],
   navigation: [
+    { href: '/', label: '返回展示页', en: 'SHOWCASE' },
     { href: '/articles/', label: '文章', en: 'ARTICLES' },
     { href: '/probe/', label: '探针', en: 'PROBE' },
     { href: '/map/', label: '地图', en: 'MAP' },
@@ -28,6 +29,7 @@ export const config = {
     { id: 'miniload', name: '像素云', source: 'https://miniload.top' },
     { id: 'isaca', name: '错层索引', source: 'https://isaca.pro' },
     { id: 'yantao', name: '代码札记', source: 'https://yantao.wiki' },
+    { id: 'birds', name: '群鸟掠空', source: 'https://www.vantajs.com/?effect=birds' },
     // ios25span.com is unavailable; add its verified effect here when the reference returns.
   ],
   particles: { desktop: 1100, mobile: 420, light: 240 },

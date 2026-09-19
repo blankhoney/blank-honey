@@ -1,5 +1,5 @@
 import type { TransitionBeforeSwapEvent } from 'astro:transitions/client';
-import { initNavigation } from './navigation';
+import { initNavigation, isNavigationCurrent } from './navigation';
 import { initFloatingSearch } from './floating-search';
 import { applyPreferences, commentTheme, store } from './preferences';
 import { initSearch } from './search';
@@ -64,9 +64,7 @@ async function mount() {
   const signal = controller.signal;
   applyPreferences();
   shell.querySelectorAll<HTMLAnchorElement>('nav a').forEach((a) => {
-    const active =
-      location.pathname.startsWith(a.pathname) ||
-      (a.pathname === '/articles/' && /^\/(blog|category)\//.test(location.pathname));
+    const active = isNavigationCurrent(location.pathname, a.pathname);
     if (active) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });

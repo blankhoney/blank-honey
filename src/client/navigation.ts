@@ -1,5 +1,13 @@
 import { capability } from './preferences';
 
+export function isNavigationCurrent(pathname: string, target: string): boolean {
+  if (target === '/') return pathname === '/';
+  return (
+    pathname.startsWith(target) ||
+    (target === '/articles/' && /^\/(blog|category)\//.test(pathname))
+  );
+}
+
 export function initNavigation() {
   const shell = document.querySelector<HTMLElement>('#shell')!;
   const panel = shell.querySelector<HTMLElement>('#navigation')!;

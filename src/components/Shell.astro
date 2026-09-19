@@ -66,7 +66,7 @@ const github = import.meta.env.PUBLIC_GITHUB_URL || config.githubUrl;
     <nav>
       {config.navigation.map((n, i) => (
         <a href={n.href}>
-          <small>{String(i + 1).padStart(2, '0')}</small>
+          <small>{n.href === '/' ? '↖' : String(i).padStart(2, '0')}</small>
           <span>{n.label}</span>
           <small>{n.en}</small>
         </a>

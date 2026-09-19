@@ -234,6 +234,50 @@
   box-shadow: 5px 5px #161818;
   padding: 10px 20px;
 }
+/* Vanta's full-stage flock stays behind a restrained text-legibility vignette. */
+#hero[data-effect='birds'] {
+  background: #07192f;
+  color: #f2f7ff;
+}
+#hero[data-effect='birds'] .flock-layer,
+#hero[data-effect='birds'] .flock-still {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+#hero[data-effect='birds'] .flock-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 44%, #07192f99 0%, #07192f38 36%, transparent 65%),
+    linear-gradient(to bottom, #07192f40, transparent 22%, transparent 76%, #07192fb3);
+}
+#hero[data-effect='birds'] .hero-copy {
+  top: 34%;
+  text-shadow: 0 2px 26px #07192f;
+}
+#hero[data-effect='birds'] .hero-copy h1 {
+  font-style: italic;
+}
+#hero[data-effect='birds'] .hero-description {
+  letter-spacing: 0.12em;
+}
+#hero[data-effect='birds'] .flock-still i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: calc(var(--size) * 0.6);
+  background: linear-gradient(135deg, #3acfff, #c587ef 60%, #fc6f9a);
+  clip-path: polygon(0 0, 47% 40%, 100% 5%, 65% 67%, 50% 100%, 36% 67%);
+  transform: rotate(var(--tilt));
+  opacity: 0.6;
+}
+#hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
+  visibility: hidden;
+}
 #hero[data-reduced='true'] *,
 #hero[data-reduced='true'] *::before {
   animation: none !important;

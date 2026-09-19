@@ -9,13 +9,19 @@
 | isaca | https://isaca.pro ：两张明暗大卡片错层切换，舒缓入场 | 原生 CSS transform/transition；未复制无明确许可的站点 bundle |
 | yantao | https://yantao.wiki ：当前 Memphis 首屏，连线粒子、代码窗口打字、轮播 | 项目已安装的 tsParticles（MIT），原生文字渐进呈现；不复制主题脚本 |
 
-第五站 https://ios25span.com 在 Chrome、直接网络及代理 HTTP/HTTPS 均未能打开，未核验，不以其他效果冒充。待参考恢复再加入配置。
+原始第五个参考站 https://ios25span.com 在当时的 Chrome、直接网络及代理 HTTP/HTTPS 均未能打开，未核验，不以其他效果冒充。2026-09-19 另按用户新需求增加下述群鸟效果，不声称它来自该站。
+
+## 群鸟掠空（2026-09-19）
+
+第五款 `birds` 复用 [Vanta BIRDS](https://www.vantajs.com/?effect=birds) 的 GPU Boids 与折纸鸟形。已实际查看聚拢、近远穿梭、振翅的多个过程帧和鼠标扰动，并核实[个人主页集成教程](https://blog.patrickskinner.tech/how-to-create-a-badass-links-page-with-3d-motion-background-using-vantajs)确实使用 `VANTA.BIRDS`；教程文章本身不是运行该效果的首页，未复制博主内容。
+
+固定 Vanta **0.5.24** 的 shader/geometry 提取到 `../vendor/vanta-birds.ts`，保留成熟群鸟规则；Three **0.186.0** 官方 GPUComputationRenderer 替代旧计算封装。本站负责延迟加载、full/light预算、静态回退、唯一 RAF 与完整资源清理；不引入 Vanta Base 的全局修改和旧资源泄漏。具体来源、单鸟 UV 修正与其他差异见 [提取说明](../vendor/vanta-birds.md)。完整 MIT 随部署保留于 `/vendor/licenses/vanta-LICENSE.txt` 与 `/vendor/licenses/three-LICENSE.txt`。
 
 ## 许可边界
 
 - AquaInkGL 未提供明确仓库许可，因此没有复制其代码；直接使用带 MIT 许可的同算法上游封装：https://github.com/michaelbrusegard/WebGL-Fluid-Enhanced 。
 - React Bits 当前及 Dither 首次发布许可包含禁止组件、模板和跨框架组件库再分发的限制，因此没有复制它的组件或 shader：https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md 。
-- Paper Shaders 明确允许再分发并要求保留 LICENSE / NOTICE，npm 包内保留原文：https://github.com/paper-design/shaders 。项目没有手写 WebGL renderer 或 shader。
+- Paper Shaders 明确允许再分发并要求保留 LICENSE / NOTICE，npm 包内保留原文：https://github.com/paper-design/shaders 。该像素云模块没有手写 WebGL renderer 或 shader。
 
 新增效果：在此目录加入同名模块，导出接收 HeroContext 的挂载函数；在 config.hero 添加 id / name / source。所有监听、计时器、引擎资源须在传入 signal 中止时释放。只有选中的模块按需加载；库没有个人信息依赖。
 
