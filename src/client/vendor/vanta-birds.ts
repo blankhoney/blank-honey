@@ -158,7 +158,10 @@ void main() {
   dist = length( dir );
 
   dir.y *= 2.5;
-  velocity -= normalize( dir ) * delta * 5.;
+  velocity -= dir / max(length(dir), 0.0001) * delta * 5.;
+
+  // Local adaptation: gently steer the flight volume above the lake, not through its surface.
+  velocity.y += max(0., -480. - selfPosition.y) * delta * 0.12;
 
   for (float y=0.0;y<height;y++) {
     for (float x=0.0;x<width;x++) {
@@ -234,6 +237,8 @@ varying float z;
 
 uniform float time;
 uniform float birdSize;
+uniform vec3 flockOrigin;
+uniform vec3 flockScale;
 
 void main() {
 
@@ -245,7 +250,7 @@ void main() {
 
   if ( birdVertex == 4.0 || birdVertex == 7.0 ) {
     // flap wings
-    newPosition.y = sin( tmpPos.w ) * 5. * birdSize;
+    newPosition.y = sin( tmpPos.w ) * 5.;
   }
 
   newPosition = mat3( modelMatrix ) * newPosition;
@@ -272,9 +277,9 @@ void main() {
     -sinrz, cosrz, 0,
     0     , 0    , 1
   );
-  newPosition =  maty * matz * newPosition;
-  newPosition += pos;
-  z = newPosition.z;
+  newPosition = maty * matz * newPosition * birdSize;
+  newPosition += flockOrigin + pos * flockScale;
+  z = distance(cameraPosition, newPosition);
 
   vColor = vec4( birdColor, 1.0 );
   gl_Position = projectionMatrix *  viewMatrix  * vec4( newPosition, 1.0 );
@@ -283,11 +288,10 @@ void main() {
 export const birdFS = `
 varying vec4 vColor;
 varying float z;
-uniform vec3 color;
+uniform vec3 fogColor;
 void main() {
-  // Fake colors for now
-  float rr = 0.2 + ( 1000. - z ) / 1000. * vColor.x;
-  float gg = 0.2 + ( 1000. - z ) / 1000. * vColor.y;
-  float bb = 0.2 + ( 1000. - z ) / 1000. * vColor.z;
-  gl_FragColor = vec4( rr, gg, bb, 1. );
+  float haze = 1.0 - exp(-pow(z * 0.00013, 2.0));
+  gl_FragColor = vec4(mix(vColor.rgb, fogColor, haze * 0.5), 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }`;

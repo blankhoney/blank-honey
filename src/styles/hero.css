@@ -234,7 +234,7 @@
   box-shadow: 5px 5px #161818;
   padding: 10px 20px;
 }
-/* Vanta's full-stage flock stays behind a restrained text-legibility vignette. */
+/* The lake and flock share one scene; only this variant gets the scenic poster and vignette. */
 #hero[data-effect='birds'] {
   background: #07192f;
   color: #f2f7ff;
@@ -251,8 +251,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 44%, #07192f99 0%, #07192f38 36%, transparent 65%),
-    linear-gradient(to bottom, #07192f40, transparent 22%, transparent 76%, #07192fb3);
+    radial-gradient(ellipse at 50% 39%, #15294140 0%, #1529411c 30%, transparent 62%),
+    linear-gradient(to bottom, #15294125, transparent 20%, transparent 76%, #102d4b80);
 }
 #hero[data-effect='birds'] .hero-copy {
   top: 34%;
@@ -264,16 +264,10 @@
 #hero[data-effect='birds'] .hero-description {
   letter-spacing: 0.12em;
 }
-#hero[data-effect='birds'] .flock-still i {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--size);
-  height: calc(var(--size) * 0.6);
-  background: linear-gradient(135deg, #3acfff, #c587ef 60%, #fc6f9a);
-  clip-path: polygon(0 0, 47% 40%, 100% 5%, 65% 67%, 50% 100%, 36% 67%);
-  transform: rotate(var(--tilt));
-  opacity: 0.6;
+#hero[data-effect='birds'] .flock-still {
+  background:
+    url('/images/hero/flock-lake.webp') center 54% / cover no-repeat,
+    linear-gradient(#829fbe 0%, #e7beb0 48%, #8fabbf 53%, #254c65 100%);
 }
 #hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
   visibility: hidden;
@@ -338,8 +332,44 @@
   }
 }
 #hero[data-effect='miniload'] #hero-stage {
-  opacity: 0.62;
-  mask-image: linear-gradient(to bottom, #000 40%, #0008 80%, transparent);
+  opacity: 0.86;
+  mask-image: linear-gradient(to bottom, #000 55%, #000b 85%, #0006);
+}
+.pixel-cloud-layer,
+.pixel-cloud-still,
+.pixel-cloud-surface {
+  position: absolute;
+  inset: 0;
+}
+.pixel-cloud-layer {
+  isolation: isolate;
+}
+.pixel-cloud-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 34%, #0009, #0005 27%, transparent 66%);
+}
+.pixel-cloud-still {
+  z-index: 0;
+  background:
+    url('/images/hero/pixel-cloud.webp') center / cover no-repeat,
+    radial-gradient(ellipse at 65% 55%, #3c4147, #101214 48%, #000 85%);
+}
+.pixel-cloud-surface {
+  z-index: 1;
+  visibility: hidden;
+}
+.pixel-cloud-surface canvas {
+  image-rendering: pixelated;
+}
+.pixel-cloud-layer[data-state='live'] .pixel-cloud-surface {
+  visibility: visible;
+}
+.pixel-cloud-layer[data-state='live'] .pixel-cloud-still {
+  visibility: hidden;
 }
 #hero[data-effect='miniload'] .hero-description {
   font: clamp(14px, 1.4vw, 19px)/1.8 var(--mono);
@@ -378,9 +408,10 @@
   }
 }
 
-/* The reference darkens the noise around the mouse; this native layer avoids a custom shader. */
+/* Darken only the background beneath the mouse, never the foreground title. */
 .pixel-cloud-shadow {
   position: absolute;
+  z-index: 3;
   top: 0;
   left: 0;
   width: clamp(220px, 60vh, 560px);

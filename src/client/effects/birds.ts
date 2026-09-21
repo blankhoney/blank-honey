@@ -1,11 +1,12 @@
 import type { HeroContext } from '../hero';
 import type { FlockBudget, FlockScene } from '../flock-scene';
 import { report } from '../log';
+import { createFrameBudget } from '../flock-performance';
 
 export function birdBudget(light: boolean): FlockBudget {
   return light
-    ? { width: 16, fps: 20, maxDpr: 1, maxPixels: 900_000 }
-    : { width: 32, fps: 30, maxDpr: 1.5, maxPixels: 2_400_000 };
+    ? { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 }
+    : { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 };
 }
 
 type SceneLoader = () => Promise<{ createFlockScene: (budget: FlockBudget) => FlockScene }>;
@@ -21,18 +22,11 @@ export default async function mountBirds(
   layer.setAttribute('aria-hidden', 'true');
   const fallback = document.createElement('div');
   fallback.className = 'flock-still';
-  for (let index = 0; index < 28; index++) {
-    const bird = document.createElement('i');
-    bird.style.setProperty('--x', `${(index * 37 + 9) % 100}%`);
-    bird.style.setProperty('--y', `${(index * 19 + 11) % 100}%`);
-    bird.style.setProperty('--size', `${10 + (index % 5) * 7}px`);
-    bird.style.setProperty('--tilt', `${((index * 29) % 100) - 50}deg`);
-    fallback.append(bird);
-  }
   layer.append(fallback);
   stage.append(layer);
   const listeners = new AbortController();
   const budget = birdBudget(light);
+  const frameBudget = createFrameBudget(budget.fps);
   let scene: FlockScene | undefined;
   let observer: ResizeObserver | undefined;
   let raf: number | undefined;
@@ -46,6 +40,7 @@ export default async function mountBirds(
     if (raf !== undefined) cancelAnimationFrame(raf);
     raf = undefined;
     last = undefined;
+    frameBudget.reset();
   }
   function release() {
     stopped = true;
@@ -78,10 +73,13 @@ export default async function mountBirds(
     raf = undefined;
     if (disposed || stopped || document.hidden || !scene) return;
     if (last === undefined || now - last >= 1000 / budget.fps - 0.25) {
-      const delta = last === undefined ? 0 : Math.min((now - last) / 1000, 0.05);
+      const interval = last === undefined ? 0 : now - last;
+      const delta = Math.min(interval / 1000, 0.05);
       last = now;
       elapsed += delta;
       try {
+        const scale = frameBudget.sample(interval);
+        if (scale !== undefined) scene.setResolutionScale(scale);
         scene.frame(elapsed * 1000, delta, pointer);
       } catch (error) {
         fail(error);
@@ -99,6 +97,7 @@ export default async function mountBirds(
     if (!scene || stopped || disposed) return;
     const { width, height } = host.getBoundingClientRect();
     try {
+      frameBudget.reset();
       scene.resize(width, height, window.devicePixelRatio || 1);
     } catch (error) {
       fail(error);

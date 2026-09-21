@@ -5,7 +5,7 @@
 | 模块 | 参考与已核验效果 | 复用实现 |
 | --- | --- | --- |
 | io724 | https://io724.com ：黑底居中标题，鼠标彩色墨迹流动；公开脚本标注 AquaInkGL | `webgl-fluid-enhanced` 0.8.0，MIT；与 AquaInkGL 同源 PavelDoGreat/WebGL-Fluid-Simulation，使用公开生命周期 API |
-| miniload | https://miniload.top ：黑白 Bayer 抖色云、像素标题；站点 bundle 使用 React Bits Dither | `@paper-design/shaders` 0.0.80 Dithering，Apache-2.0；以现成 simplex noise + Bayer 8×8 配置重现效果类型。不是原 shader 的逐像素复制 |
+| miniload | https://miniload.top ：黑白 Bayer 抖色云、像素标题；站点 bundle 使用 React Bits Dither | `@paper-design/shaders` 0.0.80 Dithering，Apache-2.0；保留 simplex/Bayer 8×8，2026-09-21 将密度函数适配为时变域扭曲 fBm 烟雾。不是原 shader 的逐像素复制 |
 | isaca | https://isaca.pro ：两张明暗大卡片错层切换，舒缓入场 | 原生 CSS transform/transition；未复制无明确许可的站点 bundle |
 | yantao | https://yantao.wiki ：当前 Memphis 首屏，连线粒子、代码窗口打字、轮播 | 项目已安装的 tsParticles（MIT），原生文字渐进呈现；不复制主题脚本 |
 
@@ -17,17 +17,29 @@
 
 固定 Vanta **0.5.24** 的 shader/geometry 提取到 `../vendor/vanta-birds.ts`，保留成熟群鸟规则；Three **0.186.0** 官方 GPUComputationRenderer 替代旧计算封装。本站负责延迟加载、full/light预算、静态回退、唯一 RAF 与完整资源清理；不引入 Vanta Base 的全局修改和旧资源泄漏。具体来源、单鸟 UV 修正与其他差异见 [提取说明](../vendor/vanta-birds.md)。完整 MIT 随部署保留于 `/vendor/licenses/vanta-LICENSE.txt` 与 `/vendor/licenses/three-LICENSE.txt`。
 
+### 动态雾谷镜湖（2026-09-21）
+
+用户确认的 Codex imagegen 概念图用于确定山谷/湖面/雾层构图，运行时不是整张概念图背景。新增确定性低多边形地形、实例化树石、几何水波与少量动态雾片，均和群鸟共用原场景与时钟。水面复用同版 Three **0.186.0** 的 [Reflector](https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/objects/Reflector.js) 公开接口，参考 [Water](https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/objects/Water.js) 的 Fresnel/太阳高光处理；倒影只缓存静态景物，首次/投影失效时更新，不每帧重画山谷。完整 Three MIT 已随站保留。
+
+背景程序模块、相机与鸟群空间适配、预算/降级和静态 poster 边界见[适配说明](../vendor/vanta-birds.md)。没有提取或修改云山巨城等原始模型实验；不新增运行时 CDN、模型下载、体积光追或后处理框架。
+
 ## 许可边界
 
 - AquaInkGL 未提供明确仓库许可，因此没有复制其代码；直接使用带 MIT 许可的同算法上游封装：https://github.com/michaelbrusegard/WebGL-Fluid-Enhanced 。
 - React Bits 当前及 Dither 首次发布许可包含禁止组件、模板和跨框架组件库再分发的限制，因此没有复制它的组件或 shader：https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md 。
-- Paper Shaders 明确允许再分发并要求保留 LICENSE / NOTICE，npm 包内保留原文：https://github.com/paper-design/shaders 。该像素云模块没有手写 WebGL renderer 或 shader。
+- Paper Shaders 明确允许再分发并要求保留 LICENSE / NOTICE，npm 包内保留原文：https://github.com/paper-design/shaders 。像素云仍复用其WebGL renderer；本地shader适配见下文，不能再称完全未修改shader。
 
 新增效果：在此目录加入同名模块，导出接收 HeroContext 的挂载函数；在 config.hero 添加 id / name / source。所有监听、计时器、引擎资源须在传入 signal 中止时释放。只有选中的模块按需加载；库没有个人信息依赖。
 
 部署产物保留许可原文：`/vendor/licenses/paper-shaders-LICENSE.txt`、`/vendor/licenses/paper-shaders-NOTICE.txt`、`/vendor/licenses/fluid-LICENSE.txt`，不依赖生产机存在 node_modules。
 
 像素云交互补验：原站鼠标附近是柔边黑色暗区（降低噪声强度），不是盖住标题的黑圆。当前用背景层内原生 radial-gradient 跟随鼠标，离开/窗口失焦时恢复；卸载同时移除遮罩与监听。未移植受限 shader。
+
+### 像素云持续烟雾（2026-09-21）
+
+`pixel-cloud-shader.ts` 对固定Paper 0.0.80 Dithering的具名噪声函数作唯一匹配替换：保留上游simplex实现、Bayer矩阵、像素坐标与输出，本地增加归一化fBm和二维时变域扭曲。full三层、light两层；时间分别进入两个扭曲通道和密度采样，固定抖色阈值，不以随机闪点或整片亮暗变化代替运动。这是程序烟雾密度，不是完整curl-noise流场、Navier–Stokes求解或体积烟雾模拟。
+
+`pixel-cloud.ts` 用公开ShaderMount接口且speed始终为0，`effects/miniload.ts`的唯一RAF以`setFrame`驱动，分别限制30/20fps与90万/32万像素，持续慢帧可单向降低两级。复用纯帧预算判定，不引入新库。渲染器释放后补释放自有context，异常保留静态后备；reduced不加载Paper或创建WebGL。`public/images/hero/pixel-cloud.webp`从实际运行场景截图压缩，用于加载/减少动效/错误回退，不是动态效果本体。
 
 ## 科技页字面与背景（第二轮返修）
 

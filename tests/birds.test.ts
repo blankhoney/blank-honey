@@ -64,13 +64,19 @@ class SceneStub {
   readonly canvas = new ElementStub('CANVAS');
   readonly resizes: Array<{ width: number; height: number; dpr: number }> = [];
   readonly frames: Array<{ time: number; delta: number; pointer: { x: number; y: number } }> = [];
+  readonly scales: number[] = [];
   disposals = 0;
   resizeError: Error | undefined;
   frameError: Error | undefined;
+  scaleError: Error | undefined;
 
   resize(width: number, height: number, dpr: number) {
     this.resizes.push({ width, height, dpr });
     if (this.resizeError) throw this.resizeError;
+  }
+  setResolutionScale(scale: number) {
+    this.scales.push(scale);
+    if (this.scaleError) throw this.scaleError;
   }
   frame(time: number, delta: number, pointer: { x: number; y: number }) {
     this.frames.push({ time, delta, pointer: { ...pointer } });
@@ -242,7 +248,7 @@ function createHarness(t: TestContext, hidden = false) {
           assert.equal(layer.attributes.get('aria-hidden'), 'true');
           assert.equal(layer.children.length, 1);
           assert.equal(layer.children[0]!.className, 'flock-still');
-          assert.equal(layer.children[0]!.children.length, 28);
+          assert.equal(layer.children[0]!.children.length, 0);
         },
         assertReleased() {
           assert.equal(scene.canvas.parent, undefined);
@@ -264,11 +270,11 @@ function createHarness(t: TestContext, hidden = false) {
 }
 
 test('bird budgets fix simulation count, frame rate and rendering limits for full and light', () => {
-  assert.deepEqual(birdBudget(false), { width: 32, fps: 30, maxDpr: 1.5, maxPixels: 2_400_000 });
-  assert.deepEqual(birdBudget(true), { width: 16, fps: 20, maxDpr: 1, maxPixels: 900_000 });
+  assert.deepEqual(birdBudget(false), { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 });
+  assert.deepEqual(birdBudget(true), { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 });
 });
 
-for (const width of [16, 32]) {
+for (const width of [16, 24, 32]) {
   test(`${width}×${width} bird geometry shares one centered simulation texel across nine vertices`, (t) => {
     const geometry = createBirdGeometry(width);
     t.after(() => geometry.dispose());
@@ -288,8 +294,9 @@ for (const width of [16, 32]) {
       const v = (Math.floor(bird / width) + 0.5) / width;
       for (let vertex = 0; vertex < 9; vertex++) {
         const index = bird * 9 + vertex;
-        assert.equal(reference.getX(index), u);
-        assert.equal(reference.getY(index), v);
+        // The 24-wide grid has non-dyadic texel centres stored in Float32 attributes.
+        assert.equal(reference.getX(index), Math.fround(u));
+        assert.equal(reference.getY(index), Math.fround(v));
         assert.ok(reference.getX(index) > 0 && reference.getX(index) < 1);
         assert.ok(reference.getY(index) > 0 && reference.getY(index) < 1);
         assert.equal(birdVertex.getX(index), vertex);
@@ -341,7 +348,7 @@ test('an already aborted effect does not append a fallback or invoke the scene l
   instance.assertDetached();
 });
 
-test('reduced motion mounts only static birds, without loading a scene or scheduling RAF', async (t) => {
+test('reduced motion mounts only the static landscape poster, without loading a scene or scheduling RAF', async (t) => {
   const h = createHarness(t);
   const instance = h.instance({ reduced: true });
   await instance.mount();
@@ -426,6 +433,145 @@ for (const light of [false, true]) {
     assert.equal(instance.scene.disposals, 1);
   });
 }
+
+for (const light of [false, true]) {
+  test(`${light ? 'light' : 'full'} sustained slow frames lower resolution twice without replacing the scene or RAF`, async (t) => {
+    const h = createHarness(t);
+    const instance = h.instance({ light });
+    await instance.mount();
+    for (let index = 0; index < 180; index++) h.tick(index * 100);
+    assert.deepEqual(instance.scene.scales, [0.8, 0.65]);
+    assert.equal(instance.loads, 1);
+    assert.deepEqual(instance.budgets, [birdBudget(light)]);
+    assert.equal(instance.scene.frames.length, 181);
+    assert.equal(instance.scene.disposals, 0);
+    assert.equal(instance.stage.children[0]!.dataset.state, 'live');
+    assert.equal(instance.stage.children[0]!.children[1], instance.scene.canvas);
+    assert.equal(h.observers.length, 1);
+    assert.equal(h.rafs.size, 1);
+    assert.equal(h.peakRafs, 1);
+    instance.controller.abort();
+    instance.assertDetached();
+    assert.equal(instance.scene.disposals, 1);
+  });
+
+  test(`${light ? 'light' : 'full'} normal rendered cadence does not lower resolution`, async (t) => {
+    const h = createHarness(t);
+    const instance = h.instance({ light });
+    await instance.mount();
+    for (let index = 0; index < 300; index++) h.tick(index * (light ? 50 : 34));
+    assert.deepEqual(instance.scene.scales, []);
+    assert.equal(instance.scene.frames.length, 301);
+    assert.equal(instance.loads, 1);
+    assert.equal(instance.budgets.length, 1);
+    assert.equal(h.peakRafs, 1);
+    instance.controller.abort();
+    instance.assertDetached();
+  });
+}
+
+test('hidden recovery discards a nearly slow window and a large timestamp jump before warming up again', async (t) => {
+  const h = createHarness(t);
+  const instance = h.instance();
+  await instance.mount();
+  h.tick(0);
+  let now = 0;
+  for (let index = 0; index < 34; index++) h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, []);
+  const frames = instance.scene.frames.length;
+  const elapsed = instance.scene.frames.at(-1)!.time;
+  h.visibility(true);
+  h.tick(600_000);
+  assert.equal(instance.scene.frames.length, frames);
+  assert.equal(h.rafs.size, 0);
+  h.visibility(false);
+  h.visibility(false);
+  now = 600_000;
+  h.tick(now);
+  assert.equal(instance.scene.frames.at(-1)!.delta, 0);
+  assert.equal(instance.scene.frames.at(-1)!.time, elapsed);
+  assert.deepEqual(instance.scene.scales, []);
+  for (let index = 0; index < 34; index++) h.tick((now += 100));
+  assert.deepEqual(
+    instance.scene.scales,
+    [],
+    'fifteen warmup plus nineteen measured intervals must not lower resolution',
+  );
+  h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  assert.equal(instance.loads, 1);
+  assert.equal(instance.budgets.length, 1);
+  assert.equal(h.peakRafs, 1);
+  instance.controller.abort();
+  instance.assertDetached();
+});
+
+test('resize restarts warmup and drops a partial window without restoring the already lowered level', async (t) => {
+  const h = createHarness(t);
+  const instance = h.instance();
+  await instance.mount();
+  h.tick(0);
+  let now = 0;
+  for (let index = 0; index < 35; index++) h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  for (let index = 0; index < 34; index++) h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  instance.host.rect.width = 720;
+  h.observers[0]!.notify();
+  assert.equal(instance.scene.resizes.length, 2);
+  for (let index = 0; index < 34; index++) h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, [0.8, 0.65]);
+  assert.equal(instance.loads, 1);
+  assert.equal(instance.budgets.length, 1);
+  assert.equal(h.peakRafs, 1);
+  instance.controller.abort();
+  instance.assertDetached();
+});
+
+test('a resolution callback exception restores the static poster and completely releases the scene', async (t) => {
+  const h = createHarness(t);
+  const instance = h.instance();
+  await instance.mount();
+  instance.scene.scaleError = new Error('resolution resize failed');
+  for (let index = 0; index < 150; index++) h.tick(index * 100);
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  assert.equal(instance.scene.disposals, 1);
+  instance.assertStatic();
+  instance.assertReleased();
+  const frames = instance.scene.frames.length;
+  h.visibility(false);
+  h.tick(90_000);
+  assert.equal(instance.scene.frames.length, frames);
+  assert.deepEqual(instance.scene.scales, [0.8]);
+  instance.controller.abort();
+  instance.controller.abort();
+  assert.equal(instance.scene.disposals, 1);
+  instance.assertDetached();
+});
+
+test('an abort immediately before a scale decision prevents stale callbacks from lowering resolution', async (t) => {
+  const h = createHarness(t);
+  const instance = h.instance();
+  await instance.mount();
+  h.tick(0);
+  let now = 0;
+  for (let index = 0; index < 34; index++) h.tick((now += 100));
+  assert.deepEqual(instance.scene.scales, []);
+  const staleFrame = [...h.rafs.values()][0]!;
+  const staleResize = h.observers[0]!.callback;
+  const frames = instance.scene.frames.length;
+  instance.controller.abort();
+  staleFrame(now + 100);
+  staleResize();
+  h.visibility(false);
+  h.tick(90_000);
+  assert.deepEqual(instance.scene.scales, []);
+  assert.equal(instance.scene.frames.length, frames);
+  assert.equal(instance.scene.disposals, 1);
+  instance.assertDetached();
+});
 
 test('repeated visible events never add scheduling chains and hidden cancels all frames', async (t) => {
   const h = createHarness(t);
