@@ -12,3 +12,6 @@ playwright-report
 .private
 src/data/radio.generated.json
 .astro
+
+.agents
+AGENTS.md

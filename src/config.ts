@@ -1,11 +1,11 @@
 /** Product configuration. Private destinations are supplied by environment variables. */
 export const config = {
-  name: 'BLANK HONEY',
-  description: '记录一些值得停留的瞬间。代码、远行，以及日常的缝隙。',
-  about: '写代码，也写一些没有用途的句子。记录远行，和日常的缝隙。',
-  githubUrl: 'https://github.com/blankhoney',
+  name: 'YOUR NAME',
+  description: '个人站点模板。',
+  about: '在这里介绍自己。',
+  githubUrl: '',
   demoContent: false,
-  sayings: ['Tempus fugit', 'Labor omnia vincit', 'Ars longa, vita brevis', 'Per aspera ad astra'],
+  sayings: [] as string[],
   navigation: [
     { href: '/', label: '返回展示页', en: 'SHOWCASE' },
     { href: '/articles/', label: '文章', en: 'ARTICLES' },
@@ -42,24 +42,24 @@ export const config = {
   radio: [
     {
       id: 'piano-01',
-      name: '静心钢琴 · Meditation Impromptu 01',
+      name: 'Audio 1',
       source: 'direct' as 'direct' | 'rss',
       urlEnv: 'RADIO_PIANO_01_URL',
-      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2001.mp3',
+      url: '',
     },
     {
       id: 'piano-02',
-      name: '缓缓流动 · Meditation Impromptu 02',
+      name: 'Audio 2',
       source: 'direct' as 'direct' | 'rss',
       urlEnv: 'RADIO_PIANO_02_URL',
-      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Meditation%20Impromptu%2002.mp3',
+      url: '',
     },
     {
       id: 'dream',
-      name: '轻柔节拍 · Dream Culture',
+      name: 'Audio 3',
       source: 'direct' as 'direct' | 'rss',
       urlEnv: 'RADIO_DREAM_URL',
-      url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dream%20Culture.mp3',
+      url: '',
     },
   ],
   // Each local entry is bundled with its own assets on the separate lab origin.

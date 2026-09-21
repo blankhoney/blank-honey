@@ -1,9 +1,0 @@
-flowchart TD
-  scenario["路由、操作与预期行为"] --> record["录制或探索界面"]
-  record --> draft["生成测试初稿"]
-  draft --> review["人工检查定位、数据和断言"]
-  review --> run["执行测试"]
-  run --> result{"行为与预期一致？"}
-  result -->|否| evidence["检查 Trace、日志和实际页面"]
-  evidence --> review
-  result -->|是| ci["整理稳定用例并接入 CI"]
