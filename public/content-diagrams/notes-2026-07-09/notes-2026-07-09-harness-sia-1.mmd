@@ -1,9 +1,0 @@
-flowchart TD
-  spec["任务规格和验证器"] --> meta["Meta-Agent：构造初始 Harness"]
-  meta --> run["Task-specific Agent：执行任务"]
-  run --> trace["执行轨迹与验证反馈"]
-  trace --> feedback["Feedback-Agent：选择改进方向"]
-  feedback --> harness["更新工具、解析或工作流程"]
-  feedback --> weights["调用训练流程更新权重"]
-  harness --> run
-  weights --> run

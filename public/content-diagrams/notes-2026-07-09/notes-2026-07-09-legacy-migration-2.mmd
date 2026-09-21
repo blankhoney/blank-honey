@@ -1,7 +1,0 @@
-flowchart TD
-  scope["确认退役范围与相关业务"] --> static["检查静态依赖"]
-  scope --> dynamic["检查运行记录与外部使用者"]
-  static --> assess["合并证据并确认迁移安排"]
-  dynamic --> assess
-  assess --> move["迁移调用方并验证行为"]
-  move --> retire["按确认范围移除旧资产"]

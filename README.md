@@ -1,37 +1,35 @@
-# Blank Honey
+# 个人站点模板
 
-小型个人博客。Astro 生成静态页面，Pagefind 提供本地搜索；探针与日志由独立的只读服务处理。工具和实验 HTML 发布到独立源。
+通用个人站点。Astro 生成静态页面，Pagefind 提供本地搜索；探针与日志由独立的只读服务处理，工具和实验 HTML 发布到独立源。
 
 ## 本地运行
 
-使用 Node.js 22.12+（推荐 Node.js 24 LTS）和 Docker Desktop。
+需要 Node.js 24 与 Docker。
 
 ```sh
 npm ci
 cp .env.example .env
-npm run build
-npm run dev
-```
-
-`dev` 只启动 Astro。工具、探针和错误日志请在 Docker 环境验收。
-
-```sh
 npm run check
 npm test
+npm run build
 npm run docker:up
 ```
 
-Docker 默认使用 `.env.example` 构建演示站。需要使用个人配置时，运行 `BUILD_ENV_FILE=.env docker compose up -d --build`；环境文件通过构建 secret 传入，不写入镜像层。
+`npm run dev` 只启动 Astro。工具、探针和错误日志请在 Docker 环境查看。
 
-主站默认地址为 `http://localhost:8080`，工具及实验为 `http://localhost:8081`。结束后运行 `npm run docker:down`。实际验证记录见 `STATE.md`。
+Docker 默认使用 `.env.example` 构建演示站；使用自己的配置时运行 `BUILD_ENV_FILE=.env docker compose up -d --build`，环境文件通过构建 secret 传入，不写入镜像层。
+
+主站默认地址为 `http://localhost:8080`，工具及实验为 `http://localhost:8081`，只有这两个端口绑定到宿主机回环地址。结束后运行 `npm run docker:down`。
+
+`.env` 只保留在本机，不要提交。脚本与测试通过只代表通用功能验证，不代表任何具体环境已完成验收。
 
 ## 内容与配置
 
-- `src/config.ts` 聚合导航、分类、首屏效果、粒子数量、瓦片、电台、工具和实验。
-- `.env` 配置真实域名、电台来源、Giscus 和服务地址，不提交 Git。变量名参考 `.env.example`。
+- `src/config.ts` 聚合站点名称、介绍、导航、分类、首屏效果、粒子数量、瓦片、电台、工具和实验。
 - 文章放在 `src/content/blog/*.md`，图片放在 `src/assets/`。Frontmatter 包含 `title`、`description`、`date`、`category`，可选 `tags`、`places`、`draft`。草稿不进入公开文章、搜索或关系图。
-- 地点放在 `src/data/places.json`，关系放在 `src/data/relations.json`。关系两端是文章 slug，只有 `definite` 且两端已发布的关系公开展示。
-- 当前内容迁移自原博客的 50 篇已发布文章，保留发布日期、正文和图片。新增内容直接提交 Markdown。
+- 地点放在 `src/data/places.json`，关系放在 `src/data/relations.json`，两者初始为空。关系两端是文章 slug，只有 `definite` 且两端已发布的关系公开展示。
+- 域名、电台来源、Giscus 和服务地址由 `.env` 提供，不提交 Git；变量名参考 `.env.example`。
+- 首屏效果的来源与第三方许可见 `src/client/effects/SOURCES.md`。
 
 新增工具或实验时，在 `config.tools` 或 `config.experiments` 增加一条记录即可。实验的 `html` 指向项目内 HTML；关联 CSS、图片等使用相对路径，并放在该 HTML 目录之内。HTML 中的 `__SITE_RETURN__` 在构建时替换为主站工具页或实验页地址。不要放置密钥或私人文件。
 
@@ -61,16 +59,23 @@ Docker 默认使用 `.env.example` 构建演示站。需要使用个人配置时
 - 第三方依赖许可只在 `lab-dist/tools/licenses/index.html` 全局列出一次，并附完整许可原文（MIT、MPL-2.0/Apache-2.0 等），不在各工具下重复、也不在主站声明。运行时依赖的嵌套依赖（如 `@cropper/*`、`readline-sync`）同样列出。
 - 工具页面在本机处理文件与姓名，不上传、不写 URL/console/localStorage；`__SITE_RETURN__` 是唯一的跨源回链。
 
-AI 生成实验集中登记在 `src/data/experiments.json`，静态产物放在 `examples/benchmarks/<slug>/`。清单记录原始提示词、来源版本、实际模型/推理强度、生成时间和观察结果；构建自动生成实验卡片、详情和源码下载，原始产物不注入博客样式。每题用独立新任务生成，保留原始工程 ZIP；一次用户任务可能包含工具调用与任务内自检，不能当作无工具的单次模型响应。
-
-首批三个题面来自无机酸-_- / Atmeplz 公开提供的 [0903 提示词包](https://atmeplz.github.io/ai-test-prompt/board-02.html)，版本链接保留在每条记录中。题面与第三方库的权利归原作者，不包含在本项目 MIT 授权内。
+AI 生成实验集中登记在 `src/data/experiments.json`（初始为空）。静态产物放在 `examples/benchmarks/<slug>/`，该目录默认被 Git 忽略。清单记录原始提示词、来源版本、模型与推理强度、生成时间和观察结果；构建自动生成实验卡片、详情和源码下载，原始产物不注入博客样式。题面与第三方库的权利归原作者，不包含在本项目 MIT 授权内。
 
 电台地址仅在构建时读取。`direct` 使用音频 URL；`rss` 取第一条可用音频 enclosure。没有配置来源则隐藏电台；单台解析失败显示暂不可用，不阻断站点构建。RSS 变更需要重新构建。
+
+## 公共仓库边界
+
+本仓库只包含通用代码。真实文章、图片、地点和实验记录不要提交：
+
+- `src/content/blog/`、`src/assets/`、`public/content-diagrams/`、`public/benchmarks/`、`public/images/hero/` 与 `examples/benchmarks/` 已在 `.gitignore` 中忽略。
+- `src/data/places.json`、`src/data/relations.json`、`src/data/experiments.json` 与 `deploy/hosts.json` 保持空值。
+
+个人内容需要在仓库外的私有构建快照中叠加后再构建，不通过 GitHub CI 发布；仓库没有自动生产部署流程。第三方依赖与随附资源的许可证原文随产物保留。
 
 ## 代码边界
 
 `src/domain` 定义数据规则，`src/application` 组合内容与配置，页面和浏览器增强位于外层。探针不公开 Prometheus 查询能力。工具 HTML 不进入主站 `dist`；工具源码只在 `scripts/build-tools.ts` 的构建里被读取，不进入主站 Astro 构建。
 
-代码使用 MIT；文章、照片与第三方资源版权独立。需要无历史的公开模板时，在工作区干净且已提交后运行 `node scripts/template.mjs`，生成独立 `template` 分支。脚本清除文章、图片、地点、关系、电台、主机清单和参考文档；发布前检查自己后来加入的个人信息。脚本不会上传或切换当前工作区。
+代码使用 MIT；文章、照片与第三方资源版权独立。
 
-部署、日志与备份见 [运维说明](docs/operations.md)。
+运行、配置与日志见[运维说明](docs/operations.md)；本地 Docker 与私有配置见[本地部署说明](deploy/README.md)。

@@ -1,8 +1,0 @@
-flowchart TD
-  need["需求与 PRD"] --> specifier["Specifier：场景与 Gherkin"]
-  specifier --> human["人工确认 QA 标准"]
-  human --> coder["Coder：按场景实现"]
-  coder --> cleaner["Cleaner：审查与清理"]
-  cleaner --> hardener["Hardener：变异测试与补充测试"]
-  hardener --> qa["QA Agent：回归验收场景"]
-  human -.->|提供验收依据| qa

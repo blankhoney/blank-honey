@@ -266,7 +266,6 @@
 }
 #hero[data-effect='birds'] .flock-still {
   background:
-    url('/images/hero/flock-lake.webp') center 54% / cover no-repeat,
     linear-gradient(#829fbe 0%, #e7beb0 48%, #8fabbf 53%, #254c65 100%);
 }
 #hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
@@ -355,7 +354,6 @@
 .pixel-cloud-still {
   z-index: 0;
   background:
-    url('/images/hero/pixel-cloud.webp') center / cover no-repeat,
     radial-gradient(ellipse at 65% 55%, #3c4147, #101214 48%, #000 85%);
 }
 .pixel-cloud-surface {

@@ -10,3 +10,14 @@ lab-dist/
 artifacts/
 .DS_Store
 src/data/radio.generated.json
+src/content/blog/
+src/assets/
+public/content-diagrams/
+public/benchmarks/
+public/images/hero/
+examples/benchmarks/
+.agents/
+AGENTS.md
+STATE.md
+CONTENT-EDIT-STATE.md
+.claude/

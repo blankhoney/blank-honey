@@ -17,7 +17,7 @@ const hosts = [
   },
 ];
 test('remote inventory extends local hosts and rejects ambiguous or duplicate identities', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'blank-honey-hosts-'));
+  const directory = await mkdtemp(join(tmpdir(), 'personal-site-hosts-'));
   const localFile = join(directory, 'local.json');
   const remoteFile = join(directory, 'remote.json');
   const labels = {
@@ -136,7 +136,7 @@ test('probe projects private metrics, caches queries, distinguishes down from fa
 });
 
 test('error endpoint bounds input, rejects cross origin and unknown fields, rotates local logs', async () => {
-  const directory = await mkdtemp(join(tmpdir(), 'blank-honey-log-'));
+  const directory = await mkdtemp(join(tmpdir(), 'personal-site-log-'));
   const app = createApp({
     probe: async () => ({ hosts: [] }),
     writeLog: createLog(directory, 300),

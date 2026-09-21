@@ -608,7 +608,7 @@ export const interfaceCloud = (() => {
         layoutDirty = true;
         wake();
       } catch (error) {
-        console.warn('[Blank Honey] 界面点云降级为原生内容:', error.message);
+        console.warn('[Your Name] 界面点云降级为原生内容:', error.message);
         destroy('sampling-failed');
       }
     }
