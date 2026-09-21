@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111d28" />
+    <title>云山巨城 | 一卷可行走的山水</title>
+    <script type="module" crossorigin src="./assets/index-DELTM7k_.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-oH-RrhAC.css">
+  </head>
+  <body>
+    <canvas id="world" aria-label="可交互的三维云山巨城场景"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <main class="hud">
+      <header class="masthead">
+        <div class="eyebrow"><span class="diamond"></span> 一卷可行走的山水 <span class="rule"></span> CLOUD MOUNTAIN CITY</div>
+        <h1>云山巨城</h1>
+        <p>山为城郭，水作长街。循着石阶，走入重峦之间。</p>
+      </header>
+
+      <div class="top-actions">
+        <div class="time-readout" aria-live="polite">
+          <div class="time-label">山中时辰 <span id="period">午后</span></div>
+          <div class="time-value" id="clock">15:30</div>
+        </div>
+        <button id="help-toggle" class="icon-button" type="button" aria-expanded="false" aria-controls="help-panel" aria-label="查看操作说明">?</button>
+      </div>
+
+      <aside class="journey-card" aria-label="游览路线">
+        <div class="card-kicker">一条入城的路 <span>01 — 03</span></div>
+        <div class="journey-line" aria-hidden="true"></div>
+        <button class="stop" data-stop="0" type="button"><span class="stop-number">01</span><span><strong>烟汀市集</strong><small>从谷底的灯火出发</small></span></button>
+        <button class="stop" data-stop="1" type="button"><span class="stop-number">02</span><span><strong>听瀑天阙</strong><small>登临瀑畔的城心</small></span></button>
+        <button class="stop" data-stop="2" type="button"><span class="stop-number">03</span><span><strong>揽云亭</strong><small>远望群山与万家灯火</small></span></button>
+      </aside>
+
+      <div class="help-panel" id="help-panel" hidden>
+        <strong>游览方式</strong>
+        <p>拖动旋转视角，滚轮缩放，右键拖动平移。点选沿路游览后，可播放或拖动旅程。时间可任意调节，也可以暂停。</p>
+      </div>
+
+      <section class="control-deck" aria-label="场景控制">
+        <div class="mode-controls">
+          <button id="overview" class="mode active" type="button" aria-pressed="true"><span class="mode-symbol">◈</span> 自由眺望</button>
+          <button id="journey" class="mode" type="button" aria-pressed="false"><span class="mode-symbol">↝</span> 沿路游览</button>
+        </div>
+        <div class="control-divider"></div>
+        <div class="tour-controls" id="tour-controls" hidden>
+          <button id="tour-play" class="play-button" type="button" aria-label="暂停游览">Ⅱ</button>
+          <label for="tour-range">路程</label>
+          <input id="tour-range" type="range" min="0" max="1000" value="0" aria-label="游览进度" />
+          <span id="tour-percent">00%</span>
+        </div>
+        <div class="day-controls">
+          <button id="time-play" class="play-button" type="button" aria-label="暂停时间">Ⅱ</button>
+          <span class="sun-icon" aria-hidden="true">☀</span>
+          <label for="time-range" class="sr-only">一天中的时间</label>
+          <input id="time-range" type="range" min="0" max="1439" value="930" aria-label="一天中的时间，零点到二十四点" />
+          <span class="moon-icon" aria-hidden="true">☾</span>
+        </div>
+      </section>
+      <div class="corner-note">0.2 米 / 体素 <span>·</span> 实时山水长卷</div>
+    </main>
+    <div id="error" class="error" hidden>此浏览器无法启动三维场景。请确认 WebGL 可用，并尝试更新浏览器。</div>
+  </body>
+</html>

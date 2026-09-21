@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#e5dfcd" />
+    <meta name="description" content="一座跨越群山与溪谷的体素古城。沿石阶登临，随日月看万家灯火。" />
+    <title>云山巨城 · 行入一幅山河长卷</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23223c35'/%3E%3Cpath d='M4 28 15 12 22 23 28 15 36 28' fill='none' stroke='%23e4c794' stroke-width='3'/%3E%3C/svg%3E" />
+    <script type="module" crossorigin src="./assets/index-lCN_3CMB.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Bp61rl8R.css">
+  </head>
+  <body>
+    <canvas id="scene" aria-label="云山巨城三维场景，可使用鼠标拖动或通过游览控件探索" tabindex="0"></canvas>
+
+    <div id="loading" role="status" aria-live="polite">
+      <div class="loading-seal">山</div>
+      <p>云山巨城</p>
+      <span id="loading-note">正在展开山河长卷</span>
+      <div class="loading-line"></div>
+    </div>
+
+    <div class="interface" id="interface">
+      <header class="masthead">
+        <div class="brand-line"><span class="seal">云山</span><span>A LIVING MOUNTAIN SCROLL</span></div>
+        <h1>云山巨城<span>一城入万山</span></h1>
+        <p>循石阶而上，听飞泉，望万家。</p>
+      </header>
+
+      <div class="top-tools">
+        <span class="live-mark"><i></i> 山河运行中</span>
+        <button id="quality" class="small-button" title="切换图形画质">均衡画质</button>
+        <button id="help-open" class="round-button" aria-label="查看操作说明">?</button>
+        <button id="hide-ui" class="round-button" title="隐藏界面（H）" aria-label="隐藏界面">⛶</button>
+      </div>
+
+      <aside class="destinations" aria-label="选择观景地点">
+        <div class="tiny-heading">山中五景 <span>EXPLORE</span></div>
+        <div id="station-buttons"></div>
+        <button id="home" class="overview-button"><span>↗</span> 一览全城</button>
+      </aside>
+
+      <div class="view-caption" aria-live="polite">
+        <span id="view-kicker">山水之间 · 层城万叠</span>
+        <strong id="view-title">群峰之上，城如长卷。</strong>
+      </div>
+
+      <aside class="map-card" id="map-card">
+        <button id="map-toggle" aria-expanded="true"><span>行旅图</span><span class="map-note">MOUNTAIN ATLAS <i>−</i></span></button>
+        <div class="map-body">
+          <svg id="map" viewBox="0 0 240 192" role="img" aria-label="群山、河流和登山路线示意图"></svg>
+          <div class="map-legend"><span><i class="path-key"></i>登云道</span><span><i class="water-key"></i>澄溪</span><span>北 ↑</span></div>
+        </div>
+      </aside>
+
+      <main class="control-dock">
+        <div class="journey-strip" id="journey-strip" hidden>
+          <button id="walk-play" aria-label="暂停行走" class="walk-button">Ⅱ</button>
+          <div class="journey-distance"><strong id="journey-location">水云埠</strong><span id="journey-distance">0 / — m</span></div>
+          <input id="journey-progress" type="range" min="0" max="100" value="0" step="0.01" aria-label="沿登云道移动" />
+          <button id="walk-speed" class="speed-button" title="切换沿路移动速度">8 m/s</button>
+        </div>
+        <div class="dock-main">
+          <div class="mode-picker" role="group" aria-label="游览模式">
+            <button id="overview-mode" class="active" aria-pressed="true"><span>◈</span>全景</button>
+            <button id="walk-mode" aria-pressed="false"><span>↟</span>沿路游览</button>
+          </div>
+          <div class="dock-divider"></div>
+          <button id="time-play" class="time-play" aria-label="暂停昼夜循环" aria-pressed="true">Ⅱ</button>
+          <div class="clock-readout"><strong id="clock">16:20</strong><span id="period">申时 · 斜阳</span></div>
+          <div class="time-control">
+            <div class="time-ticks"><button data-time="0" aria-label="调至午夜">夜</button><button data-time="6" aria-label="调至清晨">晨</button><button data-time="12" aria-label="调至正午">昼</button><button data-time="18" aria-label="调至黄昏">暮</button><span>夜</span></div>
+            <input id="time-slider" type="range" min="0" max="23.99" step="0.01" value="16.33" aria-label="一天中的时间" aria-valuetext="16时20分" />
+          </div>
+          <button id="time-speed" class="speed-button" title="切换昼夜循环速度">一日 / 4分</button>
+        </div>
+      </main>
+
+      <footer class="footer-hint"><span id="control-hint">拖动环顾 · 滚轮靠近 · 右键平移</span><span>0.2 m / VOXEL</span></footer>
+    </div>
+
+    <button id="show-ui" aria-label="显示界面（H）" hidden>显示界面 · H</button>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <dialog id="help-dialog">
+      <button id="help-close" class="dialog-close" aria-label="关闭操作说明">×</button>
+      <span class="tiny-heading">行旅手记</span>
+      <h2>从水岸，走到云上。</h2>
+      <p>全景中拖动旋转，滚轮缩放，右键拖动平移。触屏可双指缩放与平移。右侧五景可快速抵达观景机位。</p>
+      <p>选择「沿路游览」，镜头会沿石阶与桥梁从水云埠出发，穿过听瀑天阙，登临望岳亭。拖动环顾，滚轮或 W / S 调整前后位置；进度条可前往沿途任意一处。</p>
+      <dl>
+        <div><dt>空格</dt><dd>暂停 / 继续当前游览或时间</dd></div>
+        <div><dt>1 — 5</dt><dd>前往五处景点</dd></div>
+        <div><dt>T</dt><dd>暂停 / 继续昼夜</dd></div>
+        <div><dt>H</dt><dd>隐藏 / 显示界面</dd></div>
+        <div><dt>Esc</dt><dd>返回全景</dd></div>
+      </dl>
+      <p class="help-fine">拖动时间滑块会停留在所选时刻。昼夜的播放与行走的播放独立控制。若设备较慢，可点右上角切换为「流畅画质」。</p>
+    </dialog>
+    <noscript><div class="noscript">这幅三维山河需要 JavaScript 和支持 WebGL 2 的浏览器。</div></noscript>
+  </body>
+</html>

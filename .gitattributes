@@ -9,3 +9,6 @@ examples/benchmarks/*-astra-max/assets/* -text -whitespace linguist-generated=tr
 # Keep upstream JSDoc/CSS string spaces and unified-patch blank context reproducible.
 src/client/vendor/page-flip.js whitespace=-blank-at-eol
 src/client/vendor/page-flip.patch whitespace=-blank-at-eol
+
+# Preserve the original Vite license notice blockquote spacing in this benchmark.
+examples/benchmarks/cloud-mountain-city-sol-max/licenses/vite-MIT-and-notices.txt -text whitespace=-blank-at-eol
