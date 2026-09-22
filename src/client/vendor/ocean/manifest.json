@@ -1,0 +1,28 @@
+{
+  "project": "squall01337/abyssal-ocean",
+  "title": "Abyssal Ocean: FFT spectral ocean with an analytic sky, refraction/reflection and foam",
+  "license": "MIT",
+  "licenseFile": "public/vendor/licenses/ocean-LICENSE.txt",
+  "sourceRef": "142265f5013b6f27bea4f4f819b832dec75c7bad",
+  "fetched": "2026-09-22",
+  "entries": [
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/ocean/index.html",
+      "url": "https://raw.githubusercontent.com/squall01337/abyssal-ocean/142265f5013b6f27bea4f4f819b832dec75c7bad/index.html",
+      "ref": "142265f5013b6f27bea4f4f819b832dec75c7bad",
+      "bytes": 83466,
+      "sha256": "db2849045aaeb5ff92cef9742a61a1954bd94468d49fa2d84715cd897d946d4e",
+      "note": "The whole pinned demo: DOM, parameter panel, Three.js scene, every GLSL pass and the JS spectral pipeline"
+    },
+    {
+      "kind": "license",
+      "path": "public/vendor/licenses/ocean-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/squall01337/abyssal-ocean/142265f5013b6f27bea4f4f819b832dec75c7bad/LICENSE",
+      "ref": "142265f5013b6f27bea4f4f819b832dec75c7bad",
+      "bytes": 1077,
+      "sha256": "90adab8a633db9147c4e1b6df58e8817ead63b578f83c25bed503fb36f3d0dd3",
+      "note": "Unmodified MIT text, shipped verbatim at the site root"
+    }
+  ]
+}

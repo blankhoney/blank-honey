@@ -1,0 +1,128 @@
+{
+  "project": "ebruneton/black_hole_shader",
+  "title": "Black hole with accretion disc: Schwarzschild ray tracing with precomputed tables",
+  "license": "BSD-3-Clause",
+  "licenseFile": "public/vendor/licenses/blackhole-LICENSE.txt",
+  "sourceRef": "e72b3f293409893a6fa25528b29572c96fc57f57",
+  "dataRef": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+  "fetched": "2026-09-22",
+  "entries": [
+    {
+      "kind": "runtime-asset",
+      "path": "public/vendor/blackhole/deflection.dat",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/0a65035fa6ed8557b7bcb1492894c55f555fdae8/demo/deflection.dat",
+      "ref": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+      "bytes": 2097160,
+      "sha256": "1080f45a12fba81321771c2071f4a31795444b110833f61384a9bdf7d057c19d",
+      "note": "2D RG32F ray deflection table, 512x512, 8-byte width/height header"
+    },
+    {
+      "kind": "runtime-asset",
+      "path": "public/vendor/blackhole/inverse_radius.dat",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/0a65035fa6ed8557b7bcb1492894c55f555fdae8/demo/inverse_radius.dat",
+      "ref": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+      "bytes": 16392,
+      "sha256": "7fa22a9270e61f2842c97fb1a9398bcb13e1a965ad39b0f73169354a0d608b04",
+      "note": "2D RG32F ray inverse radius table, 64x32, 8-byte width/height header"
+    },
+    {
+      "kind": "runtime-asset",
+      "path": "public/vendor/blackhole/doppler.dat",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/0a65035fa6ed8557b7bcb1492894c55f555fdae8/demo/doppler.dat",
+      "ref": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+      "bytes": 1572864,
+      "sha256": "5174fff7559f82771977f7aadf00bbc071a010fc2913fe9a26d9ecd0f04afe50",
+      "note": "3D RGB32F Doppler shift table, 64x32x64, no header"
+    },
+    {
+      "kind": "runtime-asset",
+      "path": "public/vendor/blackhole/black_body.dat",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/0a65035fa6ed8557b7bcb1492894c55f555fdae8/demo/black_body.dat",
+      "ref": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+      "bytes": 1536,
+      "sha256": "aac8ed78dde66d9b44da8b65142429470c89b5edeb74a8fde8dfc000777a2d97",
+      "note": "2D RGB32F black body colour table, 128x1, no header"
+    },
+    {
+      "kind": "runtime-asset",
+      "path": "public/vendor/blackhole/noise_texture.png",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/0a65035fa6ed8557b7bcb1492894c55f555fdae8/demo/noise_texture.png",
+      "ref": "0a65035fa6ed8557b7bcb1492894c55f555fdae8",
+      "bytes": 13774,
+      "sha256": "7ba6d84ad14496b6299b57dbbc75b400fad4e9ab022dcacfc7f3fa3751009ed9",
+      "note": "8-bit RGBA PNG, 128x128, opaque alpha; uploaded as the R8 repeat/mipmapped disc noise"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/definitions.glsl",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/definitions.glsl",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 2912,
+      "sha256": "24e8f8eaf08fd7320a9d4b3b03aea581400374acf643b387c887794ed9e82af2",
+      "note": "Type macros for the model functions"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/functions.glsl",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/functions.glsl",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 19005,
+      "sha256": "ee254594ca8461d0360bc1741c14d93d0fc80103b3f50670e677f0fd8e26df45",
+      "note": "Texture coordinate mappings and the two TraceRay overloads"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/model.glsl",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/model.glsl",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 16613,
+      "sha256": "34f8de3599578e8573cf88582ebb9da0372f83f307da08e26a9c7c21a5a666a8",
+      "note": "SceneColor, DefaultDoppler, BlackBodyColor, DefaultDiscColor"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/camera_view/fragment_shader.glsl",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/demo/camera_view/fragment_shader.glsl",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 6532,
+      "sha256": "117eee570f2bc7a9c50cec647cf28e0ed82e8a66e2315ed5d18613546ef81b84",
+      "note": "Demo fragment shader: define header usage, GalaxyColor/StarColor/Noise/DiscColor glue, main"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/camera_view/vertex_shader.glsl",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/demo/camera_view/vertex_shader.glsl",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 1768,
+      "sha256": "27a877545f41d132a246ae4aebf3457e0dd1612d2eaf8aa6bd96e081d51750c7",
+      "note": "Demo vertex shader: view_dir from the quad corner"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/camera_view/shader_manager.js",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/demo/camera_view/shader_manager.js",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 7495,
+      "sha256": "69c275db8e5a49e26a0dd866be70cb37794d4af4fa1d7acd1fc0bb7ee977f56a",
+      "note": "Compile header and the disc ring parameter generator"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/camera_view/camera_view.js",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/demo/camera_view/camera_view.js",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 10922,
+      "sha256": "fe071cbedecefb4c9c9456d2fa5201baf370034b74c1cd2d469fdf7313898717",
+      "note": "Demo uniform feed, canvas sizing and the extension checks"
+    },
+    {
+      "kind": "reference-source",
+      "path": "src/client/vendor/blackhole/source/model/model.js",
+      "url": "https://raw.githubusercontent.com/ebruneton/black_hole_shader/e72b3f293409893a6fa25528b29572c96fc57f57/black_hole/demo/model/model.js",
+      "ref": "e72b3f293409893a6fa25528b29572c96fc57f57",
+      "bytes": 18055,
+      "sha256": "626e7b1c670fd530a55af6492cd191ccae264473daccca007cbfa4b2f4535178",
+      "note": "Camera model: static observer coordinates, Lorentz transform, reference frame"
+    }
+  ]
+}

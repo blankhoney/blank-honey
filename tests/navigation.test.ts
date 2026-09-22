@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { isNavigationCurrent } from '../src/client/navigation';
 import { config } from '../src/config';
 
@@ -81,11 +82,40 @@ test('the showcase entry comes first and the six existing sections keep their or
 });
 
 test('the five showcase effects retain their identities, names and source links', () => {
-  assert.deepEqual(config.hero, [
+  assert.deepEqual(config.hero.slice(0, 5), [
     { id: 'io724', name: '流体墨迹', source: 'https://io724.com' },
     { id: 'miniload', name: '像素云', source: 'https://miniload.top' },
     { id: 'isaca', name: '错层索引', source: 'https://isaca.pro' },
     { id: 'yantao', name: '代码札记', source: 'https://yantao.wiki' },
     { id: 'birds', name: '群鸟掠空', source: 'https://www.vantajs.com/?effect=birds' },
   ]);
+});
+
+test('the algorithm scenes are appended after them with their fixed identities and sources', () => {
+  assert.deepEqual(config.hero.slice(5), [
+    { id: 'blackhole', name: '引力回廊', source: 'https://github.com/ebruneton/black_hole_shader' },
+    { id: 'ocean', name: '频谱潮汐', source: 'https://github.com/squall01337/abyssal-ocean' },
+    { id: 'mandelbulb', name: '分形之眼', source: 'https://github.com/ibrews/mandelbulb-xr' },
+    {
+      id: 'reaction',
+      name: '生长纹理',
+      source: 'https://github.com/piellardj/reaction-diffusion-webgl',
+    },
+    { id: 'terrain', name: '山脉生成器', source: 'https://github.com/ZyFou/ProceduralTerrains' },
+  ]);
+  // The picker counts the whole list and the direct link selects by id, so ids stay unique.
+  assert.equal(config.hero.length, 10, 'five original showcase effects plus five algorithm scenes');
+  assert.equal(new Set(config.hero.map((effect) => effect.id)).size, config.hero.length);
+  for (const effect of config.hero) {
+    assert.match(effect.id, /^[a-z][a-z0-9]*$/);
+    assert.match(effect.source, /^https:\/\//);
+  }
+});
+
+test('every showcase effect ships the registration module the hero loader imports', () => {
+  for (const effect of config.hero)
+    assert.ok(
+      existsSync(new URL(`../src/client/effects/${effect.id}.ts`, import.meta.url)),
+      `expected src/client/effects/${effect.id}.ts for the '${effect.id}' entry`,
+    );
 });

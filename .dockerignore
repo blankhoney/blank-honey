@@ -14,4 +14,16 @@ src/data/radio.generated.json
 .astro
 
 .agents
+.claude
 AGENTS.md
+STATE.md
+CONTENT-EDIT-STATE.md
+__pycache__
+*.pyc
+backups
+*.key
+*.p12
+*.pfx
+*.env
+*.env.*
+!.env.example
