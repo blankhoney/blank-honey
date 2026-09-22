@@ -39,6 +39,36 @@ const deployFiles = new Set([
   'README.md',
 ]);
 const runtimeDirectories = new Set(['.git', 'node_modules', '.astro', 'dist', 'lab-dist', 'logs']);
+/* Reviewed runtime binaries.  These five runtime binaries are allowed in addition
+   to the pinned source archives listed by digest below, and each is pinned here by
+   exact byte length and SHA-256.  The values come from the reviewed upstream data
+   ref below.  The on-disk manifest is cross-checked against this table but is never
+   read as the source of truth, so an added manifest entry cannot admit a new
+   binary. */
+const runtimeAssetRef = '0a65035fa6ed8557b7bcb1492894c55f555fdae8';
+const runtimeAssets = {
+  'public/vendor/blackhole/deflection.dat': {
+    bytes: 2097160,
+    sha256: '1080f45a12fba81321771c2071f4a31795444b110833f61384a9bdf7d057c19d',
+  },
+  'public/vendor/blackhole/inverse_radius.dat': {
+    bytes: 16392,
+    sha256: '7fa22a9270e61f2842c97fb1a9398bcb13e1a965ad39b0f73169354a0d608b04',
+  },
+  'public/vendor/blackhole/doppler.dat': {
+    bytes: 1572864,
+    sha256: '5174fff7559f82771977f7aadf00bbc071a010fc2913fe9a26d9ecd0f04afe50',
+  },
+  'public/vendor/blackhole/black_body.dat': {
+    bytes: 1536,
+    sha256: 'aac8ed78dde66d9b44da8b65142429470c89b5edeb74a8fde8dfc000777a2d97',
+  },
+  'public/vendor/blackhole/noise_texture.png': {
+    bytes: 13774,
+    sha256: '7ba6d84ad14496b6299b57dbbc75b400fad4e9ab022dcacfc7f3fa3751009ed9',
+  },
+};
+
 const archiveDigests = {
   'scripts/licenses/7z2409-src.7z':
     'a33569eed0ce628fb9ceb9f46ac257d3f36b3966471667e65ba01878673c9faa',
@@ -113,6 +143,15 @@ export function auditPublicTree(directory, explicitFiles) {
         report(file, 'third-party-archive-changed');
       continue;
     }
+    if (runtimeAssets[file]) {
+      const pinned = runtimeAssets[file];
+      if (
+        data.length !== pinned.bytes ||
+        createHash('sha256').update(data).digest('hex') !== pinned.sha256
+      )
+        report(file, 'runtime-asset-changed');
+      continue;
+    }
     let text;
     try {
       text = new TextDecoder('utf-8', { fatal: true }).decode(data);
@@ -151,12 +190,44 @@ export function auditPublicTree(directory, explicitFiles) {
     if (
       !/name: 'YOUR NAME'/.test(config) ||
       !/githubUrl: ''/.test(config) ||
+      !/githubSourceUrl: ''/.test(config) ||
       !/sayings: \[\]/.test(config)
     )
       report('src/config.ts', 'personal-identity-config');
     const radio = config.match(/radio: \[([\s\S]*?)\n  \],/);
     if (!radio || [...radio[1].matchAll(/\burl: '([^']*)'/g)].some((match) => match[1] !== ''))
       report('src/config.ts', 'personal-radio-selection');
+    let manifestText = null;
+    try {
+      manifestText = readFileSync(
+        join(root, 'src/client/vendor/blackhole/manifest.json'),
+        'utf8',
+      );
+    } catch {
+      /* Synthetic fixtures may omit the manifest; the pinned table still applies. */
+    }
+    if (manifestText !== null) {
+      const manifest = JSON.parse(manifestText);
+      const runtime = (manifest.entries ?? []).filter(
+        (entry) => entry.kind === 'runtime-asset',
+      );
+      const pinnedPaths = Object.keys(runtimeAssets);
+      if (
+        manifest.dataRef !== runtimeAssetRef ||
+        runtime.length !== pinnedPaths.length ||
+        runtime.some(
+          (entry) =>
+            !runtimeAssets[entry.path] ||
+            entry.ref !== runtimeAssetRef ||
+            entry.bytes !== runtimeAssets[entry.path].bytes ||
+            entry.sha256 !== runtimeAssets[entry.path].sha256,
+        )
+      )
+        report(
+          'src/client/vendor/blackhole/manifest.json',
+          'runtime-asset-manifest-drift',
+        );
+    }
     const collector = parse(readFileSync(join(root, 'deploy/otel.yaml'), 'utf8'));
     const jobs = collector.receivers.prometheus.config.scrape_configs;
     if (

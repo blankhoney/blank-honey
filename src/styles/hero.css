@@ -82,7 +82,7 @@
   color: #10151e;
 }
 #hero[data-effect='isaca'] .hero-copy {
-  top: 7%;
+  top: 14%;
 }
 #hero[data-effect='isaca'] .hero-copy h1 {
   font-size: clamp(32px, 4.1vw, 58px);
@@ -96,6 +96,10 @@
 }
 #hero[data-effect='isaca'] .hero-top {
   visibility: hidden;
+}
+/* The name and tagline stay hidden here; only the GitHub entry returns. */
+#hero[data-effect='isaca'] .hero-github {
+  visibility: visible;
 }
 #hero[data-effect='isaca'] .hero-index {
   display: block;
@@ -292,8 +296,13 @@
   #hero .hero-description {
     font-size: 14px;
   }
+  #hero[data-effect='isaca'] .hero-bottom {
+    top: 28px;
+    left: 24px;
+    right: auto;
+  }
   #hero[data-effect='isaca'] .hero-index {
-    inset: 26% 4% 16%;
+    inset: 30% 4% 20%;
   }
   .index-card {
     border-radius: 20px;
@@ -303,7 +312,7 @@
     font-size: 15px;
   }
   #hero[data-effect='yantao'] .hero-copy {
-    top: 15%;
+    top: 21%;
     left: 7%;
     right: 7%;
   }
@@ -315,7 +324,7 @@
     margin-bottom: 14px;
   }
   #hero[data-effect='yantao'] .hero-code-window {
-    top: 43%;
+    top: 37%;
     right: 8%;
     width: 84%;
     min-height: 260px;
@@ -477,7 +486,7 @@
 }
 @media (max-width: 700px) {
   #hero .hero-bottom {
-    top: 66px;
+    top: 82px;
     bottom: auto;
     left: auto;
     right: 24px;
@@ -494,5 +503,270 @@
   }
   #hero[data-effect='yantao'] .hero-bottom .enter {
     padding: 3px 10px;
+  }
+}
+
+/* The header keeps its place: the tagline stays a tagline and the GitHub entry is optional. */
+#hero .hero-top {
+  z-index: 5;
+  align-items: center;
+}
+#hero .hero-top-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+#hero .hero-top-links .hero-tagline {
+  font-family: var(--reader);
+  letter-spacing: 0.08em;
+}
+#hero .hero-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  color: inherit;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+#hero .hero-github:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+#hero .hero-github:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+#hero .hero-github svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* Keep the bottom band free for the source note. */
+#hero .hero-source-note {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 5;
+  margin: 0;
+  text-align: center;
+  font: 12px/1.5 var(--mono);
+  color: inherit;
+}
+#hero .hero-source-note a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#hero .hero-source-note a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+#hero.has-hero-source #effect-picker {
+  bottom: max(54px, calc(env(safe-area-inset-bottom) + 40px));
+}
+@media (max-width: 700px) {
+  #hero .hero-tagline {
+    display: none;
+  }
+  #hero .hero-github {
+    font-size: 11px;
+    min-height: 44px;
+  }
+}
+
+/* ---------- Algorithm scenes (2026-09-22) ----------------------------------
+   One stage contract for blackhole / ocean / mandelbulb / reaction / terrain.
+   The pure-CSS still paints immediately and the canvas stays hidden
+   until the scene reports its first frame, so a reduced-motion or failed scene
+   keeps the still instead of an empty stage. A scene may mark a canvas wrapper
+   with `.algorithm-canvas`; the shipped scenes append the canvas straight into
+   the layer, so the visibility contract matches both shapes.
+   Every layer stays inside #hero-stage (z-index: -1): it never paints over the
+   header, entry link, picker or source note, and `pointer-events: none` leaves
+   links, scrolling and touch gestures untouched. The stills are static gradient
+   compositions - a fallback, not the algorithm - and reference no image. */
+.algorithm-layer,
+.algorithm-still,
+.algorithm-canvas {
+  position: absolute;
+  inset: 0;
+}
+.algorithm-layer {
+  overflow: hidden;
+  pointer-events: none;
+}
+.algorithm-layer canvas,
+.algorithm-canvas {
+  visibility: hidden;
+}
+.algorithm-layer[data-state='live'] canvas,
+.algorithm-layer[data-state='live'] .algorithm-canvas {
+  visibility: visible;
+}
+.algorithm-layer[data-state='live'] .algorithm-still {
+  visibility: hidden;
+}
+
+/* Black hole: gold accretion ring on the right half, copy keeps the left column. */
+#hero[data-effect='blackhole'] {
+  background: #05060a;
+  color: #f6e6c2;
+}
+#hero[data-effect='blackhole'] .algorithm-still {
+  background:
+    radial-gradient(circle at 64% 48%, #000 0 12.5%, #0000 13%),
+    radial-gradient(ellipse 30% 6% at 64% 48%, #ffe3ac, #ffab4a66 45%, #0000 74%),
+    radial-gradient(ellipse 44% 13% at 64% 48%, #b8732033, #0000 72%), #05060a;
+}
+/* The live disk throws a hot highlight across the left half, where the copy column sits.
+   A horizontal scrim inside the stage layer dims that side of the scene, not the copy. */
+#hero[data-effect='blackhole'] .algorithm-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(2, 4, 8, 0.88) 0%,
+    rgba(2, 4, 8, 0.72) 32%,
+    rgba(2, 4, 8, 0) 62%
+  );
+}
+#hero[data-effect='blackhole'] .hero-copy {
+  top: 32%;
+  right: 58%;
+  text-align: left;
+}
+#hero[data-effect='blackhole'] .hero-copy h1 {
+  font-size: clamp(30px, 3.8vw, 58px);
+}
+
+/* Ocean: deep blue water under a low sun, the centred copy keeps the sky band. */
+#hero[data-effect='ocean'] {
+  background: #071c36;
+  color: #f7ecd6;
+}
+#hero[data-effect='ocean'] .algorithm-still {
+  background:
+    radial-gradient(circle 26px at 50% 52%, #fff0c8, #ffd68f66 60%, #0000),
+    radial-gradient(ellipse 40% 9% at 50% 52%, #ffd68f, #ff9a4a73 46%, #0000 76%),
+    linear-gradient(to bottom, #071c36 0 60%, #e8a566 60% 60.6%, #0a2b4a 60.6% 78%, #04121f 100%);
+}
+/* The horizon and the sun read nearly white, which the pale title and header cannot sit on.
+   This scrim darkens the top band inside the stage layer, so it dims the scene, not the copy. */
+#hero[data-effect='ocean'] .algorithm-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(3, 19, 31, 0.62) 0%,
+    rgba(3, 19, 31, 0.48) 42%,
+    rgba(3, 19, 31, 0.1) 72%,
+    rgba(3, 19, 31, 0.18) 100%
+  );
+}
+#hero[data-effect='ocean'] .hero-copy {
+  top: 22%;
+}
+
+/* Mandelbulb: indigo structure with gold rings on the right, copy keeps the left column. */
+#hero[data-effect='mandelbulb'] {
+  background: #070a1c;
+  color: #f3e3bd;
+}
+#hero[data-effect='mandelbulb'] .algorithm-still {
+  background:
+    radial-gradient(circle at 64% 50%, #0000 0 26%, #070a1cd9 54%, #070a1c 100%),
+    repeating-radial-gradient(circle at 64% 50%, #d9a94e26 0 0.6%, #0000 0.6% 1.7%),
+    radial-gradient(circle at 64% 50%, #382a7a, #0b0f26 60%, #050710);
+}
+#hero[data-effect='mandelbulb'] .hero-copy {
+  top: 32%;
+  right: 58%;
+  text-align: left;
+}
+#hero[data-effect='mandelbulb'] .hero-copy h1 {
+  font-size: clamp(30px, 3.8vw, 58px);
+}
+
+/* Reaction: teal growth field with a pale gold bloom, dimmed behind the centred copy. */
+#hero[data-effect='reaction'] {
+  background: #04140f;
+  color: #edf2d6;
+}
+#hero[data-effect='reaction'] .algorithm-still {
+  background:
+    radial-gradient(circle at 32% 64%, #6fdcab3d, #0000 44%),
+    radial-gradient(circle at 70% 34%, #d9c37a30, #0000 40%),
+    repeating-conic-gradient(from 18deg at 54% 52%, #0b2c22 0deg 14deg, #061a15 14deg 28deg);
+}
+/* Copy scrim: a dark radial pass inside the stage layer that dims the growth field beneath the
+   centred title, over the still and the animated canvas alike. */
+#hero[data-effect='reaction'] .algorithm-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 62% 32% at 50% 30%, #03110dc7, #03110db8 44%, #03110d00 78%);
+}
+
+/* Terrain: two misty ridges over a blue-green valley, the centred copy keeps the sky. */
+#hero[data-effect='terrain'] {
+  background: #08201f;
+  color: #e9f2ea;
+}
+#hero[data-effect='terrain'] .algorithm-still {
+  background:
+    linear-gradient(to bottom, #0000 38%, #7fd8c022 52%, #0000 70%),
+    linear-gradient(135deg, #0000 47%, #164549 47%) 0 52%/13% 27% repeat-x,
+    linear-gradient(135deg, #0000 47%, #0b2a2e 47%) 0 66%/8% 34% repeat-x,
+    linear-gradient(to bottom, #0a2731, #08201f 62%, #061513);
+}
+#hero[data-effect='terrain'] .hero-copy {
+  top: 20%;
+}
+
+/* The stills are static; this guard also covers a future pseudo-element composition. */
+#hero[data-reduced='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Narrow screens: every new scene centres the copy at 22% and caps the title at 48px,
+   so the header pill, the entry link and the picker never collide with it. */
+@media (max-width: 700px) {
+  #hero[data-effect='blackhole'] .hero-copy,
+  #hero[data-effect='ocean'] .hero-copy,
+  #hero[data-effect='mandelbulb'] .hero-copy,
+  #hero[data-effect='reaction'] .hero-copy,
+  #hero[data-effect='terrain'] .hero-copy {
+    top: 22%;
+    left: 7%;
+    right: 7%;
+    text-align: center;
+  }
+  #hero[data-effect='blackhole'] .hero-copy h1,
+  #hero[data-effect='ocean'] .hero-copy h1,
+  #hero[data-effect='mandelbulb'] .hero-copy h1,
+  #hero[data-effect='reaction'] .hero-copy h1,
+  #hero[data-effect='terrain'] .hero-copy h1 {
+    font-size: clamp(32px, 8vw, 48px);
+  }
+  /* Portrait stacks the copy over the disk, so the black hole scrim turns vertical and covers
+     the upper band instead of the left column. */
+  #hero[data-effect='blackhole'] .algorithm-layer::after {
+    background: linear-gradient(
+      to bottom,
+      rgba(2, 4, 8, 0.7) 0%,
+      rgba(2, 4, 8, 0.65) 40%,
+      rgba(2, 4, 8, 0) 60%
+    );
   }
 }
