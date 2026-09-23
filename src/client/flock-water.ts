@@ -54,11 +54,11 @@ const waterShader = {
   name: 'FlockLake',
   uniforms: {
     tDiffuse: { value: null },
-    color: { value: new Color('#3b575b') },
+    color: { value: new Color('#284d60') },
     textureMatrix: { value: new Matrix4() },
     time: { value: 0 },
     sunDirection: { value: new Vector3(-0.18, 0.12, -1).normalize() },
-    fogColor: { value: new Color('#bfc9c3') },
+    fogColor: { value: new Color('#b7bfd0') },
   },
   vertexShader: `
     uniform mat4 textureMatrix;
@@ -146,7 +146,7 @@ export function createLake(light: boolean) {
   }
   try {
     mesh = new Reflector(geometry, {
-      color: '#3b575b',
+      color: '#284d60',
       textureWidth: light ? 256 : 512,
       textureHeight: light ? 256 : 512,
       multisample: 0,

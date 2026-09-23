@@ -5,15 +5,20 @@ import { createFrameBudget } from '../flock-performance';
 
 export function birdBudget(light: boolean): FlockBudget {
   return light
-    ? { width: 8, fps: 20, maxDpr: 1, maxPixels: 700_000 }
-    : { width: 12, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 };
+    ? { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 }
+    : { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 };
 }
 
 type SceneLoader = () => Promise<{ createFlockScene: (budget: FlockBudget) => FlockScene }>;
+const loadFlockScene: SceneLoader = () => import('../flock-scene');
+
+export async function preload(signal: AbortSignal): Promise<void> {
+  if (!signal.aborted) await loadFlockScene();
+}
 
 export default async function mountBirds(
   { host, stage, signal, reduced, light }: HeroContext,
-  loadScene: SceneLoader = () => import('../flock-scene'),
+  loadScene: SceneLoader = loadFlockScene,
 ) {
   if (signal.aborted) return;
   const layer = document.createElement('div');

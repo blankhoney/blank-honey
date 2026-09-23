@@ -10,15 +10,15 @@ import {
 } from '../src/client/flock-water';
 
 // These are CPU geometry/resource-contract tests, not shader compilation or GPU validation.
-test('the lake base and haze colours agree with the scenic palette on both budgets', () => {
+test('the lake base and haze colours agree with the restored palette on both budgets', () => {
   for (const light of [false, true]) {
     const lake = createLake(light);
     try {
       assert.ok(lake.mesh.material instanceof ShaderMaterial);
       const uniforms = lake.mesh.material.uniforms;
       // The Reflector option and the shader uniform must stay the same colour.
-      assert.equal((uniforms.color.value as Color).getHexString(), '3b575b');
-      assert.equal((uniforms.fogColor.value as Color).getHexString(), 'bfc9c3');
+      assert.equal((uniforms.color.value as Color).getHexString(), '284d60');
+      assert.equal((uniforms.fogColor.value as Color).getHexString(), 'b7bfd0');
     } finally {
       lake.dispose();
     }

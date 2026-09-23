@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro';
+import '../styles/reader.css';
+import { siteUrl } from '../application/destinations';
+
+const feedUrl = new URL('/rss.xml', siteUrl).href;
+---
+
+<Base title="RSS 订阅" description="订阅本站原创文章。">
+  <section id="rss-subscription" class="reader-page">
+    <header class="reader-head">
+      <h1>
+        RSS 订阅 <small>SUBSCRIBE</small>
+      </h1>
+      <p class="reader-intro">这里只订阅本站原创文章。阅读页里的订阅内容来自原作者，不在这里。</p>
+      <nav class="reader-links" aria-label="阅读相关链接">
+        <a href="/reader/">阅读</a>
+        <a href="/reader/manage/">管理</a>
+      </nav>
+    </header>
+
+    <div class="reader-rss-card">
+      <label for="rss-address">订阅地址</label>
+      <div class="reader-rss-address">
+        <input
+          id="rss-address"
+          type="text"
+          readonly
+          value={feedUrl}
+          data-rss-url
+          aria-describedby="rss-status"
+        />
+        <button type="button" data-rss-copy>
+          复制地址
+        </button>
+      </div>
+    </div>
+
+    <p class="reader-status" id="rss-status" role="status" aria-live="polite" data-rss-status></p>
+
+    <p class="reader-intro">
+      也可以直接打开{' '}
+      <a href="/rss.xml" data-astro-reload>
+        XML 文件
+      </a>
+      。
+    </p>
+
+    <noscript>复制按钮需要 JavaScript；可以直接打开上面的 XML 链接。</noscript>
+  </section>
+</Base>

@@ -18,8 +18,8 @@ export function createBirdGeometry(width: number) {
   const shape = [
     0, 0, -20, 0, 4, -20, 0, 0, 30, 0, 0, -15, -30, 0, 0, 0, 0, 15, 0, 0, 15, 30, 0, 0, 0, 0, -15,
   ];
-  const warm = new Color(0x39423f);
-  const cool = new Color(0x6e7770);
+  const warm = new Color(0xff4c91);
+  const cool = new Color(0x35d9ff);
   const color = new Color();
   for (let bird = 0; bird < count; bird++) {
     positions.set(shape, bird * 27);

@@ -101,6 +101,23 @@ test('public tree reports rules without exposing secret values and rejects unkno
   });
 });
 
+test('public tree refuses reader databases, journals and runtime subscription directories', () => {
+  fixture((root, files, put) => {
+    const paths = [
+      'server/reader.sqlite',
+      'public/cache.db-wal',
+      'src/cache.SQLITE-shm',
+      'src/reader-data/sources.json',
+    ];
+    for (const path of paths) put(path, 'synthetic runtime record');
+    const failures = auditPublicTree(root, files).failures;
+    for (const path of paths)
+      assert.ok(
+        failures.some((failure) => failure.file === path && failure.rule === 'reader-runtime-data'),
+      );
+  });
+});
+
 test('public tree rejects symlinks and traversal before reading files', () => {
   fixture((root, files) => {
     symlinkSync(join(root, 'src/config.ts'), join(root, 'src/alias.ts'));
@@ -149,7 +166,8 @@ test('public tree rejects an unknown binary next to the reviewed assets', () => 
     const failures = auditPublicTree(root, files).failures;
     assert.ok(
       failures.some(
-        (f) => f.file === 'public/vendor/blackhole/extra_table.dat' && f.rule === 'unreviewed-binary',
+        (f) =>
+          f.file === 'public/vendor/blackhole/extra_table.dat' && f.rule === 'unreviewed-binary',
       ),
     );
   });

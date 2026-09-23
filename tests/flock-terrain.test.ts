@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   createTerrainGeometry,
   sampleTerrain,
@@ -9,6 +10,12 @@ import {
   terrainGrid,
   terrainNoise,
 } from '../src/client/flock-terrain';
+
+/** The module text, so the three ramp colours are pinned where they are actually written. */
+const terrainSource = readFileSync(
+  new URL('../src/client/flock-terrain.ts', import.meta.url),
+  'utf8',
+);
 
 for (const light of [false, true]) {
   const label = light ? 'light' : 'full';
@@ -119,7 +126,7 @@ test('light terrain uses fewer triangles than full terrain', () => {
 for (const light of [false, true]) {
   const label = light ? 'light' : 'full';
 
-  test(`${label} terrain colours follow the moss-grey ramp without a blue cast`, () => {
+  test(`${label} terrain colours follow the original cold hillside ramp`, () => {
     const geometry = createTerrainGeometry(light);
     try {
       const color = geometry.getAttribute('color');
@@ -127,10 +134,32 @@ for (const light of [false, true]) {
         const red = color.getX(index);
         const green = color.getY(index);
         const blue = color.getZ(index);
-        // Moss green, grey rock and snow all keep green above blue and blue above
-        // red; the replaced cold palette had rock and snow with blue above green.
-        assert.ok(green >= blue - 1e-6, `vertex ${index}: green ${green} below blue ${blue}`);
-        assert.ok(blue > red, `vertex ${index}: blue ${blue} not above red ${red}`);
+        for (const [channel, value] of [
+          ['red', red],
+          ['green', green],
+          ['blue', blue],
+        ] as const) {
+          assert.ok(Number.isFinite(value), `vertex ${index}: ${channel} is not finite`);
+          assert.ok(
+            value >= 0 && value <= 1,
+            `vertex ${index}: ${channel} ${value} leaves the colour range`,
+          );
+        }
+        // The cold hillside - green slope #38575a, grey rock #788597 and snow #d5deeb - holds
+        // blue above green above red at all three endpoints, so every lerp between them does too;
+        // the shading multiply is a positive 0.8 + noise * 0.25, which keeps that order and
+        // stays inside 0..1. The bounding box of the endpoints alone would not hold here.
+        assert.ok(
+          blue > green && green > red,
+          `vertex ${index}: blue ${blue}, green ${green}, red ${red} left the cold ramp`,
+        );
+      }
+      // The ramp itself: the three exact colours the terrain is built from, and no moss grey.
+      for (const colour of ['#38575a', '#788597', '#d5deeb']) {
+        assert.ok(terrainSource.includes(`'${colour}'`), `flock-terrain.ts must keep ${colour}`);
+      }
+      for (const replaced of ['#4c625c', '#808b8b', '#d2d9d4']) {
+        assert.ok(!terrainSource.includes(`'${replaced}'`), `${replaced} must be gone`);
       }
     } finally {
       geometry.dispose();

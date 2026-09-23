@@ -26,7 +26,8 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:8080}
       LOG_DIR: /logs
       HOSTS_FILE: /app/deploy/hosts.json
-    volumes: ['./deploy/hosts.json:/app/deploy/hosts.json:ro', './logs:/logs']
+      READER_DATA_DIR: /data/reader
+    volumes: ['./deploy/hosts.json:/app/deploy/hosts.json:ro', './logs:/logs', 'reader-data:/data/reader']
     networks: [edge, metrics]
     depends_on: [prometheus]
   node-exporter:
@@ -56,6 +57,7 @@ volumes:
   caddy-data:
   caddy-config:
   prometheus-data:
+  reader-data:
 
 secrets:
   site_env:

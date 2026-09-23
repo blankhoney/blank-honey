@@ -7,6 +7,7 @@ export async function GET() {
     title: config.name,
     description: config.description,
     site: siteUrl,
+    customData: '<language>zh-CN</language>',
     items: (await content()).articles.map((a) => ({
       title: a.data.title,
       description: a.data.description,

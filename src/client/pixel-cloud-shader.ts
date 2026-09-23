@@ -1,6 +1,5 @@
 // Local adaptation of Paper Shaders 0.0.80 Dithering (Apache-2.0).
-// Keep its simplex implementation, pixel coordinates and Bayer output unchanged; the added screen
-// bank only gates how much density reaches a fragment, it never moves the pixel grid.
+// Keep its simplex implementation, pixel coordinates and Bayer output unchanged.
 const originalNoise = `float getSimplexNoise(vec2 uv, float t) {
   float noise = .5 * snoise(uv - vec2(0., .3 * t));
   noise += .5 * snoise(2. * uv + vec2(0., .32 * t));
@@ -34,13 +33,7 @@ float getSimplexNoise(vec2 uv, float t) {
     cloudFbm(uv * 0.72 + vec2(0.09, -0.17) * t),
     cloudFbm(uv * 0.72 + vec2(5.2, 1.3) + vec2(-0.13, 0.08) * t)
   );
-  float density = cloudFbm(drift + warp * .85);
-  // Steady screen band, never time random: the canvas coordinate runs from zero at its bottom edge
-  // to one at its top, so the mix returns pure black over the title and inside the bottom footer.
-  vec2 screen = gl_FragCoord.xy / u_resolution;
-  float bank = 1.0 - smoothstep(.32, .60, screen.y + .08 * sin(screen.x * 5.2));
-  float footer = smoothstep(.10, .20, screen.y);
-  return mix(-1.0, density, bank * footer);
+  return cloudFbm(drift + warp * 1.35);
 }`;
   return source.slice(0, start) + smoke + source.slice(start + originalNoise.length);
 }

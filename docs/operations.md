@@ -37,6 +37,28 @@ npm run docker:down
 
 电台源只接受 HTTP(S)，RSS 解析有 8 秒超时和 2 MB 上限。缺失源不生成对应台；解析失败保留暂不可用状态。浏览器不获取 RSS 地址。
 
+## RSS 与公开阅读
+
+`/rss.xml` 只订阅本站已发布的原创文章，`/rss/` 提供地址和复制入口。`/reader/` 展示管理员订阅的外部 RSS/Atom；它不进入原创文章 RSS 或 Pagefind 索引。订阅条目公开可读，不能添加私密或授权受限的源。正文是源实际提供的内容或摘要，不额外抓取原网页；图片和嵌入默认不加载。
+
+数据库保存在 worker 的 `/data/reader/reader.sqlite`，本地 Compose 用 `reader-data` 命名卷。默认没有订阅、没有管理员密码，也没有公开的初始化接口。在自己的服务器终端执行：
+
+```sh
+docker compose exec worker node server/reader-admin.mjs password
+```
+
+终端会要求输入两次新密码（至少12个字符），输入不显示。不要把密码放在命令参数、环境变量或聊天中，也不要用管道输入。随后打开 `/reader/manage/` 登录，添加明确的 RSS/Atom 地址；不是普通网页地址。设置 `ALLOWED_ORIGIN` 为实际主站源（不带路径或结尾斜杠），生产必须是 HTTPS，以启用 Secure 会话 Cookie。改密码撤销全部旧会话，忘记密码可在终端重新运行同一命令。
+
+启用的源默认每24小时抓取一次，启动时补跑到期任务；新增立即入队，也可手动刷新。全服务只抓取一个源，失败退避且保留旧缓存。首版只接收公开网络的 HTTP(S) 80/443 端口和 UTF-8 XML，最多50个源、每次200条、解压后2MiB、每条正文64KiB、总计10000条。达到总容量会拒绝整批新增，不悄悄删除历史；清缓存会重抓源当前窗口，不能恢复它已撤下的旧条目。
+
+备份运行中的数据库必须使用 SQLite 在线备份，不能直接复制正在写入的主文件：
+
+```sh
+docker compose exec worker node server/reader-admin.mjs backup /data/reader/snapshot-YYYYMMDD.sqlite
+```
+
+目标必须是尚不存在的文件；快照也含订阅与登录信息，应保持私有、纳入自己的加密备份，绝不提交 Git。恢复时先停止自己维护的 worker、在独立目录核对快照，再替换数据库；保留原数据库及配套 WAL，不把不同时间的主库/WAL 混用。不要使用 `docker compose down -v` 删除阅读数据。
+
 ## 探针与主机清单
 
 `deploy/hosts.json` 初始为空数组。需要探针时按数组添加条目：每项包含 `publicId`、`displayName`、`regionLabel`、`timeZone` 和内部 `instance`。前四项用于公开展示，`instance` 只在服务端查询指标。公开响应不得带真实地址、凭证或原始 Prometheus 数据。

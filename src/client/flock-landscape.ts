@@ -27,7 +27,7 @@ import { createTerrainGeometry, sceneryInstances, terrainNoise } from './flock-t
 import { createLake, reflectionLayer } from './flock-water';
 import { report } from './log';
 
-export const landscapeFogColor = '#bfc9c3';
+export const landscapeFogColor = '#b7bfd0';
 
 function createTreeGeometry() {
   const trunk = new CylinderGeometry(0.045, 0.065, 0.5, 5).translate(0, 0.25, 0);
@@ -36,7 +36,7 @@ function createTreeGeometry() {
   const parts = [trunk, lower, upper];
   try {
     for (const [index, part] of parts.entries()) {
-      const color = new Color(index === 0 ? '#635b4f' : index === 1 ? '#344a40' : '#536459');
+      const color = new Color(index === 0 ? '#5f5046' : index === 1 ? '#244a48' : '#3b5c50');
       const colors = new Float32Array(part.getAttribute('position').count * 3);
       for (let vertex = 0; vertex < colors.length; vertex += 3)
         colors.set([color.r, color.g, color.b], vertex);
@@ -109,8 +109,8 @@ export function createFlockLandscape(light: boolean) {
         side: BackSide,
         depthWrite: false,
         uniforms: {
-          zenith: { value: new Color('#91a4aa') },
-          horizon: { value: new Color('#dddcd0') },
+          zenith: { value: new Color('#789cc9') },
+          horizon: { value: new Color('#f0c7b7') },
           sunDirection: { value: new Vector3(-0.18, 0.12, -1).normalize() },
         },
         vertexShader: `
@@ -130,8 +130,8 @@ export function createFlockLandscape(light: boolean) {
           float height = smoothstep(-0.03, 0.42, d.y);
           vec3 sky = mix(horizon, zenith, height);
           float sun = max(0.0, dot(d, sunDirection));
-          sky += vec3(0.18, 0.14, 0.10) * pow(sun, 18.0);
-          sky = mix(sky, vec3(1.15, 1.08, 0.94), smoothstep(0.99982, 0.99995, sun));
+          sky += vec3(0.35, 0.16, 0.055) * pow(sun, 18.0);
+          sky = mix(sky, vec3(1.5, 1.18, 0.8), smoothstep(0.99982, 0.99995, sun));
           gl_FragColor = vec4(sky, 1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
@@ -143,8 +143,8 @@ export function createFlockLandscape(light: boolean) {
     sky.name = 'flock-sky';
     sky.renderOrder = -2;
     sky.frustumCulled = false;
-    scenery(new HemisphereLight('#dbe2de', '#646f66', 1.75));
-    const sun = scenery(new DirectionalLight('#f8ead4', 1.7));
+    scenery(new HemisphereLight('#c5d9ff', '#4f5a68', 2.1));
+    const sun = scenery(new DirectionalLight('#ffd0a3', 2.4));
     sun.position.set(-3000, 4500, -5000);
 
     const terrain = scenery(
@@ -177,7 +177,7 @@ export function createFlockLandscape(light: boolean) {
     );
     instances(
       own(new DodecahedronGeometry(1, 0)),
-      own(new MeshLambertMaterial({ color: '#78827a', flatShading: true })),
+      own(new MeshLambertMaterial({ color: '#627782', flatShading: true })),
       true,
     );
 
@@ -191,7 +191,7 @@ export function createFlockLandscape(light: boolean) {
         uniforms: {
           time: { value: 0 },
           noiseMap: { value: mistTexture },
-          color: { value: new Color('#d8ded6') },
+          color: { value: new Color('#d6dce6') },
         },
         vertexShader: `
         varying vec2 texcoord;
@@ -216,7 +216,7 @@ export function createFlockLandscape(light: boolean) {
           edge *= smoothstep(0.0, 0.38, uv.y) * smoothstep(0.0, 0.4, 1.0 - uv.y);
           edge *= smoothstep(0.0, 130.0, altitude);
           float density = smoothstep(0.12, 0.9, a * 0.7 + b * 0.3);
-          gl_FragColor = vec4(color, edge * density * 0.32);
+          gl_FragColor = vec4(color, edge * density * 0.4);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }

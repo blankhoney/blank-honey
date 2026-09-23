@@ -21,3 +21,10 @@ AGENTS.md
 STATE.md
 CONTENT-EDIT-STATE.md
 .claude/
+
+# Reader runtime records and online snapshots stay outside the source tree.
+reader-data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*

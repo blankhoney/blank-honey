@@ -8,9 +8,12 @@ RUN --mount=type=secret,id=site_env,target=/app/.env npm run build
 
 FROM node:24-alpine AS worker
 WORKDIR /app
-COPY server ./server
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --ignore-scripts
+# Release extraction keeps directories private; the unprivileged worker must own its modules.
+COPY --chown=node:node server ./server
 COPY deploy/hosts.json ./deploy/hosts.json
-RUN mkdir /logs && chown node:node /logs
+RUN mkdir -p /logs /data/reader && chown node:node /logs /data/reader && chmod 700 /data/reader
 USER node
 CMD ["node", "server/index.mjs"]
 

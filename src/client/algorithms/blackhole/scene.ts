@@ -5,12 +5,17 @@
  * `frame`. It schedules no animation frames of its own, listens on nothing global and reads no
  * events: time, the frame delta and the normalised pointer all arrive as arguments, so the runtime
  * stays the only owner of the frame loop, the observers and the listeners.
+ *
+ * The five runtime assets arrive from `assets.ts` as raw bytes shared with the hero's prefetch: the
+ * network copy is reused, nothing else is. The float tables, the decoded noise bitmap and every GL
+ * object below are this scene's own and are released with it.
  */
 
 import { report } from '../../log';
 import { createSurface, program, triangle, type AlgorithmSurface } from '../gl';
 import type { AlgorithmFactory, AlgorithmScene } from '../types';
 import { algorithmResolution } from '../types';
+import { invalidateBlackHoleAssets, loadBlackHoleAssets } from './assets';
 import {
   blackHoleFraming,
   CAMERA_FOV_Y,
@@ -22,7 +27,7 @@ import {
   staticObserverUniforms,
 } from './camera';
 import { DISC_LOOK, DISC_TIME_SCALE, discGeometry } from './disc';
-import { fetchAsset, LUTS, NOISE_TEXTURE, parseLut, parsePngHeader } from './lut';
+import { LUTS, NOISE_TEXTURE, parseLut, parsePngHeader } from './lut';
 import { fragmentSource, STARFIELD_SEED, vertexSource } from './shader';
 import {
   bindTextures,
@@ -31,6 +36,7 @@ import {
   TEXTURE_UNITS,
   throwOnGlError,
   type BlackHoleTextures,
+  type LutData,
 } from './textures';
 
 /**
@@ -105,6 +111,25 @@ function deviceRatio(): number {
   return Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
 }
 
+/** An abort is this instance leaving, not the bytes being wrong. */
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
+}
+
+/**
+ * The assembled source of the default disc fragment shader, built on first use and then reused:
+ * `fragmentSource(discGeometry())` runs the orbit integral over every ring for a result that is the
+ * same for every scene. The cache is only written once the call has returned, so a build that
+ * throws leaves nothing behind and the next scene builds it again instead of uploading a broken
+ * program.
+ */
+let defaultFragmentSource: string | undefined;
+
+function discFragmentSource(): string {
+  if (defaultFragmentSource === undefined) defaultFragmentSource = fragmentSource(discGeometry());
+  return defaultFragmentSource;
+}
+
 export const createScene: AlgorithmFactory = async (container, budget, signal) => {
   const abort = new AbortController();
   const cancel = () => abort.abort();
@@ -124,7 +149,7 @@ export const createScene: AlgorithmFactory = async (container, budget, signal) =
     if (disposed) return;
     disposed = true;
     signal.removeEventListener('abort', cancel);
-    // Cancels any fetch still in flight; the already loaded tables simply become garbage.
+    // Release this consumer and its GPU resources, not another consumer's download or cached bytes.
     abort.abort();
     const current = resources;
     // GL objects go before the surface, which drops the context they belong to. Each step runs even
@@ -139,24 +164,28 @@ export const createScene: AlgorithmFactory = async (container, budget, signal) =
 
   let noise: ImageBitmap | undefined;
   try {
-    // 1. The four tables and the noise pattern, same origin, strictly validated before upload.
-    const [deflection, inverseRadius, doppler, blackBody, noiseBytes] = await Promise.all([
-      fetchAsset(LUTS.deflection.file, abort.signal),
-      fetchAsset(LUTS.inverseRadius.file, abort.signal),
-      fetchAsset(LUTS.doppler.file, abort.signal),
-      fetchAsset(LUTS.blackBody.file, abort.signal),
-      fetchAsset(NOISE_TEXTURE.file, abort.signal),
-    ]);
+    // 1. The four tables and the noise pattern, same origin, strictly validated before upload. The
+    // bytes are shared with the hero's prefetch, so a second scene does not download them again.
+    const assets = await loadBlackHoleAssets(abort.signal);
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    const data = {
-      deflection: parseLut(deflection, LUTS.deflection),
-      inverseRadius: parseLut(inverseRadius, LUTS.inverseRadius),
-      doppler: parseLut(doppler, LUTS.doppler),
-      blackBody: parseLut(blackBody, LUTS.blackBody),
-    };
-    const noiseBytesView = new Uint8Array(noiseBytes);
-    parsePngHeader(noiseBytesView, NOISE_TEXTURE);
-    noise = await decodeNoiseTexture(noiseBytesView);
+    let data: LutData;
+    try {
+      // This instance's own copies: the float tables it uploads and the bitmap it decodes.
+      data = {
+        deflection: parseLut(assets.deflection, LUTS.deflection),
+        inverseRadius: parseLut(assets.inverseRadius, LUTS.inverseRadius),
+        doppler: parseLut(assets.doppler, LUTS.doppler),
+        blackBody: parseLut(assets.blackBody, LUTS.blackBody),
+      };
+      const noiseBytesView = new Uint8Array(assets.noise);
+      parsePngHeader(noiseBytesView, NOISE_TEXTURE);
+      noise = await decodeNoiseTexture(noiseBytesView);
+    } catch (error) {
+      // The shared bytes are the failure, not this instance's wait: drop them so the next scene
+      // fetches again. An abort is this instance leaving, and the verified bytes stay.
+      if (!signal.aborted && !isAbortError(error)) invalidateBlackHoleAssets(assets);
+      throw error;
+    }
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
     // 2. Surface and GPU objects; everything from here is registered for release.
@@ -175,7 +204,7 @@ export const createScene: AlgorithmFactory = async (container, budget, signal) =
     canvas.style.display = 'block';
     const fullscreen = triangle(gl);
     resources.fullscreen = fullscreen;
-    const linked = program(gl, vertexSource, fragmentSource(discGeometry()));
+    const linked = program(gl, vertexSource, discFragmentSource());
     resources.program = linked;
     const uniforms = locateUniforms(gl, linked);
     const tables = createTextures(gl, data, noise);

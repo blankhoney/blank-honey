@@ -1,0 +1,121 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/reader.css';
+---
+
+<Base title="订阅管理" description="管理阅读页的订阅源。">
+  <section id="reader-manage" class="reader-page">
+    <header class="reader-head">
+      <h1>
+        管理 <small>MANAGE</small>
+      </h1>
+      <p class="reader-intro">登录后可以添加、刷新或移除订阅源。这里的操作只影响阅读页的收录。</p>
+      <nav class="reader-links" aria-label="阅读相关链接">
+        <a href="/reader/">← 返回阅读</a>
+        <a href="/rss/">RSS 订阅</a>
+      </nav>
+    </header>
+
+    <p class="reader-status" role="status" aria-live="polite" data-reader-status>
+      正在读取管理状态…
+    </p>
+
+    <p class="reader-hint" data-reader-unconfigured hidden>
+      管理尚未初始化，请管理员在服务器终端设置密码。
+    </p>
+
+    <form class="reader-form" data-reader-login>
+      <fieldset>
+        <legend>登录</legend>
+        <div class="reader-form-fields">
+          <div class="reader-field">
+            <label for="reader-manage-password">密码</label>
+            <input
+              id="reader-manage-password"
+              type="password"
+              autocomplete="current-password"
+              required
+              data-reader-login-password
+            />
+          </div>
+          <button type="submit" data-reader-login-submit>
+            登录
+          </button>
+        </div>
+      </fieldset>
+    </form>
+
+    <div data-reader-admin hidden>
+      <div class="reader-manage-toolbar">
+        <button type="button" data-reader-refresh-state>
+          更新状态
+        </button>
+        <button type="button" data-reader-logout>
+          退出登录
+        </button>
+      </div>
+
+      <form class="reader-form" data-reader-add>
+        <fieldset>
+          <legend>添加订阅源</legend>
+          <p class="reader-hint">订阅内容会公开，请勿添加私密或授权受限源。</p>
+          <div class="reader-form-fields">
+            <div class="reader-field">
+              <label for="reader-add-url">订阅地址</label>
+              <input
+                id="reader-add-url"
+                type="url"
+                inputmode="url"
+                placeholder="https://example.com/feed.xml"
+                required
+                data-reader-add-url
+              />
+            </div>
+            <div class="reader-field">
+              <label for="reader-add-title">标题（可选）</label>
+              <input id="reader-add-title" type="text" autocomplete="off" data-reader-add-title />
+            </div>
+            <button type="submit" data-reader-add-submit>
+              添加
+            </button>
+          </div>
+        </fieldset>
+      </form>
+
+      <ul class="reader-sources" data-reader-sources aria-label="订阅源列表"></ul>
+
+      <form class="reader-form" data-reader-password>
+        <fieldset>
+          <legend>修改密码</legend>
+          <div class="reader-form-fields">
+            <div class="reader-field">
+              <label for="reader-current-password">当前密码</label>
+              <input
+                id="reader-current-password"
+                type="password"
+                autocomplete="current-password"
+                required
+                data-reader-current-password
+              />
+            </div>
+            <div class="reader-field">
+              <label for="reader-new-password">新密码</label>
+              <input
+                id="reader-new-password"
+                type="password"
+                autocomplete="new-password"
+                required
+                data-reader-new-password
+              />
+            </div>
+            <button type="submit" data-reader-password-submit>
+              修改密码
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <noscript>管理页面需要 JavaScript 才能使用。</noscript>
+  </section>
+</Base>
