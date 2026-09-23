@@ -9,11 +9,11 @@ export default async function ({ host, stage, signal, reduced, light }: HeroCont
   if (signal.aborted) return;
   const container = await particles(stage.id, {
     particles: {
-      number: { value: light ? 28 : 65 },
-      size: { value: { min: 0.6, max: 1.6 } },
-      paint: { color: { value: '#73babc' } },
-      move: { enable: true, speed: 0.2, outModes: { default: 'bounce' } },
-      links: { enable: true, distance: 140, color: '#73babc', opacity: 0.2 },
+      number: { value: light ? 14 : 28 },
+      size: { value: { min: 0.5, max: 1.1 } },
+      paint: { color: { value: '#7f8981' } },
+      move: { enable: true, speed: 0.08, outModes: { default: 'bounce' } },
+      links: { enable: true, distance: 100, color: '#7f8981', opacity: 0.07 },
     },
   });
   if (signal.aborted) {

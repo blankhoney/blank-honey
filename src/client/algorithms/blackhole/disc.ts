@@ -4,9 +4,10 @@
  * The upstream demo builds its disc rings with `Math.random()` while assembling the shader (see
  * `src/client/vendor/blackhole/source/camera_view/shader_manager.js`). This module generates the
  * same parameters from a fixed seed instead, so the hero shows the same disc on every load and
- * tests can pin it. The physics is unchanged: each ring is an annulus of particles on a circular
- * orbit, shaded by the upstream `DefaultDiscColor`, and `dthetaDphi` is the same numerical integral
- * of the orbit equation, with the same step count.
+ * tests can pin it. The ring physics is unchanged: each ring is an annulus of particles on a circular
+ * orbit, and `dthetaDphi` is the same numerical integral of the orbit equation, with the same step
+ * count. The shading is the upstream `DefaultDiscColor` with the disc's own look applied on top; see
+ * `shader.ts` for exactly where it differs.
  */
 
 export type DiscRing = {
@@ -38,15 +39,20 @@ const ORBIT_INTEGRAL_STEPS = 100000;
 /**
  * Schwarzschild time per second, in the model's own time unit. The upstream demo advances the
  * observer's time at the physical rate for its default mass (about 53 units per second), which is
- * far too fast for a hero background: the disc pattern would turn over roughly once per second.
+ * far too fast for a hero background: the disc pattern would turn over roughly once per second. The
+ * hero keeps its own much slower clock instead, so the pattern drifts over minutes.
  */
-export const DISC_TIME_SCALE = 1;
+export const DISC_TIME_SCALE = 0.45;
 
-/** Disc shading, kept at the upstream demo's slider defaults (indices 500, 300 and 430). */
+/**
+ * Disc shading. These are the hero's own values, not the upstream demo's slider defaults (indices
+ * 500, 300 and 430): a quiet top-layer density, a dimmer per-ring colour and a fixed 3500 K peak, so
+ * the disc reads as a restrained band on a black frame rather than the demo's full-range look.
+ */
 export const DISC_LOOK = {
-  density: 100 * 0.5 ** 10,
-  opacity: 0.3,
-  temperature: 1000 * 10 ** 0.43,
+  density: 0.075,
+  opacity: 0.42,
+  temperature: 3500,
 } as const;
 
 /**

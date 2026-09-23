@@ -1,4 +1,4 @@
-export type AlgorithmId = 'blackhole' | 'ocean' | 'mandelbulb' | 'reaction' | 'terrain';
+export type AlgorithmId = 'blackhole' | 'ocean' | 'reaction' | 'terrain';
 
 export type AlgorithmBudget = {
   light: boolean;

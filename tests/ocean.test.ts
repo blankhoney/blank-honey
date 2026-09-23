@@ -610,7 +610,7 @@ test('the canvas budget for both tiers stays inside the shared resolution caps',
 
 /* ── sun and look ────────────────────────────────────────────────────────── */
 
-test('the low warm sun points where the look says and stays physically sane', () => {
+test('the low sun points where the look says and stays physically sane', () => {
   const sun = sunState(LOOK);
   const length = Math.hypot(...sun.direction);
   closeTo(length, 1, 1e-12, 'sun direction is not a unit vector');
@@ -618,14 +618,17 @@ test('the low warm sun points where the look says and stays physically sane', ()
   assert.ok(sun.energy > 0 && Number.isFinite(sun.energy), 'sun energy is degenerate');
   for (const value of [...sun.betaR, ...sun.betaM, ...sun.color])
     assert.ok(Number.isFinite(value) && value >= 0, 'a Preetham coefficient is not a finite non-negative number');
-  // A sunset is red dominated: the blue channel cannot survive the long slant path.
+  // The sun stays above the horizon and low: the scene wants its light grazing
+  // the water, and a grazing sun is red dominated, since the blue channel cannot
+  // survive the long slant path even at this cool sky.
+  assert.ok(sun.direction[1] > 0, `the sun is below the horizon: ${sun.direction}`);
   assert.ok(sun.color[0] > sun.color[1] && sun.color[1] > sun.color[2], `sun is not warm: ${sun.color}`);
-  assert.ok(sun.color[0] / Math.max(sun.color[2], 1e-6) > 10, 'sun is not low enough to be a sunset');
+  assert.ok(sun.color[0] / Math.max(sun.color[2], 1e-6) > 10, 'sun is not low enough to be red shifted');
 
   const noon = sunState({ ...LOOK, sunElevationDeg: 70 });
   assert.ok(
     noon.color[2] / Math.max(noon.color[0], 1e-6) > sun.color[2] / Math.max(sun.color[0], 1e-6),
-    'raising the sun should cost less blue than a sunset does',
+    'raising the sun should cost less blue than a low sun does',
   );
 });
 
@@ -673,6 +676,283 @@ test('the yaw approaches its target without overshoot and only by the frame delt
   assert.ok(smoothYaw(LOOK.cameraBaseYaw, target, 30, LOOK.yawResponse) <= target);
   assert.equal(smoothYaw(Number.NaN, target, 1 / 60, LOOK.yawResponse), target);
   assert.equal(smoothYaw(0.1, Number.NaN, 1 / 60, LOOK.yawResponse), 0.1);
+});
+
+/* ── cascade filtering: pixel footprint and the fold guard ────────────────── */
+
+/** CPU mirror of GLSL `smoothstep`, so the filter can be pinned without a GPU. */
+function glslSmoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/** Texels one screen pixel of this footprint covers in a cascade. */
+function texelsPerPixel(footprint: number, fftSize: number, tileLength: number): number {
+  return (footprint * fftSize) / tileLength;
+}
+
+/** CPU mirror of the shader's `slopeFootprintWeight`, metres in and out. */
+function cascadeFootprintWeight(footprint: number, fftSize: number, tileLength: number): number {
+  return 1 - glslSmoothstep(0.65, 2.0, texelsPerPixel(footprint, fftSize, tileLength));
+}
+
+/** Footprint that puts a pixel at `texels` texels in a cascade. */
+function footprintForTexels(texels: number, fftSize: number, tileLength: number): number {
+  return (texels * tileLength) / fftSize;
+}
+
+/** CPU mirror of the shader's `slopeDenominator`. */
+function foldDenominator(value: number): number {
+  return value < 0 ? -Math.max(-value, 0.15) : Math.max(value, 0.15);
+}
+
+/** CPU mirror of the guarded Jacobian normal, for the fold cases. */
+function guardedNormal(dx: number, dy: number, dzz: number, dxx: number): [number, number, number] {
+  const x = -dx / foldDenominator(1 + dzz);
+  const z = -dy / foldDenominator(1 + dxx);
+  const length = Math.hypot(x, 1, z);
+  return [x / length, 1 / length, z / length];
+}
+
+/** CPU mirror of the shader's roughness, driven by the three cascade weights. */
+function cascadeRoughness(n0: number, n1: number, n2: number): number {
+  return Math.min(0.28, Math.max(0.025, 0.028 + 0.085 * (1 - n2) + 0.055 * (1 - n1) + 0.04 * (1 - n0)));
+}
+
+const SHIPPED_FFT_SIZES = [256, 128]; // the full and light tiers
+
+test('the cascade filter keeps a cascade while a pixel stays under its texel scale', () => {
+  for (const fftSize of SHIPPED_FFT_SIZES) {
+    for (const tileLength of CASCADE_LENGTHS) {
+      const label = `${fftSize}² over ${tileLength} m`;
+      // A pixel far finer than the cascade's texels keeps the whole cascade...
+      assert.equal(
+        cascadeFootprintWeight(0, fftSize, tileLength),
+        1,
+        `${label}: a zero footprint dropped the cascade`,
+      );
+      assert.equal(
+        cascadeFootprintWeight(footprintForTexels(0.65, fftSize, tileLength), fftSize, tileLength),
+        1,
+        `${label}: the weight left 1 before the ramp starts`,
+      );
+      // ...and one spanning two texels or more drops it entirely.
+      for (const texels of [2, 3.5, 40]) {
+        assert.equal(
+          cascadeFootprintWeight(footprintForTexels(texels, fftSize, tileLength), fftSize, tileLength),
+          0,
+          `${label}: ${texels} texels per pixel still kept the cascade`,
+        );
+      }
+      // The ramp is finite, inside [0, 1], and never rises as pixels grow.
+      let previous = Number.POSITIVE_INFINITY;
+      for (let step = 0; step <= 200; step++) {
+        const texels = (3 * step) / 200;
+        const weight = cascadeFootprintWeight(
+          footprintForTexels(texels, fftSize, tileLength),
+          fftSize,
+          tileLength,
+        );
+        assert.ok(
+          Number.isFinite(weight) && weight >= 0 && weight <= 1,
+          `${label}: weight ${weight} at ${texels} texels per pixel`,
+        );
+        assert.ok(weight <= previous + 1e-12, `${label}: the weight rose from ${previous} to ${weight}`);
+        previous = weight;
+      }
+      // Halfway through the ramp the cascade is half faded.
+      closeTo(
+        cascadeFootprintWeight(footprintForTexels(1.325, fftSize, tileLength), fftSize, tileLength),
+        0.5,
+        1e-12,
+        `${label}: midpoint`,
+      );
+    }
+  }
+
+  // The filter is a texel-scale test, so it must not depend on which tier is
+  // running: a light-tier pixel twice as coarse covers the same texels a full
+  // tier pixel covers, and the cascade has to fade identically.
+  for (const tileLength of CASCADE_LENGTHS)
+    for (const texels of [0.2, 0.65, 1.0, 1.325, 1.8, 2.5]) {
+      const full = cascadeFootprintWeight(footprintForTexels(texels, 256, tileLength), 256, tileLength);
+      const light = cascadeFootprintWeight(footprintForTexels(texels, 128, tileLength), 128, tileLength);
+      closeTo(light, full, 1e-12, `${tileLength} m at ${texels} texels per pixel must not depend on the tier`);
+    }
+});
+
+test('the Jacobian denominator never reaches zero and keeps the folding sign', () => {
+  for (const value of [0, -0, 1e-6, -1e-6, 0.15, -0.15, 1, -1, 3, -3, 1e-30, -1e-30, 1e7, -1e7]) {
+    const guarded = foldDenominator(value);
+    assert.ok(Number.isFinite(guarded), `denominator ${value} produced ${guarded}`);
+    assert.notEqual(guarded, 0, `denominator ${value} collapsed to zero`);
+    assert.ok(Math.abs(guarded) >= 0.15, `denominator ${value} fell to ${guarded}`);
+    if (value > 0) assert.ok(guarded > 0, `denominator ${value} lost its sign: ${guarded}`);
+    if (value < 0) assert.ok(guarded < 0, `denominator ${value} lost its sign: ${guarded}`);
+    // Outside the clamp window the value must pass through untouched.
+    if (Math.abs(value) > 0.15) assert.equal(guarded, value, `denominator ${value} was changed: ${guarded}`);
+  }
+
+  // A fold is exactly where both denominators cross zero, so this is the case
+  // that used to divide by zero: the normal must stay finite and unit length.
+  // The guard is a clamp on magnitude only, so the sign of the denominator —
+  // which is what marks a folded crest — has to come through untouched.
+  for (const value of [-3, -1.000000001, -1, -0.5, -0.15, -1e-9, 1e-9, 0.15, 0.5, 1, 3]) {
+    assert.equal(
+      Math.sign(foldDenominator(value)),
+      Math.sign(value),
+      `the guard dropped the fold sign of ${value}`,
+    );
+  }
+  for (const slope of [1e-6, -1e-6, 0.5, -0.5, 25, -25]) {
+    for (const crossing of [0, 1e-9, -1e-9]) {
+      const normal = guardedNormal(slope, slope, -1 + crossing, -1 + crossing);
+      for (const component of normal)
+        assert.ok(Number.isFinite(component), `slope ${slope} crossing ${crossing} gave ${component}`);
+      closeTo(Math.hypot(...normal), 1, 1e-12, `slope ${slope} crossing ${crossing}: normal length`);
+      assert.ok(normal[1] > 0, 'the guarded normal must still point up');
+      // Before the fold the normal leans against the slope; just past it the
+      // denominator has changed sign and the crest leans the other way.
+      const expected = Math.sign(slope) * (crossing < 0 ? 1 : -1);
+      assert.equal(Math.sign(normal[0]), expected, `slope ${slope} crossing ${crossing} flipped its normal`);
+      assert.equal(Math.sign(normal[2]), expected, `slope ${slope} crossing ${crossing} flipped its normal`);
+    }
+  }
+});
+
+test('the water shader filters every cascade by its own footprint and guards both denominators', () => {
+  // Comments are stripped before every check, so only real code can satisfy them.
+  const tight = flattenGlsl(OCEAN_FRAGMENT_SHADER).replace(/\s+/g, '');
+  const expect: Array<[string, string]> = [
+    [
+      'floatslopeFootprintWeight(floatfootprint,floatlengthScale){return1.0-smoothstep(0.65,2.0,footprint*uSpectrumSize/lengthScale);}',
+      'the footprint weight no longer ramps over 0.65 to 2 texels per pixel',
+    ],
+    [
+      'floatslopeDenominator(floatvalue){returnvalue<0.0?-max(-value,0.15):max(value,0.15);}',
+      'the fold guard was rewritten',
+    ],
+    ['floatfootprint=max(length(dFdx(vW.xz)),length(dFdy(vW.xz)));', 'the footprint is not the screen-space one'],
+    ['floatn0=slopeFootprintWeight(footprint,uL0);', 'the base cascade is not filtered by the footprint'],
+    [
+      '(1.0-smoothstep(2500.0,9000.0,dist))*slopeFootprintWeight(footprint,uL1)',
+      'the middle cascade lost its distance fade or its footprint weight',
+    ],
+    [
+      '(1.0-smoothstep(260.0,1500.0,dist))*slopeFootprintWeight(footprint,uL2)',
+      'the fine cascade lost its distance fade or its footprint weight',
+    ],
+    ['texture(uV0,vW.xz/uL0)*n0', 'the base layer is not weighted by n0'],
+    ['texture(uV1,vW.xz/uL1)*n1', 'the middle layer is not weighted by n1'],
+    ['texture(uV2,vW.xz/uL2)*n2', 'the fine layer is not weighted by n2'],
+    ['-dv.x/slopeDenominator(1.0+dv.z)', 'the x Jacobian denominator is unguarded'],
+    ['-dv.y/slopeDenominator(1.0+dv.w)', 'the z Jacobian denominator is unguarded'],
+    [
+      'floatrough=clamp(0.028+0.085*(1.0-n2)+0.055*(1.0-n1)+0.04*(1.0-n0),0.025,0.28);',
+      'the roughness is no longer the clamped cascade blend',
+    ],
+    ['texture(uF1,vW.xz/uL1).r*n1', 'foam ignores the filtered middle cascade'],
+    ['texture(uF2,vW.xz/uL2).r*n2*0.85', 'foam ignores the filtered fine cascade'],
+  ];
+  for (const [code, message] of expect) assert.ok(tight.includes(code), message);
+  assert.doesNotMatch(tight, /\/\(1\.0\+dv\.[zw]\)/, 'a bare Jacobian denominator survived');
+  assert.equal(
+    (tight.match(/slopeFootprintWeight\(footprint,uL/g) ?? []).length,
+    3,
+    'each of the three cascades must be filtered by its own footprint',
+  );
+
+  // Roughness stays inside its clamp for every weighting the filter can produce,
+  // and only grows as cascades drop out.
+  for (const n0 of [0, 0.25, 0.5, 0.75, 1]) {
+    for (const n1 of [0, 0.5, 1]) {
+      for (const n2 of [0, 0.5, 1]) {
+        const rough = cascadeRoughness(n0, n1, n2);
+        assert.ok(
+          Number.isFinite(rough) && rough >= 0.025 && rough <= 0.28,
+          `roughness ${rough} at weights ${n0}/${n1}/${n2} left the clamp`,
+        );
+      }
+    }
+  }
+  for (const n of [0, 0.25, 0.5, 0.75, 1])
+    assert.ok(
+      cascadeRoughness(n, n, n) >= cascadeRoughness(1, 1, 1),
+      `roughness fell below its finest value at weight ${n}`,
+    );
+  closeTo(cascadeRoughness(1, 1, 1), 0.028, 1e-12, 'all cascades present should be the smoothest surface');
+  closeTo(cascadeRoughness(0, 0, 0), 0.208, 1e-12, 'all cascades gone should be the roughest surface');
+});
+
+test('both tiers hand the water material the real FFT size, not the canvas', (t) => {
+  for (const [budget, expected] of [
+    [FIXED_BUDGET, 256],
+    [LIGHT_BUDGET, 128],
+  ] as Array<[AlgorithmBudget, number]>) {
+    const harness = surfaceHarness(budget.light ? 0 : 5, budget);
+    t.after(() => harness.surface.dispose());
+    assert.equal(harness.config.fftSize, expected, 'the tier stopped shipping this FFT size');
+    harness.surface.resizeTargets(320, 180);
+    harness.surface.renderFrame(0);
+    const water = drawnWaterUniforms(harness.drawn);
+    assert.equal(
+      water.uSpectrumSize?.value,
+      expected,
+      `the ${budget.light ? 'light' : 'full'} tier fed the shader ${String(water.uSpectrumSize?.value)} texels`,
+    );
+    // The filter is scaled by the FFT grid, so a canvas change must not move it.
+    harness.surface.resizeTargets(1920, 1080);
+    harness.surface.renderFrame(0);
+    assert.equal(
+      drawnWaterUniforms(harness.drawn).uSpectrumSize?.value,
+      expected,
+      'a resize changed the FFT size the filter is scaled by',
+    );
+  }
+
+  const harness = surfaceHarness(5);
+  t.after(() => harness.surface.dispose());
+  harness.surface.resizeTargets(320, 180);
+  harness.surface.renderFrame(0);
+  const water = drawnWaterUniforms(harness.drawn);
+  // A uniform Three does not find in the program is silently dropped, so the
+  // name has to be declared by one of the two water stages the material feeds.
+  const declared = new Set([
+    ...declaredUniforms(OCEAN_FRAGMENT_SHADER),
+    ...declaredUniforms(OCEAN_VERTEX_SHADER),
+  ]);
+  for (const name of Object.keys(water))
+    assert.ok(declared.has(name), `the water material supplies ${name}, which no water stage declares`);
+  assert.ok(
+    declaredUniforms(OCEAN_FRAGMENT_SHADER).includes('uSpectrumSize'),
+    'the fragment shader no longer declares uSpectrumSize',
+  );
+
+  // The optics dials arrive as numbers rather than as a shader default.
+  const clarity = 1 / Math.max(0.15, LOOK.clarity);
+  const absorb = water.uAbsorb?.value as { x: number; y: number; z: number };
+  closeTo(absorb.x, LOOK.absorbR * clarity, 1e-12, 'absorb R');
+  closeTo(absorb.y, LOOK.absorbG * clarity, 1e-12, 'absorb G');
+  closeTo(absorb.z, LOOK.absorbB * clarity, 1e-12, 'absorb B');
+  assert.equal(water.uSSSStrength?.value, LOOK.sssStrength, 'the crest light strength is not the shipped one');
+  assert.equal(water.uRefract?.value, LOOK.refract, 'the refraction amount is not the shipped one');
+  assert.equal(water.uGlitter?.value, LOOK.glitter, 'the glitter amount is not the shipped one');
+  assert.equal(water.uFogDensity?.value, LOOK.fogDensity, 'the fog density is not the shipped one');
+  assert.equal(water.uFoamAmount?.value, LOOK.foamAmount, 'the foam amount is not the shipped one');
+  // Silver-blue, not a warm sunset: the in-scatter is a dark blue-grey and the
+  // crest light a muted grey-teal. Both colours reach Three as a Color, which
+  // may re-encode them, so this pins the hue ordering instead of the bytes.
+  const scatter = water.uScatter?.value as { x: number; y: number; z: number };
+  const crest = water.uSSSColor?.value as { x: number; y: number; z: number };
+  assert.ok(
+    scatter.x < scatter.y && scatter.y < scatter.z,
+    `the in-scatter is not blue dominant: ${scatter.x}/${scatter.y}/${scatter.z}`,
+  );
+  assert.ok(scatter.z > 0 && scatter.z < 0.5, `the in-scatter is not a dark blue-grey: ${scatter.z}`);
+  assert.ok(
+    crest.x < crest.z && crest.z <= crest.y,
+    `the crest light is not a muted grey-teal: ${crest.x}/${crest.y}/${crest.z}`,
+  );
 });
 
 /* ── scene construction: capability failures and resource release ────────── */
@@ -834,10 +1114,13 @@ const passName = (shader: string) => PASS_NAMES.get(shader) ?? `other:${shader.s
  * Builds the real surface against a fake renderer and pass factory. The scene
  * objects are Three's own; only the two things that would need a GPU are
  * stubbed, so the pass sequence and the target lifetimes are the shipped ones.
+ * The stubbed renderer still records the scenes it is handed, which is how a
+ * test can read the water material's live uniforms.
  */
-function surfaceHarness(bloomLevels: number) {
+function surfaceHarness(bloomLevels: number, budget: AlgorithmBudget = FIXED_BUDGET) {
   const calls: PassCall[] = [];
   const uniforms = new Map<string, Uniforms>();
+  const drawn: unknown[] = [];
   const textures = ['uD0', 'uD1', 'uD2', 'uV0', 'uV1', 'uV2', 'uF0', 'uF1', 'uF2'].map(
     (name) => ({ name }) as never,
   );
@@ -869,11 +1152,29 @@ function surfaceHarness(bloomLevels: number) {
   const renderer = {
     setRenderTarget: () => {},
     clear: () => {},
-    render: () => {},
+    render: (scene: unknown) => {
+      drawn.push(scene);
+    },
   } as unknown as WebGLRenderer;
-  const config = { ...oceanConfig(FIXED_BUDGET), bloomLevels };
+  const config = { ...oceanConfig(budget), bloomLevels };
   const surface = createOceanSurface(renderer, passes, config, LOOK, simulation);
-  return { surface, calls, uniforms, config };
+  return { surface, calls, uniforms, config, drawn };
+}
+
+/**
+ * The live uniform set of the drawn water mesh. The water material is built by
+ * Three inside `createOceanSurface` and only ever reaches the renderer through
+ * a scene, so this is the one path to the values the shader will really read.
+ */
+function drawnWaterUniforms(drawn: readonly unknown[]): Uniforms {
+  for (const scene of drawn) {
+    const children = (scene as { children?: unknown[] }).children ?? [];
+    for (const child of children) {
+      const material = (child as { material?: { uniforms?: Uniforms } }).material;
+      if (material?.uniforms && 'uSpectrumSize' in material.uniforms) return material.uniforms;
+    }
+  }
+  throw new Error('the water material was never drawn');
 }
 
 /** The framebuffer sizes the bloom chain must have for a given drawing buffer. */

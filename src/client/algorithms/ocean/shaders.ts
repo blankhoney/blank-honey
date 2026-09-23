@@ -301,9 +301,26 @@ uniform mat4 viewMatrix, projectionMatrix;
 uniform vec3 uCamPos, uSunColor, uAbsorb, uScatter, uSSSColor, uFoamColor;
 uniform sampler2D uV0,uV1,uV2,uF0,uF1,uF2,uSceneColor,uSceneDepth;
 uniform float uL0,uL1,uL2,uTime,uFoamAmount,
-              uSSSStrength,uRefract,uFogDensity,uGlitter;
+              uSSSStrength,uRefract,uFogDensity,uGlitter,uSpectrumSize;
 uniform vec2 uResolution;
 layout(location=0) out vec4 oC;
+
+/* A cascade drops out once one screen pixel spans about a texel of that
+   cascade's tile: smaller footprints resolve its slope detail, while larger
+   footprints would alias that detail into shimmer. uSpectrumSize is the cascade's FFT
+   resolution and uL the tile edge, so footprint*uSpectrumSize/uL is exactly the
+   texels a pixel covers. The band is deliberately soft (0.65 to 2 texels) so a
+   cascade fades out instead of switching off at a hard radius. */
+float slopeFootprintWeight(float footprint, float lengthScale){
+  return 1.0 - smoothstep(0.65, 2.0, footprint*uSpectrumSize/lengthScale);
+}
+
+/* The Jacobian denominators 1 + dD/dx can pass through zero where the surface
+   folds. Clamping the magnitude keeps the normal finite while keeping the sign,
+   so a folded crest still flips its normal instead of producing an infinity. */
+float slopeDenominator(float value){
+  return value < 0.0 ? -max(-value, 0.15) : max(value, 0.15);
+}
 
 void main(){
   vec3  toEye = uCamPos - vW;
@@ -311,16 +328,26 @@ void main(){
   vec3  V     = toEye/max(dist, 1e-4);
 
   /* ---- surface normal from the cascade slope fields ------------------ */
-  float n1 = 1.0 - smoothstep(2500.0, 9000.0, dist);
-  float n2 = 1.0 - smoothstep( 260.0, 1500.0, dist);
-  vec4 dv = texture(uV0, vW.xz/uL0)
+  /* Screen-space footprint of this pixel, in metres. Evaluate the derivatives
+     before any divergent branch; GLSL3/WebGL2 provides them without an
+     extension. vW itself varies across the fragment quad. */
+  float footprint = max(length(dFdx(vW.xz)), length(dFdy(vW.xz)));
+  /* n0 is the base layer: it is only limited by the pixel footprint, never by
+     distance. The two finer cascades keep their distance fade, now shaped by
+     the same texel-scale test so near and far pixels filter alike. */
+  float n0 = slopeFootprintWeight(footprint, uL0);
+  float n1 = (1.0 - smoothstep(2500.0, 9000.0, dist))*slopeFootprintWeight(footprint, uL1);
+  float n2 = (1.0 - smoothstep( 260.0, 1500.0, dist))*slopeFootprintWeight(footprint, uL2);
+  vec4 dv = texture(uV0, vW.xz/uL0)*n0
           + texture(uV1, vW.xz/uL1)*n1
           + texture(uV2, vW.xz/uL2)*n2;
-  vec3 N = normalize(vec3(-dv.x/(1.0 + dv.z), 1.0, -dv.y/(1.0 + dv.w)));
+  vec3 N = normalize(vec3(-dv.x/slopeDenominator(1.0 + dv.z), 1.0,
+                          -dv.y/slopeDenominator(1.0 + dv.w)));
   float facing = dot(V, N);
 
   /* microfacet roughness rises as we lose cascades to distance --------- */
-  float rough = clamp(0.008 + 0.115*(1.0 - n2) + 0.075*(1.0 - n1), 0.006, 0.32);
+  float rough = clamp(0.028 + 0.085*(1.0 - n2) + 0.055*(1.0 - n1) + 0.04*(1.0 - n0),
+                      0.025, 0.28);
 
   /* ---- foam: whitecaps from the Jacobian plus ambient breakup -------- */
   float foam = texture(uF0, vW.xz/uL0).r*0.7

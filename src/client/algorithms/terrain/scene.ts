@@ -24,7 +24,7 @@ import {
   type AlgorithmFactory,
   type AlgorithmScene,
 } from '../types';
-import { terrainCamera } from './camera';
+import { terrainCamera, terrainFieldOfView } from './camera';
 import { createTerrainLayerGeometry, terrainLodPlan, terrainSkirtDepth } from './geometry';
 import {
   skyFragmentShader,
@@ -37,28 +37,30 @@ import {
 import { terrainWaterLevel, terrainViewHalf } from './height';
 
 const palette = {
-  zenith: '#223f5c',
-  horizon: '#d4c6b0',
-  fog: '#75959f',
-  sun: '#ffd9a8',
-  skyAmbient: '#a1b5c9',
-  groundBounce: '#3d4b45',
-  snow: '#e9eef4',
-  rock: '#4c6065',
-  vegetation: '#245b4c',
-  dry: '#596a51',
-  sand: '#849788',
-  waterDeep: '#092f42',
-  waterShallow: '#176b6b',
+  zenith: '#86989b',
+  // Horizon is the fog colour exactly. The field is finite, so the terrain
+  // eventually runs out against the sky; matching the two means the far edge
+  // dissolves instead of drawing a seam where fogged ground meets bare sky.
+  horizon: '#c8cfc8',
+  fog: '#c8cfc8',
+  sun: '#fff0d6',
+  skyAmbient: '#c2cacc',
+  groundBounce: '#676b5c',
+  snow: '#e3e6df',
+  rock: '#626d6b',
+  vegetation: '#57695c',
+  dry: '#7c7d67',
+  sand: '#899081',
+  waterDeep: '#3f595d',
+  waterShallow: '#647b7c',
 };
 
-const sunDirection = new Vector3(-0.34, 0.24, -0.9).normalize();
+const sunDirection = new Vector3(0.38, 0.28, -0.9).normalize();
 /** Fog reaches the far ring edge; the shader stops shading past the cutoff. */
 const fogDensity = 1 / 4200;
 const skyRadius = 14000;
 const cameraNear = 3;
 const cameraFar = 17000;
-const fieldOfView = 52;
 const normalEpsilon = 6;
 const snowLine = 0.58;
 /** Pointer easing rate, per second. Frames after a pause cannot jump. */
@@ -116,11 +118,13 @@ function createTerrainScene(
       throw new Error('Terrain shader compilation failed');
     };
     renderer.toneMapping = ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.0;
     renderer.setClearColor(new Color(palette.fog), 1);
 
     const scene = new Scene();
-    const camera = new PerspectiveCamera(fieldOfView, 1, cameraNear, cameraFar);
+    // Square at construction: applySize replaces both the aspect and the angle
+    // with the real viewport's before the first rendered frame.
+    const camera = new PerspectiveCamera(terrainFieldOfView(1, 1), 1, cameraNear, cameraFar);
     const fogColor = new Color(palette.fog);
 
     const skyGeometry = new SphereGeometry(skyRadius, 32, 16);
@@ -185,7 +189,7 @@ function createTerrainScene(
       uniforms: {
         uTime: { value: 0 },
         uWaterLevel: { value: terrainWaterLevel },
-        uRipple: { value: 0.09 },
+        uRipple: { value: 0.025 },
         uSunDirection: { value: sunDirection.clone() },
         uSunColor: { value: new Color(palette.sun) },
         uHorizonColor: { value: new Color(palette.horizon) },
@@ -211,6 +215,10 @@ function createTerrainScene(
       renderer.setPixelRatio(1);
       renderer.setSize(resolution.width, resolution.height, false);
       camera.aspect = width / height;
+      // The angle follows the viewport, so a narrow screen keeps the valley in
+      // shot instead of cropping it. Both have to be set before the matrix is
+      // rebuilt: the projection uniform three uploads is this camera's own.
+      camera.fov = terrainFieldOfView(width, height);
       camera.updateProjectionMatrix();
     }
     applySize(

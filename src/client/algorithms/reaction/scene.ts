@@ -117,6 +117,7 @@ export const createScene: AlgorithmFactory = (container, budget, signal) => {
     const stateLocation = gl.getUniformLocation(displayProgram, 'uState');
     const displayTexelLocation = gl.getUniformLocation(displayProgram, 'uTexelSize');
     const regionLocation = gl.getUniformLocation(displayProgram, 'uRegion');
+    const aspectLocation = gl.getUniformLocation(displayProgram, 'uAspect');
     const reliefLocation = gl.getUniformLocation(displayProgram, 'uRelief');
     const crestLocation = gl.getUniformLocation(displayProgram, 'uCrest');
 
@@ -159,6 +160,8 @@ export const createScene: AlgorithmFactory = (container, budget, signal) => {
       gl.uniform1i(stateLocation, 0);
       gl.uniform2f(displayTexelLocation, texelSize, texelSize);
       gl.uniform2f(regionLocation, region.x, region.y);
+      // The display frames itself per screen, so it needs the drawn canvas aspect, not the stage's.
+      gl.uniform1f(aspectLocation, canvas.width / canvas.height);
       gl.uniform1f(reliefLocation, DISPLAY_RELIEF);
       gl.uniform1f(crestLocation, DISPLAY_CREST);
       gl.viewport(0, 0, canvas.width, canvas.height);

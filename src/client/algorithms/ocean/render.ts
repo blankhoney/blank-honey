@@ -152,6 +152,9 @@ export function createOceanSurface(
       uL0: { value: config.cascadeLengths[0] ?? 1 },
       uL1: { value: config.cascadeLengths[1] ?? 1 },
       uL2: { value: config.cascadeLengths[2] ?? 1 },
+      // The fragment shader's cascade filtering is expressed in texels, so it
+      // needs the real FFT resolution: a per-tier constant, never the canvas.
+      uSpectrumSize: { value: config.fftSize },
       uSceneColor: { value: null as Texture | null },
       uSceneDepth: { value: null as Texture | null },
       uResolution: { value: new Vector2(1, 1) },
