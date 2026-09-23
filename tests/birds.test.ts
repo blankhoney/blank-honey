@@ -287,8 +287,8 @@ function createHarness(t: TestContext, hidden = false) {
 }
 
 test('bird budgets fix simulation count, frame rate and rendering limits for full and light', () => {
-  assert.deepEqual(birdBudget(false), { width: 12, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 });
-  assert.deepEqual(birdBudget(true), { width: 8, fps: 20, maxDpr: 1, maxPixels: 700_000 });
+  assert.deepEqual(birdBudget(false), { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 });
+  assert.deepEqual(birdBudget(true), { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 });
 });
 
 for (const width of [8, 12, 16, 24, 32]) {
@@ -752,15 +752,15 @@ test('rapid mount and abort cycles leave no listeners, observers, canvas or stal
   for (const instance of instances) instance.assertDetached();
 });
 
-test('bird colours span the moss-grey gradient without any neon left', (t) => {
-  const geometry = createBirdGeometry(12);
+test('bird colours span the pink-to-cyan gradient on the real vertices', (t) => {
+  const geometry = createBirdGeometry(16);
   t.after(() => geometry.dispose());
   const colour = geometry.getAttribute('birdColor');
-  const warm = new Color(0x39423f);
-  const cool = new Color(0x6e7770);
+  const warm = new Color(0xff4c91);
+  const cool = new Color(0x35d9ff);
   const low = [Math.min(warm.r, cool.r), Math.min(warm.g, cool.g), Math.min(warm.b, cool.b)];
   const high = [Math.max(warm.r, cool.r), Math.max(warm.g, cool.g), Math.max(warm.b, cool.b)];
-  const seen = { low: [1, 1, 1], high: [0, 0, 0], widest: 0 };
+  const seen = { low: [1, 1, 1], high: [0, 0, 0] };
   for (let index = 0; index < colour.count; index++) {
     const channels = [colour.getX(index), colour.getY(index), colour.getZ(index)];
     for (const [axis, value] of channels.entries()) {
@@ -768,21 +768,15 @@ test('bird colours span the moss-grey gradient without any neon left', (t) => {
       seen.low[axis] = Math.min(seen.low[axis]!, value);
       seen.high[axis] = Math.max(seen.high[axis]!, value);
     }
-    // Silver-grey over moss green: every bird stays near neutral, never saturated.
-    seen.widest = Math.max(seen.widest, Math.max(...channels) - Math.min(...channels));
   }
-  assert.ok(
-    seen.widest < 0.05,
-    `channel spread ${seen.widest} is too saturated for the mist scene`,
-  );
   // The per-vertex random lerp has to actually span the approved gradient.
   for (const [axis, value] of seen.high.entries()) assert.ok(value - seen.low[axis]! > 0.02);
   const source = readFileSync(
     new URL('../src/client/vendor/vanta-birds.ts', import.meta.url),
     'utf8',
   );
-  assert.ok(source.includes('new Color(0x39423f)') && source.includes('new Color(0x6e7770)'));
-  assert.ok(!/0xff4c91|0x35d9ff/.test(source), 'the neon palette must be gone');
+  assert.ok(source.includes('new Color(0xff4c91)') && source.includes('new Color(0x35d9ff)'));
+  assert.ok(!/0x39423f|0x6e7770/.test(source), 'the desaturated palette must be gone');
 });
 
 /**
@@ -930,7 +924,7 @@ function createSceneHarness() {
 
 for (const light of [false, true]) {
   const label = light ? 'light' : 'full';
-  const width = light ? 8 : 12;
+  const width = light ? 16 : 24;
   const grid = terrainGrid(light);
 
   test(`the ${label} ${width}-wide budget drives the real scene into the ${label} landscape`, () => {
@@ -957,7 +951,7 @@ for (const light of [false, true]) {
       assert.ok(lake instanceof Reflector && lake.material instanceof ShaderMaterial);
       assert.ok(landscape.getObjectByName('flock-trees') instanceof InstancedMesh);
       assert.ok(landscape.getObjectByName('flock-rocks') instanceof InstancedMesh);
-      // The light flag of the landscape is derived from the 8-wide budget, not from 12.
+      // The light flag of the landscape is derived from the 16-wide budget, not from 24.
       const mountains = landscape.getObjectByName('flock-mountains') as Mesh;
       assert.equal(mountains.geometry.getAttribute('position').count, grid.columns * grid.rows * 6);
       assert.equal(
@@ -994,9 +988,9 @@ for (const light of [false, true]) {
         assert.equal(image.height, width);
       }
       // The art-direction constants live on the mesh's own uniforms, not a second transform.
-      assert.equal(uniforms.birdSize.value, 2.1);
-      assert.deepEqual((uniforms.flockOrigin.value as Vector3).toArray(), [200, 540, -800]);
-      assert.deepEqual((uniforms.flockScale.value as Vector3).toArray(), [5.5, 1.1, 2.6]);
+      assert.equal(uniforms.birdSize.value, 3.4);
+      assert.deepEqual((uniforms.flockOrigin.value as Vector3).toArray(), [0, 820, -500]);
+      assert.deepEqual((uniforms.flockScale.value as Vector3).toArray(), [5.5, 1.4, 2]);
       assert.equal(birds.rotation.y, Math.PI / 2);
       assert.equal(birds.matrixAutoUpdate, false);
       assert.ok(harness.draws() > 0, 'the scene must really draw the flock and the reflection');

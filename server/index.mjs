@@ -1,6 +1,11 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+import { openReaderStore } from './reader/store.mjs';
+import { createReaderAuth } from './reader/auth.mjs';
+import { createReaderService } from './reader/service.mjs';
+import { createReaderHttp } from './reader/http.mjs';
 import { createProbe, validateHosts } from './probe.mjs';
 import { createLog, validateError } from './log.mjs';
 
@@ -18,7 +23,7 @@ export async function loadProbeHosts(hostsFile, remoteHostsFile) {
   return validateHosts([...hosts, ...remoteHosts]);
 }
 
-export function createApp({ probe, writeLog, allowedOrigin, now = Date.now }) {
+export function createApp({ probe, writeLog, allowedOrigin, now = Date.now, reader = undefined }) {
   let windowStart = 0,
     count = 0;
   const statuses = new Map();
@@ -31,6 +36,11 @@ export function createApp({ probe, writeLog, allowedOrigin, now = Date.now }) {
       response.end(JSON.stringify(body));
     };
     try {
+      if (request.url?.startsWith('/api/reader/')) {
+        if (!reader) return send(503, { error: 'READER_UNAVAILABLE' });
+        await reader(request, response);
+        return;
+      }
       if (request.url === '/api/probe' && request.method === 'GET') {
         const result = await probe();
         for (const host of result.hosts) {
@@ -92,15 +102,58 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.env.HOSTS_FILE || 'deploy/hosts.json',
     process.env.REMOTE_HOSTS_FILE,
   );
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:8080';
+  let store, service, reader;
+  try {
+    store = openReaderStore(join(process.env.READER_DATA_DIR || '/data/reader', 'reader.sqlite'));
+    service = createReaderService({
+      store,
+      onError: ({ sourceId, code }) =>
+        console.error(JSON.stringify({ kind: 'reader', sourceId, code })),
+    });
+    const auth = createReaderAuth({ store, allowedOrigin });
+    reader = createReaderHttp({ store, service, auth });
+    service.start();
+  } catch {
+    store?.close();
+    store = undefined;
+    service = undefined;
+    reader = undefined;
+    // A damaged or inaccessible database must not become an empty replacement or break probes.
+    console.error('reader:STARTUP_FAILED');
+  }
   const server = createApp({
     probe: createProbe({
       hosts,
       prometheusUrl: process.env.PROMETHEUS_URL || 'http://prometheus:9090',
     }),
     writeLog: createLog(process.env.LOG_DIR || 'logs'),
-    allowedOrigin: process.env.ALLOWED_ORIGIN || 'http://localhost:8080',
+    allowedOrigin,
+    reader,
   });
   server.requestTimeout = 5000;
   server.headersTimeout = 5000;
   server.listen(Number(process.env.PORT || 3001), '0.0.0.0');
+  let stopping = false;
+  const shutdown = async () => {
+    if (stopping) return;
+    stopping = true;
+    const deadline = setTimeout(() => server.closeAllConnections(), 5500);
+    deadline.unref();
+    const closed = new Promise((resolve) => server.close(resolve));
+    server.closeIdleConnections();
+    try {
+      await Promise.all([closed, service?.stop()]);
+    } finally {
+      clearTimeout(deadline);
+      store?.close();
+    }
+  };
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.once(signal, () => {
+      void shutdown().catch(() => {
+        process.exitCode = 1;
+      });
+    });
+  }
 }

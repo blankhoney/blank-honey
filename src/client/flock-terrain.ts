@@ -93,9 +93,9 @@ export function createTerrainGeometry(light: boolean) {
   const { minX, maxX, minZ, maxZ } = terrainBounds;
   const positions = new Float32Array(columns * rows * 18);
   const colors = new Float32Array(positions.length);
-  const green = new Color('#4c625c');
-  const rock = new Color('#808b8b');
-  const snow = new Color('#d2d9d4');
+  const green = new Color('#38575a');
+  const rock = new Color('#788597');
+  const snow = new Color('#d5deeb');
   const color = new Color();
   const stride = columns + 1;
   const gridPositions = new Float32Array(stride * (rows + 1) * 3);

@@ -5,6 +5,7 @@ import { applyPreferences, commentTheme, store } from './preferences';
 import { initSearch } from './search';
 import { initAudio } from './audio';
 import { report } from './log';
+import { mountHero } from './hero';
 import { initTransitions } from './transitions';
 let pageController: AbortController | undefined;
 const shell = document.querySelector<HTMLElement>('#shell')!;
@@ -78,13 +79,26 @@ async function mount() {
   }
   previousFamily = family;
   try {
-    if (document.querySelector('#hero')) await (await import('./hero')).mountHero(signal);
+    if (document.querySelector('#hero')) await mountHero(signal);
     if (signal.aborted) return;
     if (document.querySelector('#probe')) await (await import('./probe')).mountProbe(signal);
     if (signal.aborted) return;
     if (document.querySelector('#map')) await (await import('./map')).mountMap(signal);
     if (signal.aborted) return;
     if (document.querySelector('#graph')) await (await import('./graph')).mountGraph(signal);
+    if (signal.aborted) return;
+    if (document.querySelector('#reader, #rss-subscription')) {
+      const { mountReader, mountRss } = await import('./reader');
+      if (signal.aborted) return;
+      if (document.querySelector('#reader')) await mountReader(signal);
+      else await mountRss(signal);
+    }
+    if (signal.aborted) return;
+    if (document.querySelector('#reader-manage')) {
+      const { mountReaderManager } = await import('./reader-manage');
+      if (signal.aborted) return;
+      await mountReaderManager(signal);
+    }
     if (signal.aborted) return;
     if (document.querySelector('#main[data-article]')) {
       const { mountReadingMotion } = await import('./reading-motion');

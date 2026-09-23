@@ -655,23 +655,23 @@ test('the yantao notebook drops its sticker styling and keeps the code window cl
   assert.match(effect, /links:\s*\{[^}]*opacity:\s*0\.07/);
 });
 
-test('the birds screen turns to a pale morning mist and keeps its poster and live layer', () => {
+test('the birds screen keeps its dark lake, poster and live layer', () => {
   declares(
     "#hero[data-effect='birds']",
     null,
-    /background:\s*#d6ddd4/,
-    /--hero-ink:\s*#263630/,
+    /background:\s*#07192f/,
+    /--hero-ink:\s*#f2f7ff/,
     /--hero-muted:\s*color-mix\(in srgb,\s*var\(--hero-ink\) 84%,\s*transparent\)/,
-    /--hero-copy-top:\s*17%/,
+    /--hero-copy-top:\s*34%/,
     /--hero-copy-left:\s*8%/,
     /--hero-copy-width:\s*84%/,
   );
-  // The centred copy reads on its own dark ink now: no shadow behind the title.
+  // The centred copy sits on the dark lake again, and carries the shadow that keeps it readable.
   declares(
     "#hero[data-effect='birds'] .hero-copy",
     null,
     /text-align:\s*center/,
-    /text-shadow:\s*none/,
+    /text-shadow:\s*0 2px 26px #07192f/,
   );
   declares(
     "#hero[data-effect='birds'] .hero-copy h1",
@@ -679,25 +679,26 @@ test('the birds screen turns to a pale morning mist and keeps its poster and liv
     /font-style:\s*italic/,
     /font-size:\s*clamp\(40px,\s*4\.8vw,\s*70px\)/,
   );
-  // One pale mist rises from the bottom of the lake; the old shadow and corner vignette are gone.
+  // The original vignette is back: a soft dark ellipse plus a top-and-bottom wash, no pale mist.
   const lake = declares(
     "#hero[data-effect='birds'] .flock-layer::after",
     null,
     /content:\s*''/,
     /position:\s*absolute/,
     /inset:\s*0/,
-    /background:\s*linear-gradient\(to top,\s*rgba\(232,\s*233,\s*223,\s*0\.8\),\s*transparent 28%\)/,
+    /radial-gradient\(ellipse at 50% 39%,\s*#15294140 0%,\s*#1529411c 30%,\s*transparent 62%\)/,
+    /linear-gradient\(to bottom,\s*#15294125,\s*transparent 20%,\s*transparent 76%,\s*#102d4b80\)/,
   );
-  assert.doesNotMatch(lake.body, /radial-gradient/, 'the dark vignette is gone');
-  // The poster keeps its own frame and the muted palette of the new scene. The private tree still
-  // references the poster image; the public export drops that one line and keeps the gradient, so
-  // the frame and the palette are pinned here and the image only where it is actually shipped.
+  assert.doesNotMatch(lake.body, /rgba\(232,\s*233,\s*223/, 'the pale mist is gone');
+  // The poster keeps its own frame and the restored lake palette, with no desaturation on it. The
+  // private tree still references the poster image; the public export drops that one line and keeps
+  // the gradient, so the frame and the palette are pinned here and the image only where it ships.
   const poster = declares(
     "#hero[data-effect='birds'] .flock-still",
     null,
-    /linear-gradient\(#91a4aa 0%,\s*#dddcd0 47%,\s*#829591 55%,\s*#3b575b 100%\)/,
-    /filter:\s*saturate\(0?\.55\)/,
+    /linear-gradient\(#829fbe 0%,\s*#e7beb0 48%,\s*#8fabbf 53%,\s*#254c65 100%\)/,
   );
+  assert.doesNotMatch(poster.body, /filter\s*:/, 'the poster is no longer desaturated');
   if (privateSource) {
     assert.match(
       poster.body,
@@ -707,41 +708,39 @@ test('the birds screen turns to a pale morning mist and keeps its poster and liv
   } else {
     assert.match(
       poster.body,
-      /background:\s*linear-gradient\(#91a4aa/,
+      /background:\s*linear-gradient\(#829fbe/,
       'the public poster falls back to the gradient alone',
     );
     assert.doesNotMatch(poster.body, /url\s*\(/, 'the public poster ships no private image');
   }
-  // The filter belongs to the poster alone, so the live flock keeps its own colour.
+  // Nothing filters the birds any more, so the live flock keeps its own colour untouched.
   const filtered = rules.filter(
     (rule) => /filter\s*:/.test(rule.body) && rule.prelude.includes('flock'),
   );
-  assert.equal(filtered.length, 1, 'one birds rule filters anything');
   assert.deepEqual(
-    filtered[0]!.prelude.split(',').map((selector) => selector.trim()),
-    ["#hero[data-effect='birds'] .flock-still"],
-    'the poster is filtered, never the layer that carries the live canvas',
+    filtered.map((rule) => rule.prelude.trim()),
+    [],
+    'no birds rule filters the poster or the live canvas',
   );
-  // The live layer still fades the poster out once the canvas is up, and a phone keeps the 17% top.
+  // The live layer still fades the poster out once the canvas is up, and a phone keeps the 34% top.
   declares(
     "#hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still",
     null,
     /visibility:\s*hidden/,
   );
-  declares("#hero[data-effect='birds']", mobile, /--hero-copy-top:\s*max\(17%,\s*142px\)/);
-  assert.doesNotMatch(stylesheet, /#07192f|#152941|#102d4b/i, 'the old dark lake palette is gone');
+  declares("#hero[data-effect='birds']", mobile, /--hero-copy-top:\s*34%/);
 });
 
-test('the pixel-cloud poster is masked to the live scene: the lower cloud band only', () => {
-  // The static fallback draws only the band the live cloud occupies low on the stage, so the
-  // description and the bottom band keep the same clearance the live scene gives them. The private
-  // tree paints its poster image over the gradient; the public export keeps the gradient alone.
+test('the pixel-cloud fallback is the full poster again: one image over its gradient', () => {
+  // The static fallback paints the whole stage again; the band mask that clipped it to the live
+  // cloud is gone. The private tree paints its poster image over the gradient; the public export
+  // keeps the gradient alone.
   const still = declares(
     '.pixel-cloud-still',
     null,
     /radial-gradient\(ellipse at 65% 55%,\s*#3c4147,\s*#101214 48%,\s*#000 85%\)/,
-    /mask-image:\s*linear-gradient\(to bottom,\s*transparent 45%,\s*#000 65%,\s*#000 78%,\s*transparent 90%\)/,
   );
+  assert.doesNotMatch(still.body, /mask-image/, 'the poster is no longer clipped to a band');
   if (privateSource) {
     assert.match(
       still.body,
@@ -761,17 +760,13 @@ test('the pixel-cloud poster is masked to the live scene: the lower cloud band o
     /(?<!mask-)image:\s*url/,
     'the poster keeps its one image and gains no second one',
   );
-  // The mask belongs to the poster alone. Exactly two rules may mask anything: the new poster,
-  // and the stage's own pre-existing fade - so the live canvas and its surface stay untouched.
+  // The stage's own fade is the only mask left - the poster, the live canvas and its surface keep
+  // none, so the cloud scene fills the frame the way the live pass does.
   const masked = rules
     .filter((rule) => /mask-image\s*:/.test(rule.body))
     .map((rule) => rule.prelude.trim())
     .sort();
-  assert.deepEqual(
-    masked,
-    ['.pixel-cloud-still', "#hero[data-effect='miniload'] #hero-stage"].sort(),
-    'only the poster is masked; the live canvas and its surface gain nothing',
-  );
+  assert.deepEqual(masked, ["#hero[data-effect='miniload'] #hero-stage"]);
   declares('.pixel-cloud-surface', null, /visibility:\s*hidden/);
   declares(
     ".pixel-cloud-layer[data-state='live'] .pixel-cloud-surface",

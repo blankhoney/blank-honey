@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/reader.css';
+---
+
+<Base title="阅读" description="订阅文章的收录内容。">
+  <section id="reader" data-view="item" class="reader-page">
+    <header class="reader-head">
+      <h1>
+        阅读 <small>READING</small>
+      </h1>
+      <nav class="reader-links" aria-label="阅读相关链接">
+        <a href="/reader/">← 返回阅读</a>
+      </nav>
+    </header>
+
+    <p class="reader-status" role="status" aria-live="polite" data-reader-status>
+      正在加载…
+    </p>
+
+    <article class="reader-detail" data-reader-detail hidden></article>
+
+    <noscript>订阅文章需要 JavaScript 才能显示。</noscript>
+  </section>
+</Base>

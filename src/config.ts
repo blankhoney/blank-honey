@@ -10,6 +10,7 @@ export const config = {
   navigation: [
     { href: '/', label: '返回展示页', en: 'SHOWCASE' },
     { href: '/articles/', label: '文章', en: 'ARTICLES' },
+    { href: '/reader/', label: '阅读', en: 'READER' },
     { href: '/probe/', label: '探针', en: 'PROBE' },
     { href: '/map/', label: '地图', en: 'MAP' },
     { href: '/graph/', label: '图谱', en: 'GRAPH' },

@@ -293,8 +293,8 @@ test('disposing one landscape does not dispose or freeze another instance', () =
   }
 });
 
-test('the landscape carries the silver-grey mist palette on its real materials and lights', () => {
-  assert.equal(landscapeFogColor, '#bfc9c3');
+test('the landscape carries the restored lake palette on its real materials and lights', () => {
+  assert.equal(landscapeFogColor, '#b7bfd0');
   for (const light of [false, true]) {
     const landscape = createFlockLandscape(light);
     try {
@@ -308,30 +308,30 @@ test('the landscape carries the silver-grey mist palette on its real materials a
       const sky = meshes.find((mesh) => mesh.name === 'flock-sky');
       assert.ok(sky?.material instanceof ShaderMaterial, `${name} sky`);
       const skyUniforms = sky.material.uniforms;
-      assert.equal((skyUniforms.zenith.value as Color).getHexString(), '91a4aa');
-      assert.equal((skyUniforms.horizon.value as Color).getHexString(), 'dddcd0');
+      assert.equal((skyUniforms.zenith.value as Color).getHexString(), '789cc9');
+      assert.equal((skyUniforms.horizon.value as Color).getHexString(), 'f0c7b7');
       const sunDirection = skyUniforms.sunDirection.value as Vector3;
       assert.deepEqual(sunDirection.toArray(), new Vector3(-0.18, 0.12, -1).normalize().toArray());
-      // Shader-only constants: the warm glow and the disc stay dim and colourless.
-      assert.ok(sky.material.fragmentShader.includes('vec3(0.18, 0.14, 0.10) * pow(sun, 18.0)'));
-      assert.ok(sky.material.fragmentShader.includes('vec3(1.15, 1.08, 0.94)'));
+      // Shader-only constants: the warm glow and the disc stay at the restored strength.
+      assert.ok(sky.material.fragmentShader.includes('vec3(0.35, 0.16, 0.055) * pow(sun, 18.0)'));
+      assert.ok(sky.material.fragmentShader.includes('vec3(1.5, 1.18, 0.8)'));
       assert.ok(sky.material.fragmentShader.includes('smoothstep(0.99982, 0.99995, sun)'));
 
       const hemisphere = lights.find((entry) => entry instanceof HemisphereLight);
       assert.ok(hemisphere instanceof HemisphereLight, `${name} ambient`);
-      assert.equal(hemisphere.color.getHexString(), 'dbe2de');
-      assert.equal(hemisphere.groundColor.getHexString(), '646f66');
-      assert.equal(hemisphere.intensity, 1.75);
+      assert.equal(hemisphere.color.getHexString(), 'c5d9ff');
+      assert.equal(hemisphere.groundColor.getHexString(), '4f5a68');
+      assert.equal(hemisphere.intensity, 2.1);
       const sun = lights.find((entry) => entry instanceof DirectionalLight);
       assert.ok(sun instanceof DirectionalLight, `${name} sun`);
-      assert.equal(sun.color.getHexString(), 'f8ead4');
-      assert.equal(sun.intensity, 1.7);
+      assert.equal(sun.color.getHexString(), 'ffd0a3');
+      assert.equal(sun.intensity, 2.4);
       assert.deepEqual(sun.position.toArray(), [-3000, 4500, -5000]);
 
       const trees = meshes.find((mesh) => mesh.name === 'flock-trees');
       assert.ok(trees instanceof InstancedMesh, `${name} trees`);
       const colour = trees.geometry.getAttribute('color');
-      const expected = ['#635b4f', '#344a40', '#536459'].map((hex) => new Color(hex));
+      const expected = ['#5f5046', '#244a48', '#3b5c50'].map((hex) => new Color(hex));
       const found = new Set<string>();
       for (let index = 0; index < colour.count; index++) {
         found.add(
@@ -347,43 +347,43 @@ test('the landscape carries the silver-grey mist palette on its real materials a
       const rocks = meshes.find((mesh) => mesh.name === 'flock-rocks');
       assert.ok(rocks, `${name} rocks`);
       const rockMaterial = rocks.material as MeshLambertMaterial;
-      assert.equal(rockMaterial.color.getHexString(), '78827a');
+      assert.equal(rockMaterial.color.getHexString(), '627782');
 
       const resources = inspect(landscape.root);
-      assert.equal((resources.mistMaterial.uniforms.color.value as Color).getHexString(), 'd8ded6');
-      assert.ok(resources.mistMaterial.fragmentShader.includes('edge * density * 0.32'));
+      assert.equal((resources.mistMaterial.uniforms.color.value as Color).getHexString(), 'd6dce6');
+      assert.ok(resources.mistMaterial.fragmentShader.includes('edge * density * 0.4'));
     } finally {
       landscape.dispose();
     }
   }
 });
 
-test('the scenic sources keep the approved palette and drop the old one', () => {
+test('the scenic sources keep the restored lake palette and drop the grey one', () => {
   const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf8');
   const landscape = read('../src/client/flock-landscape.ts');
   const terrain = read('../src/client/flock-terrain.ts');
   const water = read('../src/client/flock-water.ts');
   for (const literal of [
-    "'#bfc9c3'",
-    "'#91a4aa'",
-    "'#dddcd0'",
-    "'#dbe2de'",
-    "'#646f66'",
-    "'#f8ead4'",
-    "'#635b4f'",
-    "'#344a40'",
-    "'#536459'",
-    "'#78827a'",
-    "'#d8ded6'",
+    "'#b7bfd0'",
+    "'#789cc9'",
+    "'#f0c7b7'",
+    "'#c5d9ff'",
+    "'#4f5a68'",
+    "'#ffd0a3'",
+    "'#5f5046'",
+    "'#244a48'",
+    "'#3b5c50'",
+    "'#627782'",
+    "'#d6dce6'",
   ])
     assert.ok(landscape.includes(literal), `flock-landscape.ts must keep ${literal}`);
-  assert.ok(landscape.includes("'#b7bfd0'") === false, 'the blue haze must be gone');
-  for (const literal of ["'#4c625c'", "'#808b8b'", "'#d2d9d4'"]) {
+  assert.ok(landscape.includes("'#bfc9c3'") === false, 'the grey haze must be gone');
+  for (const literal of ["'#38575a'", "'#788597'", "'#d5deeb'"]) {
     assert.ok(terrain.includes(literal), `flock-terrain.ts must keep ${literal}`);
   }
-  for (const literal of ["'#3b575b'", "'#bfc9c3'"]) {
+  for (const literal of ["'#284d60'", "'#b7bfd0'"]) {
     assert.ok(water.includes(literal), `flock-water.ts must keep ${literal}`);
   }
-  assert.equal(water.split("'#3b575b'").length - 1, 2, 'both lake base colours must agree');
-  assert.ok(!water.includes("'#284d60'"), 'the old lake base colour must be gone');
+  assert.equal(water.split("'#284d60'").length - 1, 2, 'both lake base colours must agree');
+  assert.ok(!water.includes("'#3b575b'"), 'the grey lake base colour must be gone');
 });

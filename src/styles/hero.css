@@ -510,9 +510,6 @@
   z-index: 0;
   background:
     radial-gradient(ellipse at 65% 55%, #3c4147, #101214 48%, #000 85%);
-  /* The static fallback carries only the lower cloud band the live scene draws, so it keeps the
-     same clearance for the description and the bottom band instead of tiling the poster full-frame. */
-  mask-image: linear-gradient(to bottom, transparent 45%, #000 65%, #000 78%, transparent 90%);
 }
 .pixel-cloud-surface {
   z-index: 1;
@@ -616,17 +613,16 @@
 
 /* ---------- birds: the flock over the lake --------------------------------- */
 #hero[data-effect='birds'] {
-  background: #d6ddd4;
-  --hero-ink: #263630;
+  background: #07192f;
+  --hero-ink: #f2f7ff;
   --hero-muted: color-mix(in srgb, var(--hero-ink) 84%, transparent);
-  --hero-copy-top: 17%;
+  --hero-copy-top: 34%;
   --hero-copy-left: 8%;
   --hero-copy-width: 84%;
 }
 #hero[data-effect='birds'] .hero-copy {
   text-align: center;
-  /* The scene is a bright morning mist, so the copy reads on its own ink instead of a shadow. */
-  text-shadow: none;
+  text-shadow: 0 2px 26px #07192f;
 }
 #hero[data-effect='birds'] .hero-copy h1 {
   font-style: italic;
@@ -636,8 +632,7 @@
   letter-spacing: 0.12em;
   margin: 26px auto 0;
 }
-/* The lake and flock share one scene; only this variant gets the scenic poster and, over the
-   bright water, one pale mist from the bottom - the top of the lake keeps its own light. */
+/* The lake and flock share one scene; only this variant gets the scenic poster and vignette. */
 #hero[data-effect='birds'] .flock-layer,
 #hero[data-effect='birds'] .flock-still {
   position: absolute;
@@ -649,14 +644,13 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(232, 233, 223, 0.8), transparent 28%);
+  background:
+    radial-gradient(ellipse at 50% 39%, #15294140 0%, #1529411c 30%, transparent 62%),
+    linear-gradient(to bottom, #15294125, transparent 20%, transparent 76%, #102d4b80);
 }
-/* The poster keeps its own frame and gains only the muted palette of the new scene; the live
-   layer is left unfiltered so the birds keep their own colour. */
 #hero[data-effect='birds'] .flock-still {
   background:
-    linear-gradient(#91a4aa 0%, #dddcd0 47%, #829591 55%, #3b575b 100%);
-  filter: saturate(0.55);
+    linear-gradient(#829fbe 0%, #e7beb0 48%, #8fabbf 53%, #254c65 100%);
 }
 #hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
   visibility: hidden;
@@ -713,10 +707,10 @@
   #hero[data-effect='yantao'] {
     --hero-copy-top: 19%;
   }
-  /* birds is the one screen that keeps its higher top edge on a phone as well, floored at 142px
-     so the centred copy always clears the 44px entry row that owns 82px..126px up there. */
+  /* birds keeps the desktop 34% top edge on a phone as well; the centred copy there already
+     clears the 44px entry row that owns 82px..126px up the screen. */
   #hero[data-effect='birds'] {
-    --hero-copy-top: max(17%, 142px);
+    --hero-copy-top: 34%;
   }
   /* Its own wider title step carries the same selector, so the narrow scale is named here too. */
   #hero[data-effect='birds'] .hero-copy h1 {

@@ -113,6 +113,8 @@ export function auditPublicTree(directory, explicitFiles) {
       continue;
     }
     if (!roots.has(file.split('/')[0]) || forbidden.test(file)) report(file, 'private-path');
+    if (/(?:^|\/)reader-data(?:\/|$)|\.(?:sqlite|db)(?:-[^/]*)?$/i.test(file))
+      report(file, 'reader-runtime-data');
     if (file.startsWith('deploy/') && !deployFiles.has(file.slice(7)))
       report(file, 'production-config');
     if (file.startsWith('.github/') && file !== '.github/workflows/ci.yml')
@@ -199,18 +201,13 @@ export function auditPublicTree(directory, explicitFiles) {
       report('src/config.ts', 'personal-radio-selection');
     let manifestText = null;
     try {
-      manifestText = readFileSync(
-        join(root, 'src/client/vendor/blackhole/manifest.json'),
-        'utf8',
-      );
+      manifestText = readFileSync(join(root, 'src/client/vendor/blackhole/manifest.json'), 'utf8');
     } catch {
       /* Synthetic fixtures may omit the manifest; the pinned table still applies. */
     }
     if (manifestText !== null) {
       const manifest = JSON.parse(manifestText);
-      const runtime = (manifest.entries ?? []).filter(
-        (entry) => entry.kind === 'runtime-asset',
-      );
+      const runtime = (manifest.entries ?? []).filter((entry) => entry.kind === 'runtime-asset');
       const pinnedPaths = Object.keys(runtimeAssets);
       if (
         manifest.dataRef !== runtimeAssetRef ||
@@ -223,10 +220,7 @@ export function auditPublicTree(directory, explicitFiles) {
             entry.sha256 !== runtimeAssets[entry.path].sha256,
         )
       )
-        report(
-          'src/client/vendor/blackhole/manifest.json',
-          'runtime-asset-manifest-drift',
-        );
+        report('src/client/vendor/blackhole/manifest.json', 'runtime-asset-manifest-drift');
     }
     const collector = parse(readFileSync(join(root, 'deploy/otel.yaml'), 'utf8'));
     const jobs = collector.receivers.prometheus.config.scrape_configs;

@@ -21,6 +21,11 @@ CONTENT-EDIT-STATE.md
 __pycache__
 *.pyc
 backups
+reader-data
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
 *.key
 *.p12
 *.pfx

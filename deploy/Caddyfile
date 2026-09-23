@@ -18,7 +18,7 @@
   header @commentTheme Access-Control-Allow-Origin "https://giscus.app"
   @immutable path /_astro/*
   header @immutable Cache-Control "public, max-age=31536000, immutable"
-  @api path /api/probe /api/errors
+  @api path /api/probe /api/errors /api/reader/*
   handle @api {
     reverse_proxy worker:3001
   }

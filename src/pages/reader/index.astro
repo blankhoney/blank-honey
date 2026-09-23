@@ -1,0 +1,54 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/reader.css';
+---
+
+<Base title="阅读" description="订阅内容来自原作者，每日自动更新。">
+  <section id="reader" data-view="list" class="reader-page">
+    <header class="reader-head">
+      <h1>
+        阅读 <small>READING</small>
+      </h1>
+      <p class="reader-intro">订阅内容来自原作者，每日自动更新</p>
+      <nav class="reader-links" aria-label="阅读相关链接">
+        <a href="/rss/">RSS 订阅</a>
+        <a href="/reader/manage/">管理</a>
+      </nav>
+    </header>
+
+    <form class="reader-filters" data-reader-filters>
+      <div class="reader-field">
+        <label for="reader-source">来源</label>
+        <select id="reader-source" name="source" data-reader-source>
+          <option value="">全部来源</option>
+        </select>
+      </div>
+      <div class="reader-field">
+        <label for="reader-query">关键词</label>
+        <input
+          id="reader-query"
+          name="q"
+          type="search"
+          autocomplete="off"
+          placeholder="标题或摘要"
+          data-reader-query
+        />
+      </div>
+      <button type="submit">筛选</button>
+    </form>
+
+    <p class="reader-status" role="status" aria-live="polite" data-reader-status>
+      正在加载…
+    </p>
+
+    <p class="reader-source-status" aria-live="polite" data-reader-source-status></p>
+
+    <ol class="reader-entries" data-reader-entries aria-label="订阅文章列表"></ol>
+
+    <button class="reader-more" type="button" data-reader-more hidden>
+      加载更多
+    </button>
+
+    <noscript>文章列表需要 JavaScript；订阅地址不受影响。</noscript>
+  </section>
+</Base>

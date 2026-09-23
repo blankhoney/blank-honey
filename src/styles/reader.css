@@ -1,0 +1,392 @@
+/*
+ * Reading surfaces: the entry list, a single entry, the administration panel and the RSS card.
+ *
+ * Colour and type come from the shared site tokens (`--bg`, `--fg`, `--muted`, `--line`, `--accent`,
+ * `--soft`, `--reader`, `--mono`), so light and dark follow the site tone with no second palette
+ * here. Every rule is scoped to `.reader-page` or a `.reader-*` class: the reader adds surfaces, it
+ * never restyles site-wide markup.
+ */
+
+.reader-page {
+  padding: 32px clamp(24px, 6vw, 96px) 95px;
+  font-family: var(--reader);
+  color: var(--fg);
+}
+
+/* One comfortable reading measure for every band of the page. */
+.reader-page > * {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* ---- Headings and links ---- */
+
+.reader-head {
+  margin-bottom: 34px;
+}
+
+.reader-head h1 {
+  font: 400 clamp(30px, 4vw, 44px) / 1.3 var(--reader);
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+}
+
+.reader-head h1 small {
+  display: block;
+  font: 12px var(--mono);
+  letter-spacing: 0.3em;
+  color: var(--muted);
+  margin-top: 12px;
+}
+
+.reader-intro {
+  color: var(--muted);
+  margin: 0 0 18px;
+  overflow-wrap: anywhere;
+}
+
+.reader-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.reader-links a,
+.reader-entry-origin,
+.reader-detail-origin {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ---- Filters ---- */
+
+.reader-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px 20px;
+  align-items: end;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 22px 0;
+  margin: 0 auto 22px;
+}
+
+.reader-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.reader-field label {
+  font: 12px var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.reader-field input,
+.reader-field select {
+  width: 100%;
+  min-height: 44px;
+}
+
+/* ---- Controls ---- */
+
+.reader-page button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--fg);
+  font: 14px var(--reader);
+}
+
+.reader-page button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.reader-page button[type='submit'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.reader-more {
+  display: block;
+  min-width: 200px;
+  margin: 30px auto 0;
+}
+
+/* ---- Status line ---- */
+
+.reader-status {
+  min-height: 22px;
+  margin: 0 auto 16px;
+  font: 12px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.reader-status[data-reader-tone='error'] {
+  color: var(--accent);
+}
+
+.reader-status[data-reader-tone='busy'] {
+  color: var(--fg);
+}
+
+/* The state of the subscriptions themselves, kept apart from the request status line. */
+.reader-source-status {
+  min-height: 22px;
+  margin: 0 auto 16px;
+  font: 12px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.reader-source-status[data-reader-tone='error'] {
+  color: var(--accent);
+}
+
+/* ---- Entry list ---- */
+
+.reader-entries,
+.reader-sources {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.reader-entry,
+.reader-source {
+  border-bottom: 1px solid var(--line);
+  padding: 26px 0;
+}
+
+.reader-entry:first-child,
+.reader-source:first-child {
+  padding-top: 0;
+}
+
+.reader-entry-meta,
+.reader-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 10px;
+  font: 12px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.reader-entry-title {
+  margin: 0 0 10px;
+  font: 400 21px/1.5 var(--reader);
+}
+
+.reader-entry-title a {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.reader-entry-title a:hover {
+  color: var(--accent);
+}
+
+.reader-entry-excerpt {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.reader-empty {
+  color: var(--muted);
+  padding: 30px 0;
+  margin: 0;
+}
+
+/* ---- Single entry ---- */
+
+.reader-detail-title {
+  font: 400 clamp(28px, 4vw, 40px) / 1.35 var(--reader);
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  overflow-wrap: anywhere;
+}
+
+.reader-detail-field {
+  display: inline-flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reader-detail-label {
+  color: var(--muted);
+}
+
+.reader-detail-value {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.reader-detail-kind {
+  margin: 0 0 14px;
+  font: 12px var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+.reader-detail-truncated {
+  margin: 0 0 22px;
+  padding-left: 16px;
+  border-left: 1px solid var(--accent);
+  color: var(--muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.reader-detail-body {
+  min-width: 0;
+  margin: 0 0 30px;
+}
+
+.reader-detail-body pre,
+.reader-detail-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.reader-detail-body pre {
+  padding: 16px;
+  background: var(--soft);
+  font: 14px/1.7 var(--mono);
+}
+
+.reader-detail-body td,
+.reader-detail-body th {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.reader-entry-title {
+  overflow-wrap: anywhere;
+}
+
+/* ---- Administration ---- */
+
+.reader-manage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 auto 26px;
+}
+
+.reader-form {
+  margin: 0 auto 30px;
+  border: 1px solid var(--line);
+  padding: 20px 22px 24px;
+}
+
+.reader-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.reader-form-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 16px 20px;
+  align-items: end;
+}
+
+.reader-source-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  margin: 0 0 8px;
+}
+
+.reader-source-title {
+  font: 400 18px var(--reader);
+  overflow-wrap: anywhere;
+}
+
+.reader-source-state {
+  font: 12px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.reader-source-url,
+.reader-source-stats {
+  margin: 0 0 8px;
+  font: 12px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.reader-source-stats {
+  margin-bottom: 16px;
+}
+
+.reader-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ---- RSS card ---- */
+
+.reader-rss-card label {
+  display: block;
+  margin-bottom: 8px;
+  font: 12px var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.reader-rss-address {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.reader-rss-address input {
+  flex: 1 1 260px;
+  min-width: 0;
+  min-height: 44px;
+  font: 12px var(--mono);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Narrow screens: one column, full-width controls, no sideways scroll ---- */
+
+@media (max-width: 700px) {
+  .reader-page {
+    padding: 24px 24px 60px;
+  }
+
+  .reader-filters,
+  .reader-form-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reader-page button[type='submit'],
+  .reader-more {
+    width: 100%;
+  }
+
+  .reader-source-actions button {
+    flex: 1 1 auto;
+  }
+}

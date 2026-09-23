@@ -69,10 +69,11 @@ test('unknown paths and similarly named prefixes do not activate navigation', ()
     );
 });
 
-test('the showcase entry comes first and the six existing sections keep their order', () => {
+test('the showcase entry comes first, then articles and reader before existing sections', () => {
   assert.deepEqual(config.navigation[0], { href: '/', label: '返回展示页', en: 'SHOWCASE' });
   assert.deepEqual(config.navigation.slice(1), [
     { href: '/articles/', label: '文章', en: 'ARTICLES' },
+    { href: '/reader/', label: '阅读', en: 'READER' },
     { href: '/probe/', label: '探针', en: 'PROBE' },
     { href: '/map/', label: '地图', en: 'MAP' },
     { href: '/graph/', label: '图谱', en: 'GRAPH' },

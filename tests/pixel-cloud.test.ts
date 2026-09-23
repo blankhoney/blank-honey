@@ -56,15 +56,15 @@ test('the cloud noise swaps the shipped Paper noise once, keeping every Bayer an
   const lightRewrite = rewrite(ditheringFragmentShader, light);
   const replacement = fullRewrite.replaced;
 
-  // Only the noise function is exchanged: one definition each. The screen gate reads the fragment
-  // coordinate, so it must stay the single reader and leave pixelisation and Bayer to the suffix.
+  // Only the noise function is exchanged: one definition each, and nothing pixel related in it.
   for (const name of ['float cloudFbm(vec2 p) {', 'float getSimplexNoise(vec2 uv, float t) {'])
     assert.equal(full.split(name).length - 1, 1);
   assert.doesNotMatch(replacement, /void main/);
-  assert.equal(
-    replacement.split('gl_FragCoord').length - 1,
-    1,
-    'the screen band may read the fragment coordinate exactly once',
+  assert.doesNotMatch(replacement, /gl_FragCoord/);
+  assert.doesNotMatch(
+    replacement,
+    /u_resolution/,
+    'the density must not be screened by the canvas',
   );
   assert.doesNotMatch(replacement, /u_time/, 'the shader receives time as the t argument only');
   assert.equal(
@@ -101,20 +101,9 @@ test('the cloud noise swaps the shipped Paper noise once, keeping every Bayer an
     for (const part of drift.split(',')) assert.notEqual(Number(part), 0, `vec2(${drift}) is 1D`);
   assert.doesNotMatch(replacement, /vec2\(0\.,/, 'no axis aligned time translation may remain');
 
-  // The warped density is mixed against a steady screen window, so the title and footer stay black.
-  assert.match(replacement, /float density = cloudFbm\(drift \+ warp \* \.85\);/);
-  assert.match(replacement, /return mix\(-1\.0, density, bank \* footer\);/);
-  const band = replacement.match(/float bank = ([^;]+);/);
-  assert.ok(band, 'the screen band must remain one named expression');
-  assert.match(
-    band[1]!,
-    /smoothstep\(\.32,\s*\.60,\s*screen\.y \+ \.08 \* sin\(screen\.x \* 5\.2\)\)/,
-  );
-  assert.doesNotMatch(band[1]!, /\bt\b/, 'the screen band must not be animated');
-  const foot = replacement.match(/float footer = ([^;]+);/);
-  assert.ok(foot, 'the footer cut must remain one named expression');
-  assert.match(foot[1]!, /smoothstep\(\.10,\s*\.20,\s*screen\.y\)/);
-  assert.doesNotMatch(foot[1]!, /\bt\b/, 'the footer cut must not be animated');
+  // The whole canvas receives the warped density: no screen window and no windowed mix remain.
+  assert.match(replacement, /return cloudFbm\(drift \+ warp \* 1\.35\);/);
+  assert.doesNotMatch(replacement, /\bmix\(/, 'the density must reach the suffix unmixed');
 
   assert.equal(
     pixelCloudShader(ditheringFragmentShader, false),
@@ -135,76 +124,6 @@ test('the cloud noise refuses a missing, altered or duplicated reference functio
   assert.throws(() => pixelCloudShader(`${ORIGINAL}\n${ORIGINAL}`, false), message);
   assert.throws(() => pixelCloudShader(`${ditheringFragmentShader}\n${ORIGINAL}`, true), message);
   assert.equal(pixelCloudShader(ORIGINAL, false).split(ORIGINAL).length - 1, 0);
-});
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-/** CPU mirror of a GLSL smoothstep, so the shader's two cuts are checkable without a GPU. */
-function smoothstepCPU(edge0: number, edge1: number, value: number) {
-  const step = clamp01((value - edge0) / (edge1 - edge0));
-  return step * step * (3 - 2 * step);
-}
-
-/** The band that fades the density out above the title and the footer cut that clears the bottom. */
-function bankCPU(x: number, y: number) {
-  return 1 - smoothstepCPU(0.32, 0.6, y + 0.08 * Math.sin(x * 5.2));
-}
-function footerCPU(y: number) {
-  return smoothstepCPU(0.1, 0.2, y);
-}
-/** The window the shader multiplies into the mix, and the mixed value it returns for that window. */
-function windowCPU(x: number, y: number) {
-  return bankCPU(x, y) * footerCPU(y);
-}
-function mixedCPU(density: number, x: number, y: number) {
-  return -1 + (density + 1) * windowCPU(x, y);
-}
-
-test('the screen band is black over the title, open across the belt and monotone between', () => {
-  for (const x of [0, 0.07, 0.31, 0.5, 0.79, 1, 4.3]) {
-    assert.equal(bankCPU(x, 1), 0, 'the top edge of the canvas stays fully black');
-    assert.equal(bankCPU(x, 0), 1, 'the bottom edge still carries the full band');
-  }
-  // The belt opens below the title and closes again before the navigation strip.
-  assert.equal(bankCPU(0, 0.3), 1, 'the band is untouched below its ramp');
-  assert.equal(bankCPU(0, 0.6), 0, 'the ramp is complete and the roof is black');
-  assert.ok(Math.abs(bankCPU(0, 0.46) - 0.5) < 1e-9, 'the ramp midpoint is half open');
-  for (const x of [0, 0.13, 0.41, 0.67, 0.95]) {
-    let previous = Infinity;
-    for (let sample = 0; sample <= 64; sample++) {
-      const value = bankCPU(x, sample / 64);
-      assert.ok(value >= 0 && value <= 1, 'the band never leaves the mix range');
-      assert.ok(value <= previous, 'the band never brightens towards the top');
-      previous = value;
-    }
-  }
-});
-
-test('the cloud window clamps to pure black over the title and inside the bottom tenth', () => {
-  const densities = [-1, -0.5, 0, 0.25, 1, 2];
-  for (const x of [0, 0.07, 0.31, 0.5, 0.79, 1, 4.3]) {
-    for (const y of [1, 0.9, 0.68]) {
-      assert.equal(windowCPU(x, y), 0, 'the roof shuts the mix off completely');
-      for (const density of densities) assert.equal(mixedCPU(density, x, y), -1);
-    }
-    for (const y of [0, 0.03, 0.08, 0.1]) {
-      assert.equal(windowCPU(x, y), 0, 'the bottom tenth stays black for the navigation');
-      for (const density of densities) assert.equal(mixedCPU(density, x, y), -1);
-    }
-  }
-  // Between the two ramps the window is finite, keeps varying and hands the density through.
-  const windows = new Set<number>();
-  for (const x of [0, 0.2, 0.55, 0.9, 4.3]) {
-    assert.equal(windowCPU(x, 0.22), 1, 'the belt centre passes the full density');
-    for (let sample = 0; sample <= 50; sample++) {
-      const y = 0.1 + (sample / 50) * 0.5;
-      const window = windowCPU(x, y);
-      assert.ok(Number.isFinite(window) && window >= 0 && window <= 1);
-      assert.ok(Number.isFinite(mixedCPU(0.5, x, y)));
-      assert.ok(mixedCPU(0.5, x, y) >= -1 && mixedCPU(0.5, x, y) <= 0.5);
-      windows.add(Number(window.toFixed(6)));
-    }
-  }
-  assert.ok(windows.size > 4, 'the window must keep varying across the cloud belt');
 });
 
 test('pixel cloud resolution reserves rounded-edge headroom and clamps the scale', () => {
