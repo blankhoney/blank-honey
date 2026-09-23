@@ -95,7 +95,6 @@ test('the algorithm scenes are appended after them with their fixed identities a
   assert.deepEqual(config.hero.slice(5), [
     { id: 'blackhole', name: '引力回廊', source: 'https://github.com/ebruneton/black_hole_shader' },
     { id: 'ocean', name: '频谱潮汐', source: 'https://github.com/squall01337/abyssal-ocean' },
-    { id: 'mandelbulb', name: '分形之眼', source: 'https://github.com/ibrews/mandelbulb-xr' },
     {
       id: 'reaction',
       name: '生长纹理',
@@ -104,7 +103,7 @@ test('the algorithm scenes are appended after them with their fixed identities a
     { id: 'terrain', name: '山脉生成器', source: 'https://github.com/ZyFou/ProceduralTerrains' },
   ]);
   // The picker counts the whole list and the direct link selects by id, so ids stay unique.
-  assert.equal(config.hero.length, 10, 'five original showcase effects plus five algorithm scenes');
+  assert.equal(config.hero.length, 9, 'five original showcase effects plus four algorithm scenes');
   assert.equal(new Set(config.hero.map((effect) => effect.id)).size, config.hero.length);
   for (const effect of config.hero) {
     assert.match(effect.id, /^[a-z][a-z0-9]*$/);

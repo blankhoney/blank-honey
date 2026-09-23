@@ -11,6 +11,8 @@ import {
   terrainFlowMeander,
   terrainFlowMeanderScale,
   terrainFlowWidth,
+  terrainFjordBank,
+  terrainFjordCore,
   terrainFrequency,
   terrainHeightRef,
   terrainHeightScale,
@@ -51,6 +53,8 @@ const float terrainFlowDirection = ${glslFloat(terrainFlowDirection)};
 const float terrainFlowWidth = ${glslFloat(terrainFlowWidth)};
 const float terrainFlowMeander = ${glslFloat(terrainFlowMeander)};
 const float terrainFlowMeanderScale = ${glslFloat(terrainFlowMeanderScale)};
+const float terrainFjordCore = ${glslFloat(terrainFjordCore)};
+const float terrainFjordBank = ${glslFloat(terrainFjordBank)};
 `;
 
 /**
@@ -94,8 +98,17 @@ float terrainValleyAt(vec2 xz, vec2 p) {
   // written as 1.0 - smoothstep with ascending edges.
   float basin = 1.0 - smoothstep(0.32, 0.66, vnoise(p * 0.33 + vec2(5.1, 17.7)));
   float open = smoothstep(terrainViewHalf * 0.60, terrainViewHalf * 1.45, length(xz));
-  float blended = clamp(flow * 0.85 + basin * 0.70, 0.0, 1.0);
-  return clamp(max(blended, (1.0 - open) * 0.99), 0.0, 1.0);
+  float blended = clamp(flow * 0.35 + basin * 0.25, 0.0, 1.0);
+  // Fjord: a world-space centre line that runs the whole length of the field,
+  // so the valley reads as one continuous channel instead of local patches.
+  // The sweep and bend coefficients are fixed here, not seeded; the phase
+  // offset 0.5 puts the crossing near the viewing area. terrainFjordCore is
+  // the half width that keeps the full valley, terrainFjordBank where the
+  // banks have climbed back to ordinary terrain.
+  float centre = 450.0 * sin(xz.y / 2200.0) + 200.0 * sin(xz.y / 4300.0 + 0.5);
+  float across = abs(xz.x - centre);
+  float fjord = 1.0 - smoothstep(terrainFjordCore, terrainFjordBank, across);
+  return clamp(max(blended, max(fjord * 0.99, (1.0 - open) * 0.99)), 0.0, 1.0);
 }
 
 float terrainHeight01(vec2 xz) {
@@ -105,9 +118,18 @@ float terrainHeight01(vec2 xz) {
     fbm4(p + vec2(87.2, 9.1))
   );
   vec2 q = p + (warp - 0.5) * terrainWarp;
-  float floorHeight = fbm4(q) * 0.30 + 0.10;
-  float ridge = pow(terrainRidged3(q * 1.7 + vec2(31.4, 27.2)), 1.2);
-  float mountains = 0.35 + ridge * 0.95;
+  float base = fbm4(q);
+  // The lake bed is a shallow terrace of the same warped field — at most a
+  // tenth of it plus a tenth, under terrainHeightRef, so it never rises above
+  // water level.
+  float floorHeight = base * 0.10 + 0.10;
+  // Original phase offset (31.4, 27.2): only the frequency and the crest
+  // shaping are new. The 1.5 exponent pulls the mid slopes down toward the
+  // crests, so the chains read as peaks and not as sawtooth ramps.
+  float ridge = pow(terrainRidged3(q * 1.05 + vec2(31.4, 27.2)), 1.5);
+  // The fBM term sets the large trend, the ridge term the peaks, so the chain
+  // stays continuous instead of breaking into isolated spikes.
+  float mountains = 0.30 + base * 0.32 + ridge * 0.44;
   return mix(mountains, floorHeight, terrainValleyAt(xz, p));
 }
 
@@ -126,8 +148,13 @@ float terrainFogFactor(float viewDistance) {
   return clamp(1.0 - exp(-(d * d)), 0.0, 1.0);
 }
 
-// Fully fogged pixels are the fog colour regardless of the surface, so the
-// far ring skips all three height evaluations below.
+// Fully fogged pixels are the fog colour regardless of the surface, so the far
+// ring skips all three height evaluations below. The test stays a plain
+// distance threshold, which is what keeps that path cheap. The layered haze the
+// material applies only thins the fog above hC = 623.5 (see the mix there);
+// below that height it only ever thickens it, so the early return draws a
+// distant summit at least as fogged as the exact per-pixel value and never
+// under-fogs anything.
 const float terrainFogCutoff = 0.985;
 
 void terrainFoggedColor() {
@@ -221,12 +248,42 @@ void main() {
   albedo = mix(albedo, uRockColor, smoothstep(0.55, 0.86, h01));
   albedo = mix(albedo, uSnowColor, smoothstep(uSnowLine - 0.07, uSnowLine + 0.07, h01 - slope * 0.35));
   albedo = mix(uSandColor, albedo, smoothstep(0.0, 30.0, heightAboveWater));
-  albedo *= 0.88 + 0.12 * vnoise(xz * 0.02);
+  // Strata band the rock by height — one band per 90 world units of hC —
+  // bent by a very low frequency noise so they follow the ground instead of
+  // reading as perfect contour rings. Together with the coarse brightness
+  // variation they keep the bare rock from reading as flat grey.
+  float strata = sin(hC * 0.07 + vnoise(xz * 0.006) * 6.0);
+  albedo *= 0.86 + 0.10 * vnoise(xz * 0.06) + 0.035 * strata;
 
-  float diffuse = max(dot(normalGeo, uSunDirection), 0.0);
+  // Rock grain: three noise samples give a micro normal that breaks up the flat
+  // lit faces of a near slope. It is lighting only — the height field, the
+  // geometry normal and every mask above are untouched, so no vertex moves and
+  // the LOD seams are unaffected. The weight is 1 within 1500 world units of the
+  // camera and reaches 0 at 6000, so the detail sits on the ground the viewer is
+  // actually near and fades out before a distant cell — much wider than one
+  // grain — would start to shimmer.
+  vec2 grainPos = xz * 0.018;
+  float grainHeight = vnoise(grainPos);
+  vec2 grainSlope = vec2(
+    grainHeight - vnoise(grainPos + vec2(0.12, 0.0)),
+    grainHeight - vnoise(grainPos + vec2(0.0, 0.12))
+  );
+  float grainWeight = 1.0 - smoothstep(1500.0, 6000.0, viewDistance);
+  vec3 normalLit = normalize(normalGeo + vec3(grainSlope.x, 0.0, grainSlope.y) * (2.0 * grainWeight));
+
+  float diffuse = max(dot(normalLit, uSunDirection), 0.0);
+  // Ambient and bounce stay on the geometry normal: the grain is a sunlit
+  // surface detail, so it must not also tilt the sky/ground terms.
   vec3 ambient = uSkyColor * 0.42 * (0.5 + 0.5 * normalGeo.y);
   vec3 bounce = uGroundColor * 0.16 * (1.0 - normalGeo.y * 0.5);
   vec3 color = albedo * (uSunColor * diffuse + ambient + bounce);
+  // Layered haze: the air is thickest at water level, so low ground fades out
+  // sooner than a summit at the same distance. The exponent crosses 1.0 at
+  // hC = 623.5: below that height the fog only thickens, and only ground above
+  // it thins the fog, which is what keeps the far ring's distance-only
+  // early-out conservative instead of exact.
+  float lowHaze = exp(-max(hC, 0.0) / 450.0);
+  fog = 1.0 - pow(1.0 - fog, 0.7 + 1.2 * lowHaze);
   color = mix(color, uFogColor, fog);
 
   gl_FragColor = vec4(color, 1.0);
@@ -273,7 +330,7 @@ void main() {
 
   // Two drifting noise fields tilt the surface; the terrain height field gives
   // the depth that shades shallows and the shoreline foam.
-  vec2 p = xz * 0.03 + vec2(uTime * 0.035, uTime * 0.021);
+  vec2 p = xz * 0.015 + vec2(uTime * 0.009, uTime * 0.006);
   float rippleX = vnoise(p);
   float rippleZ = vnoise(p * 1.9 + vec2(41.3, 17.1));
   vec3 normal = normalize(vec3((rippleX - 0.5) * uRipple, 1.0, (rippleZ - 0.5) * uRipple));
@@ -285,11 +342,15 @@ void main() {
 
   vec3 view = normalize(cameraPosition - vWorldPosition);
   float fresnel = pow(1.0 - clamp(dot(view, normal), 0.0, 1.0), 4.0);
-  float specular = pow(max(dot(reflect(-uSunDirection, normal), view), 0.0), 90.0);
+  float specular = pow(max(dot(reflect(-uSunDirection, normal), view), 0.0), 180.0);
 
   vec3 color = mix(body, uHorizonColor, fresnel * 0.45);
-  color += uSunColor * specular * 0.45;
+  color += uSunColor * specular * 0.14;
   color = mix(color, uHorizonColor, foam * 0.18);
+  // Same layered haze as the terrain, over the water's own level: the surface
+  // sits at the bottom of the haze profile, so it always gets the dense end.
+  float lowHaze = exp(-max(uWaterLevel, 0.0) / 450.0);
+  fog = 1.0 - pow(1.0 - fog, 0.7 + 1.2 * lowHaze);
   color = mix(color, uFogColor, fog);
 
   gl_FragColor = vec4(color, 1.0);
@@ -319,8 +380,8 @@ void main() {
   float height = smoothstep(-0.02, 0.5, direction.y);
   vec3 sky = mix(uHorizonColor, uZenithColor, height);
   float sun = max(dot(direction, uSunDirection), 0.0);
-  sky += uSunColor * 0.30 * pow(sun, 12.0);
-  sky = mix(sky, uSunColor * 1.5, smoothstep(0.9993, 0.9998, sun));
+  sky += uSunColor * 0.12 * pow(sun, 12.0);
+  sky = mix(sky, uSunColor * 1.5, smoothstep(0.99992, 0.99997, sun));
   gl_FragColor = vec4(sky, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>

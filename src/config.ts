@@ -31,11 +31,10 @@ export const config = {
     { id: 'isaca', name: '错层索引', source: 'https://isaca.pro' },
     { id: 'yantao', name: '代码札记', source: 'https://yantao.wiki' },
     { id: 'birds', name: '群鸟掠空', source: 'https://www.vantajs.com/?effect=birds' },
-    // The five algorithm scenes below are local adaptations of the upstream projects recorded in
+    // The four algorithm scenes below are local adaptations of the upstream projects recorded in
     // src/client/effects/SOURCES.md and src/client/vendor/; each ships its own still fallback.
     { id: 'blackhole', name: '引力回廊', source: 'https://github.com/ebruneton/black_hole_shader' },
     { id: 'ocean', name: '频谱潮汐', source: 'https://github.com/squall01337/abyssal-ocean' },
-    { id: 'mandelbulb', name: '分形之眼', source: 'https://github.com/ibrews/mandelbulb-xr' },
     {
       id: 'reaction',
       name: '生长纹理',

@@ -1,9 +1,26 @@
 import assert from 'node:assert/strict';
 import { getEventListeners } from 'node:events';
+import { readFileSync } from 'node:fs';
 import test, { type TestContext } from 'node:test';
-import { BufferGeometry, DataTexture, FloatType, RGBAFormat } from 'three';
+import {
+  BufferGeometry,
+  Color,
+  DataTexture,
+  FloatType,
+  Group,
+  InstancedMesh,
+  Mesh,
+  Object3D,
+  RGBAFormat,
+  Scene,
+  ShaderMaterial,
+  Texture,
+  Vector3,
+} from 'three';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 import mountBirds, { birdBudget } from '../src/client/effects/birds';
-import type { FlockBudget, FlockScene } from '../src/client/flock-scene';
+import { createFlockScene, type FlockBudget, type FlockScene } from '../src/client/flock-scene';
+import { terrainGrid } from '../src/client/flock-terrain';
 import type { HeroContext } from '../src/client/hero';
 import {
   birdVS,
@@ -270,11 +287,11 @@ function createHarness(t: TestContext, hidden = false) {
 }
 
 test('bird budgets fix simulation count, frame rate and rendering limits for full and light', () => {
-  assert.deepEqual(birdBudget(false), { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 });
-  assert.deepEqual(birdBudget(true), { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 });
+  assert.deepEqual(birdBudget(false), { width: 12, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 });
+  assert.deepEqual(birdBudget(true), { width: 8, fps: 20, maxDpr: 1, maxPixels: 700_000 });
 });
 
-for (const width of [16, 24, 32]) {
+for (const width of [8, 12, 16, 24, 32]) {
   test(`${width}×${width} bird geometry shares one centered simulation texel across nine vertices`, (t) => {
     const geometry = createBirdGeometry(width);
     t.after(() => geometry.dispose());
@@ -294,7 +311,7 @@ for (const width of [16, 24, 32]) {
       const v = (Math.floor(bird / width) + 0.5) / width;
       for (let vertex = 0; vertex < 9; vertex++) {
         const index = bird * 9 + vertex;
-        // The 24-wide grid has non-dyadic texel centres stored in Float32 attributes.
+        // Non-dyadic grids (12 and 24) store texel centres as Float32 attributes.
         assert.equal(reference.getX(index), Math.fround(u));
         assert.equal(reference.getY(index), Math.fround(v));
         assert.ok(reference.getX(index) > 0 && reference.getX(index) < 1);
@@ -734,3 +751,266 @@ test('rapid mount and abort cycles leave no listeners, observers, canvas or stal
   assert.equal(h.peakRafs, 1);
   for (const instance of instances) instance.assertDetached();
 });
+
+test('bird colours span the moss-grey gradient without any neon left', (t) => {
+  const geometry = createBirdGeometry(12);
+  t.after(() => geometry.dispose());
+  const colour = geometry.getAttribute('birdColor');
+  const warm = new Color(0x39423f);
+  const cool = new Color(0x6e7770);
+  const low = [Math.min(warm.r, cool.r), Math.min(warm.g, cool.g), Math.min(warm.b, cool.b)];
+  const high = [Math.max(warm.r, cool.r), Math.max(warm.g, cool.g), Math.max(warm.b, cool.b)];
+  const seen = { low: [1, 1, 1], high: [0, 0, 0], widest: 0 };
+  for (let index = 0; index < colour.count; index++) {
+    const channels = [colour.getX(index), colour.getY(index), colour.getZ(index)];
+    for (const [axis, value] of channels.entries()) {
+      assert.ok(value >= low[axis]! - 1e-7 && value <= high[axis]! + 1e-7);
+      seen.low[axis] = Math.min(seen.low[axis]!, value);
+      seen.high[axis] = Math.max(seen.high[axis]!, value);
+    }
+    // Silver-grey over moss green: every bird stays near neutral, never saturated.
+    seen.widest = Math.max(seen.widest, Math.max(...channels) - Math.min(...channels));
+  }
+  assert.ok(
+    seen.widest < 0.05,
+    `channel spread ${seen.widest} is too saturated for the mist scene`,
+  );
+  // The per-vertex random lerp has to actually span the approved gradient.
+  for (const [axis, value] of seen.high.entries()) assert.ok(value - seen.low[axis]! > 0.02);
+  const source = readFileSync(
+    new URL('../src/client/vendor/vanta-birds.ts', import.meta.url),
+    'utf8',
+  );
+  assert.ok(source.includes('new Color(0x39423f)') && source.includes('new Color(0x6e7770)'));
+  assert.ok(!/0xff4c91|0x35d9ff/.test(source), 'the neon palette must be gone');
+});
+
+/**
+ * Enough of a WebGL2 context for three's renderer, the mirror pass and the boids
+ * compute pass to build, draw and dispose the real flock scene without a browser.
+ * Anything the renderer only calls is a recorded no-op; the numbers it reads are real.
+ */
+function createGlStub() {
+  const calls: string[] = [];
+  const parameters: Record<string, unknown> = {
+    VERSION: 'WebGL 2.0 (flock test stub)',
+    SHADING_LANGUAGE_VERSION: 'WebGL GLSL ES 3.00 (flock test stub)',
+    VENDOR: 'test',
+    RENDERER: 'test',
+    MAX_TEXTURE_IMAGE_UNITS: 16,
+    MAX_VERTEX_TEXTURE_IMAGE_UNITS: 16,
+    MAX_COMBINED_TEXTURE_IMAGE_UNITS: 32,
+    MAX_TEXTURE_SIZE: 4096,
+    MAX_CUBE_MAP_TEXTURE_SIZE: 4096,
+    MAX_VERTEX_ATTRIBS: 16,
+    MAX_VERTEX_UNIFORM_VECTORS: 256,
+    MAX_FRAGMENT_UNIFORM_VECTORS: 256,
+    MAX_VARYING_VECTORS: 15,
+    MAX_ARRAY_TEXTURE_LAYERS: 256,
+    MAX_3D_TEXTURE_SIZE: 256,
+    MAX_TEXTURE_MAX_ANISOTROPY_EXT: 16,
+  };
+  const names = new Map<string, number>();
+  const enumName = new Map<number, string>();
+  let nextConstant = 1000;
+  const base: Record<string, unknown> = {
+    getParameter: (name: unknown) =>
+      typeof name === 'number'
+        ? (parameters[enumName.get(name) ?? ''] ?? 4096)
+        : (parameters[String(name)] ?? 4096),
+    getShaderPrecisionFormat: () => ({ rangeMin: 127, rangeMax: 127, precision: 23 }),
+    getContextAttributes: () => ({ alpha: true, antialias: false, depth: true, stencil: false }),
+    // The boids pass needs float colour buffers; the mirror pass only needs a context.
+    getExtension: (name: string) =>
+      name === 'WEBGL_lose_context'
+        ? { loseContext: () => calls.push('loseContext') }
+        : name === 'EXT_color_buffer_float'
+          ? {}
+          : null,
+    getShaderParameter: () => true,
+    getProgramParameter: (_program: unknown, parameter: unknown) => {
+      // LINK_STATUS is a boolean; the two count queries must be numbers.
+      const key = enumName.get(parameter as number) ?? '';
+      return key === 'ACTIVE_UNIFORMS' || key === 'ACTIVE_ATTRIBUTES' ? 0 : true;
+    },
+    getShaderInfoLog: () => '',
+    getProgramInfoLog: () => '',
+    createShader: () => ({ kind: 'shader' }),
+    createProgram: () => ({ kind: 'program' }),
+    createTexture: () => ({ kind: 'texture' }),
+    createBuffer: () => ({ kind: 'buffer' }),
+    createVertexArray: () => ({ kind: 'vertexArray' }),
+    getUniformLocation: () => null,
+    getAttribLocation: () => 0,
+    getActiveUniform: () => null,
+    getActiveAttrib: () => null,
+    getError: () => 0,
+    isEnabled: () => true,
+    // three only warns when the mirror/compute framebuffer reports back incomplete.
+    checkFramebufferStatus: () => names.get('FRAMEBUFFER_COMPLETE') ?? 0,
+  };
+  const gl = new Proxy(base, {
+    get(target, key: string) {
+      if (key in target) return target[key];
+      if (/^[A-Z][A-Z0-9_]*$/.test(key)) {
+        let id = names.get(key);
+        if (id === undefined) {
+          id = nextConstant++;
+          names.set(key, id);
+          enumName.set(id, key);
+        }
+        return id;
+      }
+      return (...args: unknown[]) => {
+        void args;
+        calls.push(key);
+        // Framebuffers, renderbuffers and VAOs are three's own WeakMap keys.
+        return key.startsWith('create') ? { kind: key } : undefined;
+      };
+    },
+  });
+  return {
+    gl: gl as unknown as WebGL2RenderingContext,
+    // three draws meshes with drawElements, instanced meshes with drawElementsInstanced.
+    draws: () => calls.filter((call) => call.startsWith('draw')).length,
+  };
+}
+
+function createSceneHarness() {
+  const stub = createGlStub();
+  const saved = new Map(
+    ['document', 'window'].map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]),
+  );
+  const sceneAdd = Object.getOwnPropertyDescriptor(Scene.prototype, 'add');
+  const added: Object3D[] = [];
+  // The scene graph the factory builds is only reachable through the adds it performs.
+  (Scene.prototype as unknown as { add: (...objects: Object3D[]) => unknown }).add = function (
+    this: Scene,
+    ...objects: Object3D[]
+  ) {
+    added.push(...objects);
+    return Object3D.prototype.add.apply(this, objects);
+  };
+  const canvas = {
+    className: '',
+    width: 300,
+    height: 150,
+    style: {} as Record<string, string>,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    remove: () => {},
+    getContext: () => stub.gl,
+  };
+  const globals = globalThis as Record<string, unknown>;
+  globals.document = {
+    createElement: (tag: string) => {
+      assert.equal(tag, 'canvas');
+      return canvas;
+    },
+  };
+  globals.window = { devicePixelRatio: 1 };
+  return {
+    added,
+    draws: stub.draws,
+    find(name: string) {
+      const found = added.find((object) => object.name === name);
+      assert.ok(found, `${name} must be added to the flock scene`);
+      return found;
+    },
+    restore() {
+      if (sceneAdd) Object.defineProperty(Scene.prototype, 'add', sceneAdd);
+      else Reflect.deleteProperty(Scene.prototype, 'add');
+      for (const [name, descriptor] of saved) {
+        if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+        else Reflect.deleteProperty(globalThis, name);
+      }
+    },
+  };
+}
+
+for (const light of [false, true]) {
+  const label = light ? 'light' : 'full';
+  const width = light ? 8 : 12;
+  const grid = terrainGrid(light);
+
+  test(`the ${label} ${width}-wide budget drives the real scene into the ${label} landscape`, () => {
+    const budget = birdBudget(light);
+    assert.deepEqual(budget, {
+      width,
+      fps: light ? 20 : 30,
+      maxDpr: light ? 1 : 1.25,
+      maxPixels: light ? 700_000 : 1_800_000,
+    });
+    const harness = createSceneHarness();
+    let scene: FlockScene | undefined;
+    try {
+      scene = createFlockScene(budget);
+      scene.resize(1000, 600, 1);
+      scene.frame(0, 0, { x: 0.25, y: 0.25 });
+      // Exactly the landscape root and the flock mesh belong to the top-level scene.
+      assert.deepEqual(
+        harness.added.map((object) => object.name),
+        ['flock-landscape', 'flock-birds'],
+      );
+      const landscape = harness.find('flock-landscape') as Group;
+      const lake = landscape.getObjectByName('flock-lake') as Reflector;
+      assert.ok(lake instanceof Reflector && lake.material instanceof ShaderMaterial);
+      assert.ok(landscape.getObjectByName('flock-trees') instanceof InstancedMesh);
+      assert.ok(landscape.getObjectByName('flock-rocks') instanceof InstancedMesh);
+      // The light flag of the landscape is derived from the 8-wide budget, not from 12.
+      const mountains = landscape.getObjectByName('flock-mountains') as Mesh;
+      assert.equal(mountains.geometry.getAttribute('position').count, grid.columns * grid.rows * 6);
+      assert.equal(
+        (landscape.getObjectByName('flock-trees') as InstancedMesh).count,
+        light ? 75 : 180,
+      );
+      assert.equal(
+        (landscape.getObjectByName('flock-rocks') as InstancedMesh).count,
+        light ? 30 : 60,
+      );
+      let mist = 0;
+      landscape.traverse((object) => {
+        if (object.name.startsWith('flock-mist-')) mist++;
+      });
+      assert.equal(mist, light ? 4 : 8);
+      assert.equal(lake.getRenderTarget().width, light ? 256 : 512);
+
+      // One width feeds both the visible geometry and the boids simulation texture.
+      const birds = harness.find('flock-birds') as Mesh;
+      assert.equal(birds.geometry.getAttribute('position').count, width * width * 9);
+      assert.equal(birds.geometry.getAttribute('reference').count, width * width * 9);
+      assert.ok(birds.material instanceof ShaderMaterial);
+      const uniforms = birds.material.uniforms;
+      // Both ping-pong textures must be square and exactly width texels across.
+      for (const name of ['texturePosition', 'textureVelocity'] as const) {
+        const texture: unknown = uniforms[name].value;
+        assert.ok(texture instanceof Texture, `${name} must be a texture`);
+        const image = texture.image;
+        assert.ok(
+          typeof image === 'object' && image !== null && 'width' in image && 'height' in image,
+          `${name} must carry a sized image`,
+        );
+        assert.equal(image.width, width);
+        assert.equal(image.height, width);
+      }
+      // The art-direction constants live on the mesh's own uniforms, not a second transform.
+      assert.equal(uniforms.birdSize.value, 2.1);
+      assert.deepEqual((uniforms.flockOrigin.value as Vector3).toArray(), [200, 540, -800]);
+      assert.deepEqual((uniforms.flockScale.value as Vector3).toArray(), [5.5, 1.1, 2.6]);
+      assert.equal(birds.rotation.y, Math.PI / 2);
+      assert.equal(birds.matrixAutoUpdate, false);
+      assert.ok(harness.draws() > 0, 'the scene must really draw the flock and the reflection');
+
+      const geometry = birds.geometry;
+      const material = birds.material;
+      const target = lake.getRenderTarget();
+      scene.frame(0.5, 0.016, { x: -0.25, y: -0.25 });
+      assert.equal(birds.geometry, geometry);
+      assert.equal(birds.material, material);
+      assert.equal(lake.getRenderTarget(), target);
+    } finally {
+      scene?.dispose();
+      harness.restore();
+    }
+  });
+}

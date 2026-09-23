@@ -39,15 +39,18 @@ export type ObserverPose = {
   pitch?: number;
 };
 
-/** Distance from the singularity. Upstream's demo orbits at about 35; the hero keeps a fixed 18. */
-export const CAMERA_RADIUS = 18;
+/** Distance from the singularity. Upstream's demo orbits at about 35; the hero keeps a fixed 30. */
+export const CAMERA_RADIUS = 30;
 /** Elevation above the disc plane: slightly lower than the upstream demo's default 7.05 degrees. */
 export const CAMERA_ELEVATION = (6 * Math.PI) / 180;
 /** Vertical field of view, unchanged from the upstream demo. */
 export const CAMERA_FOV_Y = (50 * Math.PI) / 180;
-/** Bounds of the pointer look-around. The view never tumbles and never leaves the disc. */
-export const POINTER_YAW_LIMIT = 0.22;
-export const POINTER_PITCH_LIMIT = 0.12;
+/**
+ * Bounds of the pointer look-around. The view never tumbles and never leaves the disc; the hero
+ * narrows the upstream demo's free look to a restrained drift so the subject keeps its place.
+ */
+export const POINTER_YAW_LIMIT = 0.09;
+export const POINTER_PITCH_LIMIT = 0.045;
 /** Approach rate of the pointer orbit, per second: high enough to follow, low enough to stay calm. */
 export const ORBIT_RATE = 3;
 
@@ -59,12 +62,12 @@ export const VIEW_CENTER_ASPECT = 1.15;
 
 /**
  * Composition of the frame, as the UV of the viewport that the centre of the frame shows: (0.5, 0.5)
- * is upstream's centred view, and y counts up from the bottom. The wide layout keeps the subject
- * right of the copy; the narrow layout lowers it, so on a phone it sits in the lower 64% of the
- * height with the copy above it.
+ * is upstream's centred view, and y counts up from the bottom. The wide layout keeps the subject on
+ * the right of the copy, at the middle of the height; the narrow layout lowers it, so on a phone it
+ * sits in the lower 66% of the height with the copy above it. Both are the hero's own framing.
  */
-const VIEW_CENTER_WIDE: [number, number] = [0.68, 0.52];
-const VIEW_CENTER_NARROW: [number, number] = [0.5, 0.36];
+const VIEW_CENTER_WIDE: [number, number] = [0.7, 0.5];
+const VIEW_CENTER_NARROW: [number, number] = [0.5, 0.34];
 
 /**
  * The view centre for a viewport of the given aspect, as the `view_center` uniform takes it: a

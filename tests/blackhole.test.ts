@@ -8,6 +8,7 @@ import { algorithmResolution } from '../src/client/algorithms/types';
 import {
   blackHoleFraming,
   CAMERA_ELEVATION,
+  CAMERA_FOV_Y,
   CAMERA_RADIUS,
   ORBIT_RATE,
   POINTER_PITCH_LIMIT,
@@ -20,6 +21,7 @@ import {
 } from '../src/client/algorithms/blackhole/camera';
 import {
   DISC_INNER_RADIUS,
+  DISC_LOOK,
   DISC_OUTER_RADIUS,
   DISC_SEED,
   DISC_TIME_SCALE,
@@ -35,6 +37,7 @@ import {
   parseLut,
   parsePngHeader,
 } from '../src/client/algorithms/blackhole/lut';
+import { SCENE_EXPOSURE } from '../src/client/algorithms/blackhole/scene';
 import {
   SKY_BAND_DIRECTION,
   STARFIELD_SEED,
@@ -44,8 +47,9 @@ import {
 
 /**
  * CPU-side checks of the black hole scene: table formats and their failure modes, the vendored
- * bytes, the seeded disc, the camera reduction and the assembled GLSL. These are not GPU or browser
- * checks: shader compilation and the rendered look belong to the browser verification step.
+ * bytes, the seeded disc, the camera reduction, the tone map's numbers and the assembled GLSL. These
+ * are not GPU or browser checks: shader compilation and the rendered look belong to the browser
+ * verification step.
  */
 
 const VENDOR = 'src/client/vendor/blackhole';
@@ -62,6 +66,8 @@ const readBytes = (relative: string) => new Uint8Array(readFileSync(projectPath(
 
 const geometry = discGeometry();
 const shader = fragmentSource(geometry);
+/** The scene source, read as text: the tests below check what it uploads, not what it draws. */
+const sceneSource = readText('src/client/algorithms/blackhole/scene.ts');
 
 /** Removes comments, so only code is compared: the scene drops upstream's documentation blocks. */
 function stripComments(text: string): string {
@@ -339,6 +345,25 @@ test('the disc constants are emitted in the upstream shader manager format', () 
   assert.equal(source, discParameterSource(discGeometry()));
 });
 
+test('the look constants are pinned and are the ones uploaded', () => {
+  // The disc shading, the disc clock and the exposure of the output stage: the three numbers the
+  // hero's look is built from, pinned here so a later tweak is a deliberate one.
+  assert.deepEqual(DISC_LOOK, { density: 0.075, opacity: 0.42, temperature: 3500 });
+  assert.equal(DISC_TIME_SCALE, 0.45);
+  assert.equal(SCENE_EXPOSURE, 0.00011);
+  // The scene uploads exactly those, as the three-component look uniform and the exposure.
+  assert.match(
+    sceneSource,
+    /uniform3f\(uniforms\.disc_params, DISC_LOOK\.density, DISC_LOOK\.opacity, DISC_LOOK\.temperature\)/,
+  );
+  assert.match(sceneSource, /uniform1f\(uniforms\.exposure, SCENE_EXPOSURE\)/);
+  // No uniform holds the look on the CPU side: the shader reads the density, opacity and temperature
+  // from disc_params, so the pinned numbers really are what the frame is drawn with.
+  assert.match(shader, /float density = disc_params\.x;/);
+  assert.match(shader, /float opacity = disc_params\.y;/);
+  assert.match(shader, /float temperature = disc_params\.z;/);
+});
+
 /**
  * A direct port of the upstream pipeline for a static observer
  * (`src/client/vendor/blackhole/source/model/model.js`): the 4-velocity of a stopped camera, the
@@ -428,13 +453,47 @@ function upstreamStaticObserver(radius: number, elevation: number, yaw: number, 
   };
 }
 
+/**
+ * The output stage's tone map, ported from `shader.ts` so its numbers can be checked without a GPU:
+ * the upstream coefficients, the per-channel polynomial, the clamp and the display gamma, in the
+ * order the shader applies them. The exposure is the caller's, as it is `main`'s.
+ */
+function toneMap(color: [number, number, number]): [number, number, number] {
+  const A = 2.51;
+  const B = 0.03;
+  const C = 2.43;
+  const D = 0.59;
+  const E = 0.14;
+  const channel = (value: number) => {
+    const clamped = Math.max(value, 0);
+    const mapped = (clamped * (A * clamped + B)) / (clamped * (C * clamped + D) + E);
+    return Math.min(Math.max(mapped, 0), 1) ** (1 / 2.2);
+  };
+  return [channel(color[0]), channel(color[1]), channel(color[2])];
+}
+
+/** The curve the scene draws with: the tone map of a colour the exposure has already been applied to. */
+function exposed(color: [number, number, number]): [number, number, number] {
+  return toneMap([color[0] * SCENE_EXPOSURE, color[1] * SCENE_EXPOSURE, color[2] * SCENE_EXPOSURE]);
+}
+
 test('the camera reduction is the upstream pipeline for a static observer', () => {
   const poses = [
     // The upstream demo's own defaults, then this scene's pose, then the pointer extremes.
     { radius: Math.max(1 + 39 * 0.94 * 0.94, 1.01), elevation: Math.PI * (970 / 1799 - 0.5) },
     { radius: CAMERA_RADIUS, elevation: CAMERA_ELEVATION, yaw: 0, pitch: 0 },
-    { radius: CAMERA_RADIUS, elevation: CAMERA_ELEVATION, yaw: 0.22, pitch: -0.12 },
-    { radius: CAMERA_RADIUS, elevation: CAMERA_ELEVATION, yaw: -0.22, pitch: 0.12 },
+    {
+      radius: CAMERA_RADIUS,
+      elevation: CAMERA_ELEVATION,
+      yaw: POINTER_YAW_LIMIT,
+      pitch: -POINTER_PITCH_LIMIT,
+    },
+    {
+      radius: CAMERA_RADIUS,
+      elevation: CAMERA_ELEVATION,
+      yaw: -POINTER_YAW_LIMIT,
+      pitch: POINTER_PITCH_LIMIT,
+    },
     // Beyond the pointer limits: the reduction has to hold for any pose, not just the bounded one.
     { radius: 3.2, elevation: 0.4, yaw: 1.1, pitch: -0.9 },
   ];
@@ -471,6 +530,16 @@ test('the camera reduction is the upstream pipeline for a static observer', () =
 });
 
 test('the camera stays finite, keeps its radius and looks at the black hole', () => {
+  // The pose and the look-around the hero ships with, pinned so a change to the frame is deliberate:
+  // a fixed radius well outside the disc, a low elevation, the upstream field of view, and a drift
+  // that is much smaller than the upstream demo's free look.
+  assert.equal(CAMERA_RADIUS, 30);
+  assert.equal(CAMERA_ELEVATION, (6 * Math.PI) / 180);
+  assert.equal(CAMERA_FOV_Y, (50 * Math.PI) / 180);
+  assert.equal(POINTER_YAW_LIMIT, 0.09);
+  assert.equal(POINTER_PITCH_LIMIT, 0.045);
+  assert.equal(ORBIT_RATE, 3);
+
   const neutral = staticObserverUniforms({ time: 0 });
   assert.deepEqual(neutral.cameraPosition, [
     0,
@@ -573,6 +642,8 @@ test('the disc clock is far slower than the upstream demo rate', () => {
 });
 
 test('every reused function is the upstream body', () => {
+  // DefaultDiscColor is deliberately absent: it is upstream's body plus the hero's own look, and the
+  // next test pins that difference one change at a time.
   const reused: [keyof typeof SOURCES, string][] = [
     ['functions', 'GetRayDeflectionTextureUFromEsquare'],
     ['functions', 'GetUapsisFromEsquare'],
@@ -586,7 +657,6 @@ test('every reused function is the upstream body', () => {
     ['functions', 'TraceRay'],
     ['model', 'DefaultDoppler'],
     ['model', 'BlackBodyColor'],
-    ['model', 'DefaultDiscColor'],
     ['model', 'SceneColor'],
   ];
   for (const [file, name] of reused) {
@@ -601,6 +671,86 @@ test('every reused function is the upstream body', () => {
   // The two TraceRay overloads are both needed: the shader's RayTrace calls the long one.
   assert.equal(glslDefinitions(shader, 'TraceRay').length, 2);
   assert.equal(glslDefinitions(shader, 'LookupRayDeflection').length, 1);
+});
+
+test('the disc shading is the upstream body with four marked look changes', () => {
+  const upstream = glslDefinitions(readText(SOURCES.model), 'DefaultDiscColor');
+  assert.equal(upstream.length, 1);
+  const deployed = glslDefinitions(shader, 'DefaultDiscColor');
+  assert.equal(deployed.length, 1);
+  const body = deployed[0]!;
+  assert.notEqual(body, upstream[0]!);
+
+  // The per-ring loop is upstream's: the same orbit terms, the same ring constants, and the same
+  // noise tap on the same scaled coordinates. The disc noise is per ring, not per pixel.
+  for (const token of [
+    'for (int i = 0; i < NUM_DISC_PARTICLES; ++i)',
+    'vec4 params = DISC_PARTICLE_PARAMS[i];',
+    'float u_avg = (u1 + u2) * 0.5;',
+    'float dphi_dt = u_avg * sqrt(0.5 * u_avg);',
+    'float phi = dphi_dt * p_t + phi0;',
+    'float a = mod(p_phi - phi, 2.0 * pi);',
+    'float r = 1.0 / (u1 + (u2 - u1) * s * s);',
+    'vec2 d = vec2(a - pi, r - p_r) * vec2(1.0 / pi, 0.5);',
+    'float noise = Noise(d * vec2(p_r / OUTER_DISC_R, 1.0));',
+  ]) {
+    assert.ok(body.includes(token), token);
+  }
+
+  // Change 1: the reversed-edge smoothstep, which GLSL leaves undefined, written in the defined
+  // forward order. Same ramp, same result.
+  assert.match(body, /density \+= \(1\.0 - smoothstep\(0\.0, 1\.0, length\(d\)\)\) \* noise;/);
+  // Change 2: the filament modulation of the summed density. The phase drifts with the disc clock
+  // and the two grains come from the existing disc noise; both gates are clamped non-negative, so
+  // the density is only ever scaled, never inverted.
+  assert.match(body, /float phase = p_phi - 0\.004 \* p_t;/);
+  assert.match(
+    body,
+    /float grain_coarse = clamp\(Noise\(vec2\(p_r \* 0\.45, phase \* 1\.3\)\) \* 0\.4, 0\.0, 1\.0\);/,
+  );
+  assert.match(
+    body,
+    /float grain_fine = clamp\(Noise\(vec2\(p_r \* 5\.5 \+ 0\.35 \* sin\(phase \* 3\.0\), phase \* 0\.8\)\) \* 0\.4, 0\.0, 1\.0\);/,
+  );
+  assert.equal(body.match(/clamp\(Noise\(vec2\(/g)?.length, 2);
+  assert.equal(body.match(/\) \* 0\.4, 0\.0, 1\.0\)/g)?.length, 2);
+  assert.match(
+    body,
+    /density = max\(density, 0\.0\) \* \(0\.30 \+ 0\.70 \* grain_coarse\) \* \(0\.12 \+ 1\.8 \* grain_fine \* grain_fine\);/,
+  );
+  // Change 3: the temperature profile's base, which is negative inside the inner edge, is clamped
+  // before pow() rather than handed to it.
+  assert.match(
+    body,
+    /pow\(max\(\(1\.0 - sqrt\(3\.0 \/ p_r\)\) \/ \(p_r \* p_r \* p_r\), 0\.0\), 0\.25\)/,
+  );
+  // Change 4: the outer edge of the alpha ramp, which upstream writes with its edges reversed as
+  // well, in the defined forward order. The inner edge of the ramp is upstream's own and untouched.
+  assert.match(body, /float alpha = smoothstep\(INNER_DISC_R, INNER_DISC_R \* 1\.2, p_r\) \*/);
+  assert.match(body, /\(1\.0 - smoothstep\(OUTER_DISC_R \/ 1\.2, OUTER_DISC_R, p_r\)\)/);
+  assert.doesNotMatch(body, /smoothstep\(OUTER_DISC_R, OUTER_DISC_R \/ 1\.2, p_r\)/);
+  // Nothing else moved: undoing those four changes has to give the upstream body back exactly, so
+  // there is no fifth silent difference hiding in the deployed text.
+  const restored = body
+    .replace(
+      /float phase = [^;]+; float grain_coarse = [^;]+; float grain_fine = [^;]+; density = max\(density, 0\.0\) \* \(0\.30 \+ 0\.70 \* grain_coarse\) \* \(0\.12 \+ 1\.8 \* grain_fine \* grain_fine\);/,
+      '',
+    )
+    .replace(
+      'density += (1.0 - smoothstep(0.0, 1.0, length(d))) * noise;',
+      'density += smoothstep(1.0, 0.0, length(d)) * noise;',
+    )
+    .replace(
+      'pow(max((1.0 - sqrt(3.0 / p_r)) / (p_r * p_r * p_r), 0.0), 0.25)',
+      'pow((1.0 - sqrt(3.0 / p_r)) / (p_r * p_r * p_r), 0.25)',
+    )
+    .replace(
+      /\(1\.0 - smoothstep\(OUTER_DISC_R \/ 1\.2, OUTER_DISC_R, p_r\)\)/,
+      'smoothstep(OUTER_DISC_R, OUTER_DISC_R / 1.2, p_r)',
+    )
+    .replace(/\s+/g, ' ')
+    .trim();
+  assert.equal(restored, upstream[0]!);
 });
 
 test('the lookup constants and type macros come from the upstream sources', () => {
@@ -686,7 +836,7 @@ test('no Gaia, Tycho, rocket or bloom path survives in the shader', () => {
   assert.doesNotMatch(code, /bloom/i);
   // The HDR colour is tone mapped in the fragment, so there is no float target and no second pass.
   assert.match(code, /vec3 ToneMapACES\(vec3 color\)/);
-  assert.match(code, /pow\(color, vec3\(1\.0 \/ 2\.2\)\)/);
+  assert.match(code, /pow\(clamp\(mapped, 0\.0, 1\.0\), vec3\(1\.0 \/ 2\.2\)\)/);
   assert.match(code, /frag_color = vec4\(ToneMapACES\(/);
   assert.doesNotMatch(code, /DOPPLER == 0/);
   // The procedural sky is in: hash points, a value-noise nebula, a seeded band.
@@ -703,6 +853,105 @@ test('no Gaia, Tycho, rocket or bloom path survives in the shader', () => {
   for (const seed of STARFIELD_SEED) {
     assert.ok(Number.isInteger(seed) && seed >= 0 && seed < 2 ** 32, `${seed}`);
   }
+});
+
+test('the tone map is the ACES shoulder per channel and keeps the frame in range', () => {
+  // The shader really is the port below, line by line: upstream's coefficients, the polynomial on
+  // each channel, the clamp and the display gamma.
+  const code = compactGlsl(shader);
+  assert.match(code, /const float A = 2\.51;/);
+  assert.match(code, /const float B = 0\.03;/);
+  assert.match(code, /const float C = 2\.43;/);
+  assert.match(code, /const float D = 0\.59;/);
+  assert.match(code, /const float E = 0\.14;/);
+  assert.match(code, /color = max\(color, vec3\(0\.0\)\);/);
+  assert.match(
+    code,
+    /vec3 mapped = \(color \* \(A \* color \+ B\)\) \/ \(color \* \(C \* color \+ D\) \+ E\);/,
+  );
+  assert.match(code, /return pow\(clamp\(mapped, 0\.0, 1\.0\), vec3\(1\.0 \/ 2\.2\)\);/);
+  // The luminance the curve used to be applied to, the ratio that carried the colour through it and
+  // the peak the result used to be divided by are all gone: the curve is per channel again.
+  assert.doesNotMatch(code, /luminance|LUMA|fitted|peak/);
+  // The per-channel ceiling that used to sit in front of the curve is gone too: a very bright pixel
+  // is placed by the shoulder, not truncated before it.
+  assert.doesNotMatch(code, /min\(color \* exposure/);
+  assert.match(code, /frag_color = vec4\(ToneMapACES\(color \* exposure\), 1\.0\);/);
+
+  // Reference values: a neutral grey of 0.18 and a white of 1.0 land exactly where upstream's own
+  // curve puts them, since a neutral is the same curve whichever way it is applied.
+  for (const channel of toneMap([0.18, 0.18, 0.18])) {
+    assert.ok(Math.abs(channel - 0.54859084) < 1e-8, `${channel}`);
+  }
+  for (const channel of toneMap([1, 1, 1])) {
+    assert.ok(Math.abs(channel - 0.90549245) < 1e-8, `${channel}`);
+  }
+
+  // Black stays black, and no scene colour reaches the output as NaN or as a negative channel,
+  // however odd it is: a disc density below zero, a saturated primary, or a radiance far past the
+  // display range.
+  assert.deepEqual(toneMap([0, 0, 0]), [0, 0, 0]);
+  for (const sample of [
+    [-1, -1, -1],
+    [-0.5, 0.2, 0.05],
+    [0, 4, 0],
+    [1e12, 3e5, 12],
+    [1e30, 1e30, 1e30],
+    [Number.MIN_VALUE, 0, 0],
+  ] as [number, number, number][]) {
+    for (const channel of toneMap(sample)) {
+      assert.ok(Number.isFinite(channel), `${sample}: ${channel}`);
+      assert.ok(channel >= 0 && channel <= 1, `${sample}: ${channel}`);
+    }
+  }
+  // Radiance far past the display range lands on white, not at infinity.
+  assert.deepEqual(toneMap([1e12, 1e12, 1e12]), [1, 1, 1]);
+
+  // The curve is monotone: one hue sampled at a rising intensity never comes back lower in any
+  // channel, so a brighter pixel of a colour is never drawn darker than a dimmer one of it.
+  for (const hue of [
+    [1, 1, 1],
+    [1, 0.55, 0.3],
+    [1, 0.03, 0.006],
+  ] as [number, number, number][]) {
+    let previous = [0, 0, 0];
+    for (const intensity of [1e-4, 1e-3, 1e-2, 0.1, 1, 2, 7, 8, 100, 1e4, 1e8]) {
+      const output = toneMap([hue[0] * intensity, hue[1] * intensity, hue[2] * intensity]);
+      output.forEach((channel, index) => {
+        assert.ok(channel >= previous[index]!, `${hue} at ${intensity}: channel ${index}`);
+        previous[index] = channel;
+      });
+    }
+  }
+
+  // At the exposure the scene uploads, a sweep of disc radiances stays below the shoulder: the four
+  // greys come out in order, distinct and unsaturated, which is the gradation the low exposure is
+  // there to keep. Five times that exposure lifts all four, so the render parameter really is the
+  // one the curve is fed.
+  const greys = [0.05, 0.2, 0.7, 2] as const;
+  const dim = greys.map((grey) => exposed([grey, grey, grey])[0]);
+  let previousGrey = -1;
+  for (const channel of dim) {
+    assert.ok(channel > previousGrey && channel < 1, `${channel}`);
+    previousGrey = channel;
+  }
+  greys.forEach((grey, index) => {
+    const lifted = exposed([grey * 5, grey * 5, grey * 5])[0];
+    assert.ok(lifted > dim[index]!, `${grey}: ${lifted}`);
+  });
+
+  // A red-dominant highlight is allowed to desaturate: the shoulder is asymptotic, so the other two
+  // channels of a bright red core catch up with the red instead of the core clipping to a flat red.
+  // The dim red of the same hue still reads as red.
+  const red = toneMap([1, 0.02, 0.004]);
+  assert.ok(red[0] > 0.8 && red[1] < 0.2 && red[2] < 0.1, `${red}`);
+  let ratios: [number, number] = [0, 0];
+  for (const intensity of [1, 2, 5, 10, 100, 1000, 1e4, 1e6]) {
+    const [r, g, b] = toneMap([intensity, 0.02 * intensity, 0.004 * intensity]);
+    assert.ok(g / r >= ratios[0] && b / r >= ratios[1], `at ${intensity}`);
+    ratios = [g / r, b / r];
+  }
+  assert.deepEqual(toneMap([1e6, 2e4, 4e3]), [1, 1, 1]);
 });
 
 test('the procedural sky is seeded, pure and actually uploaded', () => {
@@ -744,30 +993,58 @@ test('the starfield cell is lifted to 3D with an explicit zero component', () =>
   assert.match(starLayer, /SkyCell\(ivec3\(ivec2\(cell\), 0\)\) \+ uvec3\(face\) \+ salt/);
 });
 
+test('the sky keeps its deterministic field and only its star gains come down', () => {
+  const starLayer = glslDefinitions(shader, 'StarLayer')[0]!;
+  const galaxy = glslDefinitions(shader, 'GalaxyColor')[0]!;
+  // The magnitude law is steeper, so the faint masses drop away and only the bright cores survive:
+  // this is the star speckle the hero takes out, and it is a change inside StarLayer alone.
+  assert.match(starLayer, /float magnitude = pow\(h\.z, 12\.0\);/);
+  assert.doesNotMatch(starLayer, /pow\(h\.z, 5\.0\)/);
+  // The three layers keep their grids, their sizes and their salts, and take the quieter gains.
+  for (const [layer, salt] of [
+    ['42.0, 0.10, 12.0', 'uvec3(0u)'],
+    ['86.0, 0.11, 24.0', 'uvec3(17u, 29u, 43u)'],
+    ['21.0, 0.09, 90.0', 'uvec3(97u, 71u, 53u)'],
+  ] as [string, string][]) {
+    assert.equal(galaxy.includes(`StarLayer(faceUv, face, ${layer}, ${salt})`), true, layer);
+  }
+  // The nebula, the band and the ambient tint keep the levels they had: the sky gains brightness
+  // nowhere, so the disc stays the brightest thing on the frame.
+  assert.match(galaxy, /vec3 color = SKY_DUST_COLOR \* \(10\.0 \* dust \* dust\);/);
+  assert.match(galaxy, /color \+= SKY_BAND_COLOR \* \(9\.0 \* band \* dust\);/);
+  assert.match(galaxy, /color \+= SKY_DUST_COLOR \* SKY_AMBIENT;/);
+  // The draw is still the seeded hash of the direction, reached through the same cube-face lattice.
+  assert.match(galaxy, /CubeFace\(d, face\)/);
+  assert.match(
+    starLayer,
+    /CellHash3\(SkyCell\(ivec3\(ivec2\(cell\), 0\)\) \+ uvec3\(face\) \+ salt\)/,
+  );
+});
+
 test('the frame centre switches layout at the chosen aspect', () => {
-  // Wide: the subject sits right of the copy, a little above the middle. Narrow: it is centred
+  // Wide: the subject sits right of the copy, at the middle of the height. Narrow: it is centred
   // horizontally and low, so the copy above it is clear. The threshold itself is the wide layout.
-  assert.deepEqual(blackHoleFraming(VIEW_CENTER_ASPECT), [0.68, 0.52]);
+  assert.deepEqual(blackHoleFraming(VIEW_CENTER_ASPECT), [0.7, 0.5]);
   for (const aspect of [1.2, 1.3333, 1.6, 1.7777, 2.4, 21 / 9]) {
-    assert.deepEqual(blackHoleFraming(aspect), [0.68, 0.52], `${aspect}`);
+    assert.deepEqual(blackHoleFraming(aspect), [0.7, 0.5], `${aspect}`);
   }
   for (const aspect of [1.1499, 1.15 - 1e-9, 1, 0.75, 0.5, 390 / 844]) {
-    assert.deepEqual(blackHoleFraming(aspect), [0.5, 0.36], `${aspect}`);
+    assert.deepEqual(blackHoleFraming(aspect), [0.5, 0.34], `${aspect}`);
   }
-  // y counts up from the bottom, so the narrow layout puts the subject in the lower 64% of the
+  // y counts up from the bottom, so the narrow layout puts the subject in the lower 66% of the
   // height, and the wide layout keeps it right of centre.
-  assert.equal(1 - blackHoleFraming(1)[1], 0.64);
+  assert.ok(Math.abs(1 - blackHoleFraming(1)[1] - 0.66) < 1e-12);
   assert.ok(blackHoleFraming(2)[0] > 0.5 && blackHoleFraming(1)[1] < 0.5);
   // An aspect that is not a usable number gets the narrow layout: the subject stays clear of the
   // copy rather than the frame reverting to a centred view.
   for (const aspect of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
-    assert.deepEqual(blackHoleFraming(aspect), [0.5, 0.36], `${aspect}`);
+    assert.deepEqual(blackHoleFraming(aspect), [0.5, 0.34], `${aspect}`);
   }
   // A caller gets its own pair and cannot move the layout for everyone else.
   const pair = blackHoleFraming(1.6);
   pair[0] = 0.5;
   pair[1] = 0.5;
-  assert.deepEqual(blackHoleFraming(1.6), [0.68, 0.52]);
+  assert.deepEqual(blackHoleFraming(1.6), [0.7, 0.5]);
 });
 
 test('the hero budget never moves the framing', () => {
@@ -801,16 +1078,16 @@ test('the hero budget never moves the framing', () => {
       boxAspect >= VIEW_CENTER_ASPECT,
       `${width}x${height}`,
     );
-    assert.deepEqual(framing, boxAspect >= VIEW_CENTER_ASPECT ? [0.68, 0.52] : [0.5, 0.36]);
+    assert.deepEqual(framing, boxAspect >= VIEW_CENTER_ASPECT ? [0.7, 0.5] : [0.5, 0.34]);
   }
   // The landscape and portrait boxes really do land on opposite sides of the switch.
   assert.deepEqual(
     blackHoleFraming(algorithmResolution(1440, 900, full, 1, 2).width / 900),
-    [0.68, 0.52],
+    [0.7, 0.5],
   );
   assert.deepEqual(
     blackHoleFraming(algorithmResolution(390, 844, full, 1, 3).width / 844),
-    [0.5, 0.36],
+    [0.5, 0.34],
   );
   // The scene uploads the centre from that same function and that same aspect, on resize.
   const scene = readText('src/client/algorithms/blackhole/scene.ts');

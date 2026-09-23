@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { getEventListeners } from 'node:events';
 import test, { type TestContext } from 'node:test';
+import { validateError } from '../server/log.mjs';
 import { algorithmBudget, mountAlgorithm } from '../src/client/algorithm-hero';
 import type {
   AlgorithmBudget,
@@ -245,6 +246,14 @@ function createHarness(t: TestContext) {
   t.after(() => {
     try {
       for (const controller of controllers) controller.abort();
+      // Every payload the client actually sent must be accepted by the server's own validator.
+      // This runs here, not in the fetch mock: report() swallows a rejection there.
+      for (const post of posts)
+        assert.deepEqual(
+          validateError(post),
+          post,
+          `the server accepts the reported kind ${String(post.kind)}`,
+        );
     } finally {
       rafs.clear();
       for (const observer of [...observers, ...intersections]) observer.disconnect();
@@ -399,7 +408,6 @@ test('every algorithm gets the planned frame rate, DPR cap and pixel ceiling', (
   const ceilings: Array<[AlgorithmId, { full: number; light: number }]> = [
     ['blackhole', { full: 900_000, light: 300_000 }],
     ['ocean', { full: 1_200_000, light: 400_000 }],
-    ['mandelbulb', { full: 360_000, light: 160_000 }],
     ['reaction', { full: 1_200_000, light: 450_000 }],
     ['terrain', { full: 1_200_000, light: 450_000 }],
   ];
@@ -466,7 +474,7 @@ test('the still shows first and the canvas is revealed only after the first draw
 
 test('reduced motion returns before any GPU module is requested', async (t) => {
   const harness = createHarness(t);
-  const qa = harness.instance({ id: 'mandelbulb', reduced: true });
+  const qa = harness.instance({ id: 'blackhole', reduced: true });
   await qa.mount();
   assert.equal(qa.loads, 0);
   assert.equal(qa.calls.length, 0);
@@ -491,7 +499,7 @@ test('a scene that throws on its first frame keeps the still and reports only th
   assert.equal(qa.scene.canvas.parent, undefined, 'the broken canvas leaves the layer');
   assert.equal(qa.still?.className, 'algorithm-still', 'the still is still there');
   assert.equal(harness.rafs.size, 0);
-  assert.deepEqual(harness.posts, [{ kind: 'algorithm:terrain', code: 'Error', path: '/qa' }]);
+  assert.deepEqual(harness.posts, [{ kind: 'algorithm-terrain', code: 'Error', path: '/qa' }]);
   assert.doesNotMatch(
     JSON.stringify(harness.posts),
     /private|someone|compile/,
@@ -510,7 +518,7 @@ test('a module that fails to import falls back to the still', async (t) => {
   assert.equal(qa.calls.length, 0);
   assert.equal(qa.state, 'static');
   assert.equal(qa.scene.disposals, 0);
-  assert.deepEqual(harness.posts, [{ kind: 'algorithm:ocean', code: 'Error', path: '/qa' }]);
+  assert.deepEqual(harness.posts, [{ kind: 'algorithm-ocean', code: 'Error', path: '/qa' }]);
   qa.controller.abort();
   qa.assertDetached();
 });
@@ -524,7 +532,7 @@ test('a scene that cannot open a context leaves the layer static', async (t) => 
   assert.equal(qa.calls.length, 1);
   assert.equal(qa.scene.disposals, 0, 'there is no scene object to release');
   assert.equal(harness.rafs.size, 0);
-  assert.deepEqual(harness.posts, [{ kind: 'algorithm:reaction', code: 'Error', path: '/qa' }]);
+  assert.deepEqual(harness.posts, [{ kind: 'algorithm-reaction', code: 'Error', path: '/qa' }]);
   qa.controller.abort();
   qa.assertDetached();
 });
@@ -541,7 +549,7 @@ test('a frame that throws while live returns the layer to the still', async (t) 
   assert.equal(qa.state, 'static');
   assert.equal(qa.scene.disposals, 1);
   assert.equal(harness.rafs.size, 0);
-  assert.deepEqual(harness.posts, [{ kind: 'algorithm:terrain', code: 'Error', path: '/qa' }]);
+  assert.deepEqual(harness.posts, [{ kind: 'algorithm-terrain', code: 'Error', path: '/qa' }]);
   qa.controller.abort();
   assert.equal(qa.scene.disposals, 1);
   qa.assertDetached();
@@ -549,7 +557,7 @@ test('a frame that throws while live returns the layer to the still', async (t) 
 
 test('a lost WebGL context returns the layer to the still and releases the scene', async (t) => {
   const harness = createHarness(t);
-  const qa = harness.instance({ id: 'mandelbulb' });
+  const qa = harness.instance({ id: 'reaction' });
   await qa.mount();
   const event = new EventStub('webglcontextlost');
   qa.scene.canvas.dispatchEvent(event);
@@ -558,7 +566,7 @@ test('a lost WebGL context returns the layer to the still and releases the scene
   assert.equal(qa.scene.disposals, 1);
   assert.equal(qa.scene.canvas.parent, undefined);
   assert.equal(harness.rafs.size, 0);
-  assert.deepEqual(harness.posts, [{ kind: 'algorithm:mandelbulb', code: 'Error', path: '/qa' }]);
+  assert.deepEqual(harness.posts, [{ kind: 'algorithm-reaction', code: 'Error', path: '/qa' }]);
   qa.controller.abort();
   assert.equal(qa.scene.disposals, 1);
   qa.assertDetached();
@@ -641,7 +649,7 @@ test('a cleanup that throws still detaches the layer, the loop and the signal li
   assert.equal(qa.host.listenerCount, 0);
   assert.equal(getEventListeners(qa.controller.signal, 'abort').length, 0);
   assert.equal(harness.posts.length, 1);
-  assert.equal(harness.posts[0]!.kind, 'algorithm:blackhole:dispose');
+  assert.equal(harness.posts[0]!.kind, 'algorithm-blackhole-dispose');
   assert.equal(harness.posts[0]!.code, 'Error');
   assert.equal(harness.posts[0]!.path, '/qa');
   assert.doesNotMatch(JSON.stringify(harness.posts), /private|someone|release failed/);
@@ -662,12 +670,29 @@ test('a failing frame whose cleanup also throws still falls back to the still', 
   assert.equal(harness.rafs.size, 0);
   assert.deepEqual(
     harness.posts.map((post) => post.kind),
-    ['algorithm:reaction:dispose', 'algorithm:reaction'],
+    ['algorithm-reaction-dispose', 'algorithm-reaction'],
     'the cleanup failure is reported without hiding the frame failure',
   );
   qa.controller.abort();
   assert.equal(qa.scene.disposals, 1);
   qa.assertDetached();
+});
+
+test('every algorithm-kind the runtime can report passes the server validator', () => {
+  // A pure contract check: the client payload shape, judged by the server's own validator. The
+  // hyphen kinds are the live ones; a colon kind is what the runtime used to send and the server
+  // rejects. Nothing here reports, so the client's request budget stays untouched.
+  const ids: AlgorithmId[] = ['blackhole', 'ocean', 'reaction', 'terrain'];
+  for (const id of ids) {
+    for (const kind of [`algorithm-${id}`, `algorithm-${id}-dispose`]) {
+      const post = { kind, code: 'Error', path: '/qa' };
+      assert.deepEqual(validateError(post), post, `${kind} is a valid payload`);
+    }
+    for (const kind of [`algorithm:${id}`, `algorithm:${id}:dispose`]) {
+      const post = { kind, code: 'Error', path: '/qa' };
+      assert.equal(validateError(post), null, `${kind} stays rejected by the server`);
+    }
+  }
 });
 
 /* ---------- size, visibility and quality -------------------------------- */
@@ -798,6 +823,32 @@ test('leaving the stage or blurring the window clears every pointer field', asyn
   qa.assertDetached();
 });
 
+test('a pending click is dropped when the gesture is cancelled, left or blurred', async (t) => {
+  const harness = createHarness(t);
+  const qa = harness.instance({ id: 'reaction' });
+  await qa.mount();
+  qa.stage.rect = { left: 0, top: 0, width: 100, height: 100 };
+  const clears: Array<[string, () => void]> = [
+    ['pointercancel', () => qa.pointer('pointercancel', { clientX: 25, clientY: 25 })],
+    ['pointerleave', () => qa.pointer('pointerleave', { clientX: 25, clientY: 25 })],
+    ['blur', () => harness.window.dispatchEvent(new EventStub('blur'))],
+  ];
+  let time = 0;
+  for (const [name, clear] of clears) {
+    time += 40;
+    qa.pointer('pointerdown', { clientX: 25, clientY: 25 });
+    clear();
+    harness.tick(time);
+    assert.deepEqual(
+      qa.scene.frames.at(-1)!.pointer,
+      { x: -0.5, y: 0.5, active: false, down: false, tap: false },
+      `a ${name} drops the pending click and the press state, keeping only the last position`,
+    );
+  }
+  qa.controller.abort();
+  qa.assertDetached();
+});
+
 test('a browser pointercancel drops a touch candidate before its release arrives', async (t) => {
   const harness = createHarness(t);
   const qa = harness.instance({ id: 'terrain' });
@@ -848,6 +899,93 @@ test('a short touch tap lasts exactly one rendered frame', async (t) => {
     qa.scene.frames.at(-1)!.pointer,
     { x: -0.5, y: 0.5, active: false, down: false, tap: false },
     'the tap is consumed by that single frame',
+  );
+  qa.controller.abort();
+  qa.assertDetached();
+});
+
+test('a short mouse click reaches the scene on the next rendered frame', async (t) => {
+  const harness = createHarness(t);
+  const qa = harness.instance({ id: 'reaction' });
+  await qa.mount();
+  qa.stage.rect = { left: 0, top: 0, width: 100, height: 100 };
+  harness.tick(0);
+  const baseline = qa.scene.frames.length;
+  // A press and its release inside one 30 fps window must not be dropped between the two events.
+  qa.pointer('pointerdown', { clientX: 25, clientY: 25 });
+  qa.pointer('pointerup', { clientX: 25, clientY: 25 });
+  harness.tick(10);
+  assert.equal(qa.scene.frames.length, baseline, 'a frame under the interval is not due yet');
+  harness.tick(40);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: -0.5, y: 0.5, active: true, down: false, tap: true },
+    'the click survives to the next real render',
+  );
+  harness.tick(80);
+  const consumed = qa.scene.frames.at(-1)!.pointer;
+  assert.equal(consumed.tap, false, 'the click lasts exactly one rendered frame');
+  assert.equal(consumed.active, true, 'the pointer stays active after the click');
+  qa.controller.abort();
+  qa.assertDetached();
+});
+
+test('a short pen click reaches the scene on the next rendered frame', async (t) => {
+  const harness = createHarness(t);
+  const qa = harness.instance({ id: 'reaction' });
+  await qa.mount();
+  qa.stage.rect = { left: 0, top: 0, width: 100, height: 100 };
+  harness.tick(0);
+  const baseline = qa.scene.frames.length;
+  qa.pointer('pointerdown', { pointerType: 'pen', clientX: 25, clientY: 25 });
+  qa.pointer('pointerup', { pointerType: 'pen', clientX: 25, clientY: 25 });
+  harness.tick(10);
+  assert.equal(qa.scene.frames.length, baseline, 'a frame under the interval is not due yet');
+  harness.tick(40);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: -0.5, y: 0.5, active: true, down: false, tap: true },
+    'a pen click survives to the next real render',
+  );
+  harness.tick(80);
+  const consumed = qa.scene.frames.at(-1)!.pointer;
+  assert.equal(consumed.tap, false, 'the pen click lasts exactly one rendered frame');
+  assert.equal(consumed.active, true, 'the pen keeps the pointer active');
+  qa.controller.abort();
+  qa.assertDetached();
+});
+
+test('a held mouse press raises its edge once and drops it on release', async (t) => {
+  const harness = createHarness(t);
+  const qa = harness.instance({ id: 'reaction' });
+  await qa.mount();
+  qa.stage.rect = { left: 0, top: 0, width: 100, height: 100 };
+  harness.tick(0);
+  qa.pointer('pointerdown', { clientX: 25, clientY: 25 });
+  harness.tick(40);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: -0.5, y: 0.5, active: true, down: true, tap: true },
+    'the press edge rides the first render of the hold',
+  );
+  harness.tick(80);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: -0.5, y: 0.5, active: true, down: true, tap: false },
+    'the held press brushes on its own, with no repeat of the edge',
+  );
+  qa.pointer('pointerup', { clientX: 25, clientY: 25 });
+  harness.tick(120);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: -0.5, y: 0.5, active: true, down: false, tap: false },
+    'the release ends the press',
+  );
+  harness.tick(160);
+  assert.equal(
+    qa.scene.frames.at(-1)!.pointer.tap,
+    false,
+    'the release injects nothing of its own',
   );
   qa.controller.abort();
   qa.assertDetached();
@@ -905,5 +1043,28 @@ test('gestures owned by a link, button or editable target never reach the scene'
   assert.equal(qa.scene.frames.at(-1)!.pointer.down, false);
   qa.controller.abort();
   for (const target of [link, button, editable]) target.remove();
+  qa.assertDetached();
+});
+
+test('a click owned by a control never becomes a tap', async (t) => {
+  const harness = createHarness(t);
+  const qa = harness.instance({ id: 'reaction' });
+  await qa.mount();
+  qa.stage.rect = { left: 0, top: 0, width: 100, height: 100 };
+  const button = new ElementStub('BUTTON');
+  qa.stage.append(button);
+  qa.pointer('pointerdown', { clientX: 25, clientY: 25 }, button);
+  qa.pointer('pointerup', { clientX: 25, clientY: 25 }, button);
+  harness.tick(0);
+  harness.tick(40);
+  assert.deepEqual(
+    qa.scene.frames.at(-1)!.pointer,
+    { x: 0, y: 0, active: false, down: false, tap: false },
+    'a control keeps its own click and its own press state',
+  );
+  harness.tick(80);
+  assert.equal(qa.scene.frames.at(-1)!.pointer.tap, false, 'nothing arrives late either');
+  qa.controller.abort();
+  button.remove();
   qa.assertDetached();
 });

@@ -1,69 +1,72 @@
 /**
- * Visual constants for the open-water scene: a warm low sun over deep blue
- * water, framed so the horizon sits near the top third and the middle of the
- * canvas stays a readable deep blue band. Exposure and bloom strength were
- * lowered from the upstream demo's values so the sun's bloom does not wash out
- * the right side of the frame and the title keeps its contrast.
+ * Visual constants for the open-water scene: a low, cool sun over silver-blue
+ * water, framed from just above the surface so the swell reads as a long, slow
+ * procession of ridges rather than a choppy sea, and the middle of the canvas
+ * stays a readable blue-grey band. The distant water is drawn from a filtered
+ * slope field, so the horizon neither shimmers nor boils. Exposure, bloom and
+ * vignette are all small: the narrow light band on the right of the frame is
+ * meant to stay a band, and the title keeps its contrast against it.
  *
  * Every value is a fixed constant: the scene has no UI, no switch and no
  * control surface, and nothing here changes after construction.
  */
 export const LOOK = {
   // ── wind sea (JONSWAP + TMA + Donelan–Banner) ──────────────────────────
-  windSpeed: 10.5,
+  windSpeed: 12,
   windDirectionDeg: 300,
-  fetchKm: 230,
+  fetchKm: 300,
   depth: 420,
-  swell: 0.7,
-  spread: 0.62,
-  shortWaves: 0.0075,
+  swell: 0.85,
+  spread: 0.55,
+  shortWaves: 0.0035,
   amplitude: 1.0,
-  choppiness: 1.3,
+  choppiness: 1.1,
   // ── foam ───────────────────────────────────────────────────────────────
-  foamThreshold: 0.62,
-  foamStrength: 1.05,
-  foamDecay: 0.42,
-  foamAmount: 0.85,
+  foamThreshold: 0.45,
+  foamStrength: 0.7,
+  foamDecay: 0.58,
+  foamAmount: 0.4,
   // ── sky / sun ──────────────────────────────────────────────────────────
-  sunElevationDeg: 6,
-  sunAzimuthDeg: 300,
-  turbidity: 3.4,
-  rayleigh: 2.4,
-  mie: 0.0075,
+  sunElevationDeg: 12,
+  sunAzimuthDeg: 288,
+  turbidity: 2.4,
+  rayleigh: 2.8,
+  mie: 0.0035,
   mieG: 0.8,
-  sunPower: 2.6,
-  skyGain: 1.0,
+  sunPower: 1.35,
+  skyGain: 0.9,
   // ── water optics ───────────────────────────────────────────────────────
   clarity: 1.0,
-  absorbR: 0.34,
-  absorbG: 0.085,
-  absorbB: 0.048,
-  /** Deep blue in-scattering; a mid teal would read as tropic water. */
-  scatter: '#0b4a66',
-  sss: '#2fbfa2',
-  sssStrength: 1.5,
-  refract: 0.55,
-  glitter: 1.0,
-  fogDensity: 0.000085,
+  absorbR: 0.28,
+  absorbG: 0.12,
+  absorbB: 0.075,
+  /** Dark blue-grey in-scattering; a saturated blue would read as tropic water. */
+  scatter: '#173847',
+  /** Muted grey-teal crest light, so breaking crests stay silver rather than green. */
+  sss: '#5a8582',
+  sssStrength: 0.6,
+  refract: 0.4,
+  glitter: 0.45,
+  fogDensity: 0.0001,
   // ── camera ─────────────────────────────────────────────────────────────
   /** Metres above the mean water plane. The grid shader offsets by this. */
-  cameraHeight: 8,
-  /** Negative looks down; -0.17 rad puts the horizon about 32% from the top. */
-  cameraPitch: -0.17,
+  cameraHeight: 4,
+  /** Negative looks down; -0.065 rad puts the horizon about 43% from the top. */
+  cameraPitch: -0.065,
   cameraBaseYaw: 0,
   /** Bounded pointer yaw, radians either side of the base heading. */
-  pointerYawRange: 0.12,
+  pointerYawRange: 0.075,
   /** Exponential approach rate for the yaw, per second. */
   yawResponse: 2.5,
   fieldOfView: 50,
   near: 0.25,
   far: 40000,
   // ── post ───────────────────────────────────────────────────────────────
-  exposure: 0.8,
-  bloomStrength: 0.18,
-  bloomThreshold: 1.0,
+  exposure: 0.72,
+  bloomStrength: 0.05,
+  bloomThreshold: 1.4,
   bloomKnee: 0.6,
-  vignette: 0.34,
+  vignette: 0.12,
 } as const;
 
 /**

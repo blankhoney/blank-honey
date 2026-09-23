@@ -15,7 +15,6 @@ type AlgorithmLoader = () => Promise<{ createScene: AlgorithmFactory }>;
 const pixelBudgets: Record<AlgorithmId, { full: number; light: number }> = {
   blackhole: { full: 900_000, light: 300_000 },
   ocean: { full: 1_200_000, light: 400_000 },
-  mandelbulb: { full: 360_000, light: 160_000 },
   reaction: { full: 1_200_000, light: 450_000 },
   terrain: { full: 1_200_000, light: 450_000 },
 };
@@ -120,7 +119,7 @@ export async function mountAlgorithm(
       released.dispose();
     } catch (error) {
       // A stuck release cannot be allowed to block the abort path from dropping the layer.
-      report(`algorithm:${id}:dispose`, error);
+      report(`algorithm-${id}-dispose`, error);
     }
   }
   function dispose() {
@@ -135,7 +134,7 @@ export async function mountAlgorithm(
     release();
     layer.dataset.state = 'static';
     // Keep the failing algorithm identifiable; report() sends only a name and the page path.
-    report(`algorithm:${id}`, error);
+    report(`algorithm-${id}`, error);
   }
   function schedule() {
     if (disposed || stopped || document.hidden || !inViewport || raf !== undefined) return;
@@ -228,6 +227,9 @@ export async function mountAlgorithm(
     pointer.y = at.y;
     pointer.active = true;
     pointer.down = true;
+    // Hold the press edge until the next real render: a click whose release lands in the same
+    // frame window would otherwise be gone before the scene is asked to read it.
+    pointer.tap = true;
   }
   function onPointerUp(event: PointerEvent) {
     if (event.pointerType === 'touch') {

@@ -36,9 +36,12 @@ import {
 /**
  * Exposure of the output tone map, applied to the HDR scene colour before the ACES curve. The
  * upstream demo has the same multiplication, but in a separate pass that first mixes in its
- * multi-level bloom; this scene has no bloom, so the constant is this site's own.
+ * multi-level bloom; this scene has no bloom and no pre-clamp of its own, so the constant is this
+ * site's own and the tone map's shoulder places the brightest pixels. It is deliberately low: the
+ * curve is applied per channel, so the exposure is what keeps the disc below the shoulder, where its
+ * brightness differences survive, instead of on top of it.
  */
-export const SCENE_EXPOSURE = 9e-4;
+export const SCENE_EXPOSURE = 0.00011;
 
 type SceneResources = {
   surface: AlgorithmSurface;

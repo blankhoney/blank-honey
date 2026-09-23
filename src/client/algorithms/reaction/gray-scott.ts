@@ -30,13 +30,14 @@ export type GrayScottParameters = {
 };
 
 /**
- * Working point for the hero: the coral / labyrinth region of the Gray–Scott parameter plane.
- * CPU runs of this reference retain a changing colony instead of
- * dying back to the absorbing A = 1, B = 0 state.
+ * Working point for the hero: a sparse version of the coral / labyrinth region of the Gray–Scott
+ * parameter plane. CPU runs of this reference keep the colony both alive and patterned — it neither
+ * dies back to the absorbing A = 1, B = 0 state nor floods into a single sheet — and the display
+ * pass turns the surviving field into separated hollows rather than a uniform texture.
  */
 export const GRAY_SCOTT_PARAMETERS: GrayScottParameters = {
-  feed: 0.029,
-  kill: 0.057,
+  feed: 0.03,
+  kill: 0.0601,
   diffuseA: 0.8,
   diffuseB: 0.4,
   timeStep: 1,

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Group } from 'three';
+import { Color, Group, ShaderMaterial } from 'three';
 import {
   createLake,
   createReflectionCache,
@@ -10,6 +10,21 @@ import {
 } from '../src/client/flock-water';
 
 // These are CPU geometry/resource-contract tests, not shader compilation or GPU validation.
+test('the lake base and haze colours agree with the scenic palette on both budgets', () => {
+  for (const light of [false, true]) {
+    const lake = createLake(light);
+    try {
+      assert.ok(lake.mesh.material instanceof ShaderMaterial);
+      const uniforms = lake.mesh.material.uniforms;
+      // The Reflector option and the shader uniform must stay the same colour.
+      assert.equal((uniforms.color.value as Color).getHexString(), '3b575b');
+      assert.equal((uniforms.fogColor.value as Color).getHexString(), 'bfc9c3');
+    } finally {
+      lake.dispose();
+    }
+  }
+});
+
 test('lake waves change over time at different positions without exceeding the amplitude budget', () => {
   const amplitude = lakeWaves.reduce((sum, wave) => sum + wave.amplitude, 0);
   for (const [x, z] of [

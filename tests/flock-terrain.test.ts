@@ -116,6 +116,28 @@ test('light terrain uses fewer triangles than full terrain', () => {
   assert.ok(light.columns * light.rows < full.columns * full.rows);
 });
 
+for (const light of [false, true]) {
+  const label = light ? 'light' : 'full';
+
+  test(`${label} terrain colours follow the moss-grey ramp without a blue cast`, () => {
+    const geometry = createTerrainGeometry(light);
+    try {
+      const color = geometry.getAttribute('color');
+      for (let index = 0; index < color.count; index++) {
+        const red = color.getX(index);
+        const green = color.getY(index);
+        const blue = color.getZ(index);
+        // Moss green, grey rock and snow all keep green above blue and blue above
+        // red; the replaced cold palette had rock and snow with blue above green.
+        assert.ok(green >= blue - 1e-6, `vertex ${index}: green ${green} below blue ${blue}`);
+        assert.ok(blue > red, `vertex ${index}: blue ${blue} not above red ${red}`);
+      }
+    } finally {
+      geometry.dispose();
+    }
+  });
+}
+
 test('seeded placement randomness is repeatable, seed-sensitive and inside [0, 1)', () => {
   const first = seededRandom(1234);
   const same = seededRandom(1234);

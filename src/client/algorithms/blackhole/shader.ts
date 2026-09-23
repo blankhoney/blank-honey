@@ -3,13 +3,18 @@
  *
  * The ray tracing is the upstream model's text, reused from commit
  * `e72b3f293409893a6fa25528f29572c96fc57f57` (BSD-3-Clause): `black_hole/definitions.glsl`,
- * `black_hole/functions.glsl` and `black_hole/model.glsl` are reproduced verbatim apart from their
- * documentation comments, and the shader-level glue (`RayTrace`, `Doppler`, `DiscColor`, `Noise`,
- * `main`) follows `demo/camera_view/fragment_shader.glsl`. The pristine upstream files are in
- * `src/client/vendor/blackhole/source/`, and `src/client/vendor/blackhole/README.md` lists every
- * difference: the Gaia/Tycho sky is replaced by a procedural starfield, the dead branches of the
- * fixed defines are dropped, `DefaultStarColor` and the star cube maps are gone with `STARS 0`, and
- * the output stage tone maps locally instead of building the upstream float bloom.
+ * `black_hole/functions.glsl` and `black_hole/model.glsl` are reproduced from that commit, and the
+ * shader-level glue (`RayTrace`, `Doppler`, `Noise`, `main`) follows
+ * `demo/camera_view/fragment_shader.glsl`. `TraceRay`, `DefaultDoppler`, `BlackBodyColor` and
+ * `SceneColor` are byte-identical to upstream; `DefaultDiscColor`, `GalaxyColor`, `StarLayer`,
+ * `ToneMapACES` and `main` are this site's own look and are marked as such below, one difference at
+ * a time. The pristine upstream files are in `src/client/vendor/blackhole/source/`, and
+ * `src/client/vendor/blackhole/README.md` records how the vendored data and the sky differ from
+ * upstream: the Gaia/Tycho sky is replaced by a procedural starfield, the dead branches of the fixed
+ * defines are dropped, `DefaultStarColor` and the star cube maps are gone with `STARS 0`, and the
+ * output stage tone maps locally instead of building the upstream float bloom. The look changes below
+ * are newer than that list, which has not been extended for them; the local markers in this file are
+ * the record.
  */
 
 import { FULLSCREEN_VERTEX } from '../gl';
@@ -299,21 +304,41 @@ vec4 DefaultDiscColor(vec2 p, float p_t, bool top_side, float doppler_factor,
     float r = 1.0 / (u1 + (u2 - u1) * s * s);
     vec2 d = vec2(a - pi, r - p_r) * vec2(1.0 / pi, 0.5);
     float noise = Noise(d * vec2(p_r / OUTER_DISC_R, 1.0));
-    density += smoothstep(1.0, 0.0, length(d)) * noise;
+    // Local display change: upstream writes smoothstep(1.0, 0.0, length(d)), and GLSL leaves the
+    // result undefined when edge0 >= edge1. The forward form is the same ramp, defined.
+    density += (1.0 - smoothstep(0.0, 1.0, length(d))) * noise;
   }
+
+  // Local display change: the hero's own filament modulation of the summed density, in place of the
+  // plain summed density upstream shades with. The phase term drifts with the disc clock, so the
+  // strand pattern is not locked to the rings, and the coarse and the fine grain are both drawn from
+  // existing disc noise. The two gates multiply: the coarse one only ever thins the density down,
+  // while the fine one is squared, so most of the disc falls away into strands and the grains that
+  // come out strong keep the density they had. Both gates are clamped non-negative, so the
+  // modulation cannot turn the density negative. The per-ring noise in the loop above is untouched.
+  float phase = p_phi - 0.004 * p_t;
+  float grain_coarse = clamp(Noise(vec2(p_r * 0.45, phase * 1.3)) * 0.4, 0.0, 1.0);
+  float grain_fine = clamp(Noise(vec2(p_r * 5.5 + 0.35 * sin(phase * 3.0), phase * 0.8)) * 0.4, 0.0, 1.0);
+  density = max(density, 0.0) * (0.30 + 0.70 * grain_coarse) * (0.12 + 1.8 * grain_fine * grain_fine);
 
   const float r_max = 49.0 / 12.0;
   const float temperature_profile_max =
       pow((1.0 - sqrt(3.0 / r_max)) / (r_max * r_max * r_max), 0.25);
+  // Local display change: for a radius inside the inner edge this base is negative, and upstream
+  // hands it to pow() as it is. The guard clamps the base at zero, so those pixels darken instead of
+  // turning the whole frame into NaN.
   float temperature_profile =
-      pow((1.0 - sqrt(3.0 / p_r)) / (p_r * p_r * p_r), 0.25);
+      pow(max((1.0 - sqrt(3.0 / p_r)) / (p_r * p_r * p_r), 0.0), 0.25);
   float temperature =
       disc_temperature * temperature_profile * (1.0 / temperature_profile_max);
 
   vec3 color = max(density, 0.0) *
       BlackBodyColor(black_body_texture, temperature * doppler_factor);
+  // Local display change: the outer edge of the alpha ramp is written with its edges reversed
+  // upstream, the same undefined case as the per-ring ramp above. The forward form is the same
+  // fade-out between OUTER_DISC_R / 1.2 and OUTER_DISC_R, defined. The inner edge is untouched.
   float alpha = smoothstep(INNER_DISC_R, INNER_DISC_R * 1.2, p_r) *
-      smoothstep(OUTER_DISC_R, OUTER_DISC_R / 1.2, p_r);
+      (1.0 - smoothstep(OUTER_DISC_R / 1.2, OUTER_DISC_R, p_r));
   return vec4(color * alpha, alpha);
 }
 
@@ -505,8 +530,10 @@ vec3 StarLayer(vec2 faceUv, uint face, float cells, float size, float gain, uvec
   // The cell is 2D: the missing component is filled with 0, and the face stays in the salt term.
   vec3 h = CellHash3(SkyCell(ivec3(ivec2(cell), 0)) + uvec3(face) + salt);
   vec2 point = cell + 0.2 + 0.6 * h.xy;
-  // A power law on the magnitude keeps most stars faint and a few bright.
-  float magnitude = pow(h.z, 5.0);
+  // A power law on the magnitude keeps most stars faint and a few bright. Local display change: the
+  // hero steepens the exponent, so the faint masses drop away and the sky keeps only the few bright
+  // cores instead of reading as speckle. The hash and the seed are the deterministic ones above.
+  float magnitude = pow(h.z, 12.0);
   float core = 1.0 - smoothstep(0.0, size, length(grid - point));
   // Near-neutral tints: the Doppler table only holds valid entries around the neutral chromaticity.
   vec3 tint = mix(vec3(0.82, 0.93, 1.12), vec3(1.14, 1.0, 0.86), fract(h.z * 61.7));
@@ -520,13 +547,16 @@ vec3 GalaxyColor(vec3 dir) {
   float along = dot(d, SKY_BAND_NORMAL);
   float band = exp(-SKY_BAND_FALLOFF * along * along);
   float dust = smoothstep(0.46, 0.86, SkyFbm(d * SKY_NEBULA_SCALE) + 0.3 * band);
+  // Local display change: the nebula, the band and the ambient tint keep the levels they had, and
+  // only the three star layers below are quieter (gains 12, 24 and 90 against 34, 90 and 420), so
+  // nothing in the sky gains brightness.
   vec3 color = SKY_DUST_COLOR * (10.0 * dust * dust);
   color += SKY_BAND_COLOR * (9.0 * band * dust);
   color += SKY_DUST_COLOR * SKY_AMBIENT;
   float crowding = 1.0 + 0.7 * band;
-  color += StarLayer(faceUv, face, 42.0, 0.10, 34.0, uvec3(0u)) * crowding;
-  color += StarLayer(faceUv, face, 86.0, 0.11, 90.0, uvec3(17u, 29u, 43u)) * crowding;
-  color += StarLayer(faceUv, face, 21.0, 0.09, 420.0, uvec3(97u, 71u, 53u)) * crowding;
+  color += StarLayer(faceUv, face, 42.0, 0.10, 12.0, uvec3(0u)) * crowding;
+  color += StarLayer(faceUv, face, 86.0, 0.11, 24.0, uvec3(17u, 29u, 43u)) * crowding;
+  color += StarLayer(faceUv, face, 21.0, 0.09, 90.0, uvec3(97u, 71u, 53u)) * crowding;
   return color;
 }
 
@@ -570,18 +600,26 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
 // maps in a second pass. This scene tone maps in the same fragment instead: the HDR scene colour is
 // unchanged, but no float render target, no bloom and no float blending are needed.
 //
-// ACES filmic curve, as in the upstream render pass, after
-// https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/ .
+// Local display change: upstream clamps every channel of the exposed colour at 10 before the tone
+// map, and that ceiling stays out; the curve below is upstream's own polynomial, applied to each
+// channel on its own, with the coefficients from
+// https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/ . An earlier revision
+// of this scene applied the polynomial to the luminance alone and then divided the colour by its
+// peak channel. That normalisation is what flattened the frame: every pixel bright enough to reach
+// the top of the shoulder came out at the same peak value, so the brightness differences between
+// them were gone. The exposure stays low instead, which keeps the disc in the lower part of the
+// curve where those differences survive, and the per-channel shoulder is left to desaturate a bright
+// core towards white, exactly as the same curve does upstream.
 vec3 ToneMapACES(vec3 color) {
   const float A = 2.51;
   const float B = 0.03;
   const float C = 2.43;
   const float D = 0.59;
   const float E = 0.14;
-  // The clamp is this scene's one addition to the upstream curve: upstream feeds it a colour that
-  // is already non-negative, while a disc density below zero can hand pow() a negative base here.
-  color = clamp((color * (A * color + B)) / (color * (C * color + D) + E), 0.0, 1.0);
-  return pow(color, vec3(1.0 / 2.2));
+  // Keep the polynomial's input non-negative, including after colour-table interpolation.
+  color = max(color, vec3(0.0));
+  vec3 mapped = (color * (A * color + B)) / (color * (C * color + D) + E);
+  return pow(clamp(mapped, 0.0, 1.0), vec3(1.0 / 2.2));
 }
 
 void main() {
@@ -590,7 +628,10 @@ void main() {
   // here. view_center moves the point the frame is centred on, which is this scene's framing.
   vec3 view_dir = vec3((vUv - view_center) * 2.0 * camera_size.xy, -camera_size.z);
   vec3 color = SceneColor(camera_position, p, k_s, e_tau, e_w, e_h, e_d, view_dir);
-  frag_color = vec4(ToneMapACES(min(color * exposure, vec3(10.0))), 1.0);
+  // Local display change: upstream clamps every channel of the exposed colour at 10 before the tone
+  // map. That ceiling decides what a very bright pixel becomes before the curve can, so it is not
+  // restored: the exposure uniform places the frame on the curve and the shoulder does the rest.
+  frag_color = vec4(ToneMapACES(color * exposure), 1.0);
 }
 `;
 }

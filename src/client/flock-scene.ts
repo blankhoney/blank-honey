@@ -29,7 +29,7 @@ import { flockPixelRatio } from './flock-performance';
 import { report } from './log';
 
 export type FlockBudget = {
-  width: 16 | 24;
+  width: 8 | 12;
   fps: number;
   maxDpr: number;
   maxPixels: number;
@@ -82,7 +82,7 @@ export function createFlockScene(budget: FlockBudget): FlockScene {
     const scene = new Scene();
     scene.fog = new FogExp2(landscapeFogColor, 0.00013);
     const camera = new PerspectiveCamera(55, 1, 5, 24000);
-    const landscape = createFlockLandscape(budget.width === 16);
+    const landscape = createFlockLandscape(budget.width === 8);
     releases.push(() => landscape.dispose());
     scene.add(landscape.root);
 
@@ -123,14 +123,14 @@ export function createFlockScene(budget: FlockBudget): FlockScene {
     if (error) throw new Error(error);
     const geometry = createBirdGeometry(budget.width);
     releases.push(() => geometry.dispose());
-    const flockOrigin = new Vector3(0, 820, -500);
-    const flockScale = new Vector3(5.5, 1.4, 2);
+    const flockOrigin = new Vector3(200, 540, -800);
+    const flockScale = new Vector3(5.5, 1.1, 2.6);
     const material = new ShaderMaterial({
       uniforms: {
         texturePosition: { value: null },
         textureVelocity: { value: null },
         time: { value: 0 },
-        birdSize: { value: 3.4 },
+        birdSize: { value: 2.1 },
         flockOrigin: { value: flockOrigin },
         flockScale: { value: flockScale },
         fogColor: { value: new Color(landscapeFogColor) },

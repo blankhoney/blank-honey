@@ -3,6 +3,7 @@
 // the numbers the shaders and the mesh depend on are checked here directly.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { Vector3, type BufferGeometry } from 'three';
 import { createScene } from '../src/client/algorithms/terrain/scene';
 import {
@@ -15,12 +16,16 @@ import {
   terrainFlowMeander,
   terrainFlowMeanderScale,
   terrainFlowWidth,
+  terrainFjordBank,
+  terrainFjordCore,
   terrainFrequency,
   terrainHeight,
   terrainHeightCeiling,
   terrainHeightFloor,
   terrainHeightRef,
   terrainHeightScale,
+  terrainLacunarity,
+  terrainPersistence,
   terrainSeedX,
   terrainSeedZ,
   terrainValley,
@@ -31,10 +36,15 @@ import {
 import {
   terrainCamera,
   terrainCameraHeight,
+  terrainFieldOfView,
   terrainOrbitRadius,
+  terrainOrbitSwing,
+  terrainParallaxShift,
+  terrainParallaxYaw,
   terrainTargetHeight,
 } from '../src/client/algorithms/terrain/camera';
 import {
+  skyFragmentShader,
   terrainFragmentShader,
   terrainVertexShader,
   waterFragmentShader,
@@ -43,6 +53,11 @@ import { NOISE_GLSL, NOISE_STACK_PRIMS2D_GLSL } from '../src/client/vendor/terra
 import { terrainResolution } from '../src/client/algorithms/terrain/scene';
 
 const extent = terrainViewHalf * 5;
+/** The scene module's source, for the values that are not exported. */
+const sceneSource = readFileSync(
+  new URL('../src/client/algorithms/terrain/scene.ts', import.meta.url),
+  'utf8',
+);
 // The scene's own budget, before the pixel and DPR caps of the test viewport.
 const fullBudget = { light: false, fps: 30, maxPixels: 1_200_000, maxDpr: 1.5 };
 const lightBudget = { light: true, fps: 20, maxPixels: 450_000, maxDpr: 1 };
@@ -130,6 +145,58 @@ test('the water level divides the field into a real lake and real peaks', () => 
   assert.ok(above > 0, 'mountains must exist for snow and rock to shade');
   assert.equal(terrainWaterLevel, 0);
   assert.ok(terrainHeightRef > 0.1 && terrainHeightRef < 0.5, 'water sits inside the h01 range');
+});
+
+test('the fjord runs the whole field as one continuous channel', () => {
+  // The centre line the field carries is two fixed sine terms in world Z; it is
+  // written out here the way the design states it, so this test measures the
+  // channel the shaders actually carve and not a re-derivation of it.
+  const centreAt = (z: number) => 450 * Math.sin(z / 2200) + 200 * Math.sin(z / 4300 + 0.5);
+  let worstValley = Infinity;
+  let worstAt = '';
+  let shallowestBed = -Infinity;
+  let bedAt = '';
+  for (let z = -4000; z <= 4000; z += 7) {
+    const centre = centreAt(z);
+    const valley = terrainValley(centre, z);
+    if (valley < worstValley) {
+      worstValley = valley;
+      worstAt = `${centre.toFixed(0)},${z}`;
+    }
+    const bed = terrainHeight(centre, z);
+    if (bed > shallowestBed) {
+      shallowestBed = bed;
+      bedAt = `${centre.toFixed(0)},${z}`;
+    }
+  }
+  // Full valley strength along the whole line: the channel never pinches shut
+  // between two basins, so it reads as one fjord and not as local patches.
+  assert.ok(worstValley >= 0.99, `valley ${worstValley.toFixed(3)} at ${worstAt}`);
+  // The bed under the line stays below water the whole way too. The banks
+  // either side are ordinary terrain and are free to rise above water.
+  assert.ok(
+    shallowestBed < terrainWaterLevel,
+    `bed ${shallowestBed.toFixed(0)} surfaces at ${bedAt}`,
+  );
+  // Wide as well as continuous: the mask holds full strength across the whole
+  // core, which is what the banks are measured against.
+  assert.ok(terrainFjordCore > 0 && terrainFjordBank > terrainFjordCore);
+  for (const z of [-3600, -1800, 0, 1800, 3600]) {
+    const centre = centreAt(z);
+    for (const across of [0, terrainFjordCore / 2, terrainFjordCore]) {
+      for (const side of [-1, 1]) {
+        const x = centre + side * across;
+        assert.ok(
+          terrainValley(x, z) >= 0.99,
+          `valley ${terrainValley(x, z)} at ${x},${z} inside the core`,
+        );
+      }
+    }
+  }
+  // The channel is a channel: past the bank the mask is free to drop away, and
+  // it does, so the fjord has real sides rather than masking the whole field.
+  const far = centreAt(0) + terrainFjordBank * 1.5;
+  assert.ok(terrainValley(far, 0) < 0.99, 'the mask must fall off past the bank');
 });
 
 test('the fixed viewing area holds both the lake and a summit', () => {
@@ -323,24 +390,37 @@ test('the camera stays above the terrain it orbits and over water level', () => 
   assert.ok(Math.abs(centred.position.y - terrainCameraHeight) < 10);
   assert.equal(centred.target.y, terrainTargetHeight);
   assert.ok(terrainCameraHeight > terrainTargetHeight, 'the camera looks down at the lake');
-  // Independent bound: the highest ground anywhere on the orbit ring, against
-  // the lowest the camera height can reach. Passes with room even though the
-  // limited yaw swing never actually visits that part of the ring.
-  let ringHighest = -Infinity;
-  for (let angle = 0; angle < Math.PI * 2; angle += 0.005) {
-    for (const ratio of [0.98, 1, 1.02]) {
-      ringHighest = Math.max(
-        ringHighest,
-        terrainHeight(Math.sin(angle) * terrainOrbitRadius * ratio, Math.cos(angle) * terrainOrbitRadius * ratio),
-      );
+  // The shot is held. The pitch is solved once from the fixed camera height and
+  // pinned there, so with a resting pointer the camera never rises or falls and
+  // the aim point never moves; only the yaw drifts, and only by the swing.
+  for (const seconds of [0, 30, 120, 600]) {
+    const view = terrainCamera(seconds, 0, 0);
+    assert.equal(view.position.y, centred.position.y, 'the camera must not breathe with time');
+    assert.deepEqual(view.target, centred.target, 'the aim point must not drift with time');
+    assert.ok(Math.abs(view.yaw) <= terrainOrbitSwing + 1e-12, `yaw ${view.yaw} escapes the swing`);
+  }
+  // Independent bound: the camera never leaves a narrow arc in front of the
+  // viewing area — the orbit swing plus the pointer lean, over the band the aim
+  // point can shift the whole rig through. Sample that band directly instead of
+  // the whole orbit ring: the ring reaches far enough round to cross mountains
+  // the shot can never visit, and the field is designed to have them.
+  const yawReach = terrainOrbitSwing + terrainParallaxYaw;
+  let bandHighest = -Infinity;
+  for (let yaw = -yawReach; yaw <= yawReach + 1e-9; yaw += yawReach / 32) {
+    for (let shiftX = -1; shiftX <= 1; shiftX += 0.25) {
+      for (let shiftZ = -1; shiftZ <= 1; shiftZ += 0.25) {
+        const x = shiftX * terrainParallaxShift + Math.sin(yaw) * terrainOrbitRadius;
+        const z = shiftZ * terrainParallaxShift * 0.5 + Math.cos(yaw) * terrainOrbitRadius;
+        bandHighest = Math.max(bandHighest, terrainHeight(x, z));
+      }
     }
   }
   const lowestCameraHeight = Math.min(
     ...[0, 1].flatMap((x) => [0, 1].map((y) => terrainCamera(0, x, y).position.y)),
   );
   assert.ok(
-    lowestCameraHeight - ringHighest > 100,
-    `ring clearance ${(lowestCameraHeight - ringHighest).toFixed(0)} is too small`,
+    lowestCameraHeight - bandHighest > 100,
+    `band clearance ${(lowestCameraHeight - bandHighest).toFixed(0)} is too small`,
   );
 });
 
@@ -369,6 +449,108 @@ test('the camera is deterministic and its pointer lean is bounded', () => {
     const view = terrainCamera(10, x, y);
     assert.ok(Number.isFinite(view.position.x + view.position.y + view.position.z));
   }
+});
+
+test('the field of view holds the shot across wide, square and narrow screens', () => {
+  // three builds a perspective frustum from the vertical angle and the aspect:
+  // the half height at unit distance is tan(fov/2), the half width is that
+  // times the aspect. Horizontal therefore follows from the two.
+  const halfWidthAtUnit = (width: number, height: number) =>
+    Math.tan(((terrainFieldOfView(width, height) / 2) * Math.PI) / 180) * (width / height);
+  const horizontal = (width: number, height: number) =>
+    2 * (180 / Math.PI) * Math.atan(halfWidthAtUnit(width, height));
+  // Landscape and square screens hold the designed vertical angle exactly.
+  for (const [width, height] of [
+    [1440, 900],
+    [1000, 600],
+    [1920, 1080],
+    [320, 320],
+  ]) {
+    assert.equal(terrainFieldOfView(width, height), 52, `${width}x${height} must hold 52`);
+  }
+  // Portrait widens the vertical angle instead, until the horizontal one is back
+  // to the design: that is the axis that decides how much valley is in shot.
+  for (const [width, height] of [
+    [390, 844],
+    [320, 700],
+    [360, 780],
+  ]) {
+    const vertical = terrainFieldOfView(width, height);
+    assert.ok(vertical > 52 && vertical < 100, `portrait ${width}x${height} vertical ${vertical}`);
+    assert.ok(
+      Math.abs(horizontal(width, height) - 52) < 1e-9,
+      `${width}x${height} horizontal ${horizontal(width, height)}`,
+    );
+  }
+  // Only the aspect matters, so a scaled pair is the same viewport.
+  for (const [width, height] of [
+    [390, 844],
+    [1440, 900],
+    [1000, 600],
+  ]) {
+    assert.equal(terrainFieldOfView(width, height), terrainFieldOfView(width * 2, height * 2));
+    assert.equal(terrainFieldOfView(width, height), terrainFieldOfView(width * 0.5, height * 0.5));
+  }
+  // Every aspect from very tall to very wide returns a usable angle, and the
+  // cap only ever binds at the narrow end: the horizontal never collapses to
+  // nothing on a tall screen, which is what the narrow viewport needs.
+  for (let aspect = 0.01; aspect <= 10; aspect *= 1.07) {
+    const vertical = terrainFieldOfView(aspect, 1);
+    assert.ok(Number.isFinite(vertical), `aspect ${aspect}`);
+    assert.ok(vertical >= 52 - 1e-9 && vertical <= 100, `aspect ${aspect} gave ${vertical}`);
+    if (aspect >= 1) assert.equal(vertical, 52, `aspect ${aspect} must not widen`);
+  }
+  assert.equal(terrainFieldOfView(0.01, 1), 100, 'the cap binds on the narrowest screens');
+  // A degenerate viewport must still return a usable angle, never NaN.
+  for (const [width, height] of [
+    [0, 844],
+    [-390, 844],
+    [Number.NaN, 844],
+    [Number.POSITIVE_INFINITY, 844],
+    [390, 0],
+    [390, -700],
+    [390, Number.NaN],
+    [390, Number.POSITIVE_INFINITY],
+    [0, 0],
+    [Number.NaN, Number.NaN],
+  ]) {
+    const vertical = terrainFieldOfView(width, height);
+    assert.ok(Number.isFinite(vertical), `${width}x${height} gave ${vertical}`);
+    assert.ok(vertical >= 52 && vertical <= 100, `${width}x${height} gave ${vertical}`);
+  }
+});
+
+test('the scene drives the camera angle from every resize, before the matrix', () => {
+  // The angle has to be applied to the camera the renderer builds its
+  // projection uniform from, on every size change, and before the matrix is
+  // rebuilt; and the scene must never write a projection matrix itself.
+  const aspect = sceneSource.indexOf('camera.aspect = width / height;');
+  const fov = sceneSource.indexOf('camera.fov = terrainFieldOfView(width, height);');
+  const matrix = sceneSource.indexOf('camera.updateProjectionMatrix();');
+  assert.notEqual(aspect, -1, 'applySize must set the aspect');
+  assert.notEqual(fov, -1, 'applySize must set the angle from the viewport');
+  assert.notEqual(matrix, -1, 'applySize must rebuild the projection');
+  assert.ok(aspect < fov && fov < matrix, 'the angle must land before the matrix is rebuilt');
+  assert.ok(
+    sceneSource.includes(
+      'new PerspectiveCamera(terrainFieldOfView(1, 1), 1, cameraNear, cameraFar)',
+    ),
+    'the camera must be built from the same function',
+  );
+  assert.ok(!sceneSource.includes('const fieldOfView = 52'), 'no orphaned fixed angle may remain');
+  // resize applies the size every time it is called, so frames never keep a
+  // stale angle after the viewport changes.
+  assert.ok(sceneSource.includes('applySize(safeWidth, safeHeight, safeScale);'));
+  assert.equal(sceneSource.split('applySize(').length - 1, 3, 'construction plus one resize path');
+  // The projection uniform stays three's: the scene never builds or copies one.
+  assert.ok(
+    !sceneSource.includes('projectionMatrix'),
+    'the scene must not write a projection matrix',
+  );
+  assert.ok(
+    !sceneSource.includes('matrixWorldInverse'),
+    'the scene must not build a view-projection',
+  );
 });
 
 test('terrain resolution uses real pixels and respects the pixel and DPR caps', () => {
@@ -429,12 +611,196 @@ test('no shader calls smoothstep with reversed edges', () => {
   assert.ok(waterFragmentShader.includes('1.0 - smoothstep(0.0, 5.0, depth)'));
 });
 
+test('the rock grain is a distance-faded lighting detail that never flips a face', () => {
+  // It is three noise samples tilting the sunlit normal and nothing more: the
+  // height field, the geometry normal and every mask stay as they were, and the
+  // far early-out still runs before any of it. There is no GPU here, so the
+  // checks are the structure of the shader text plus a sampled run of the
+  // production expression over the slope, noise and weight ranges.
+  const cutoff = terrainFragmentShader.indexOf('if (fog >= terrainFogCutoff)');
+  const firstHeight = terrainFragmentShader.indexOf('terrainHeight(xz)');
+  const grain = terrainFragmentShader.indexOf('vec2 grainPos = xz * 0.018;');
+  const diffuse = terrainFragmentShader.indexOf(
+    'float diffuse = max(dot(normalLit, uSunDirection), 0.0);',
+  );
+  assert.ok(
+    cutoff > 0 && firstHeight > cutoff,
+    'the early-out must stay ahead of every height sample',
+  );
+  assert.ok(grain > firstHeight, 'the grain must come after the height field is sampled');
+  assert.ok(diffuse > grain, 'the grain must be built before it lights the sun term');
+  // Exactly the three forward differences the normal already needed: the grain
+  // must never evaluate the height field again.
+  assert.equal(
+    terrainFragmentShader.match(/terrainHeight\(xz/g)?.length,
+    3,
+    'one height sample per call',
+  );
+  // The geometry normal still drives the masks and the sky/ground terms.
+  assert.ok(terrainFragmentShader.includes('float slope = 1.0 - normalGeo.y;'));
+  assert.ok(
+    terrainFragmentShader.includes(
+      'smoothstep(uSnowLine - 0.07, uSnowLine + 0.07, h01 - slope * 0.35)',
+    ),
+    'the snow line still reads the geometry slope',
+  );
+  assert.ok(
+    terrainFragmentShader.includes('vec3 ambient = uSkyColor * 0.42 * (0.5 + 0.5 * normalGeo.y);'),
+  );
+  assert.ok(
+    terrainFragmentShader.includes(
+      'vec3 bounce = uGroundColor * 0.16 * (1.0 - normalGeo.y * 0.5);',
+    ),
+  );
+  // The lit normal is the sun term's normal and nothing else's: declared once,
+  // used once. The geometry normal is not even read again after it.
+  assert.equal(
+    terrainFragmentShader.match(/normalLit/g)?.length,
+    2,
+    'normalLit is the sun term only',
+  );
+  assert.equal(
+    terrainFragmentShader.match(/grainWeight/g)?.length,
+    2,
+    'grainWeight scales the tilt only',
+  );
+  // The production expression itself, with the tilt scale read out of it rather
+  // than restated here, so the samples below cannot drift from the shader.
+  const litForm =
+    /vec3 normalLit = normalize\(normalGeo \+ vec3\(grainSlope\.x, 0\.0, grainSlope\.y\) \* \(([\d.]+) \* grainWeight\)\);/.exec(
+      terrainFragmentShader,
+    );
+  assert.notEqual(litForm, null, 'the lit normal must be the designed expression');
+  const tilt = Number(litForm![1]);
+  assert.ok(Number.isFinite(tilt) && tilt > 0, `tilt ${litForm![1]}`);
+  // Sampled, not proved: the geometry normal is whatever the local forward
+  // differences give — its X and Z both move — so there is no single lower
+  // bound to state for the lit normal's y. What holds for every combination is
+  // weaker and enough: the perturbation only ever moves the two horizontal
+  // axes, so the y of an upward geometry normal survives untouched, and the
+  // renormalisation of a finite, non-zero vector keeps it unit length and
+  // upward. The grid spans both extreme slope signs, the full noise range and
+  // the whole weight range. This is a sample of the arithmetic, not a GPU run.
+  const slopes = [-100, -2, 0, 2, 100];
+  const noises = [0, 0.5, 1];
+  const weights = [0, 0.5, 1];
+  let checked = 0;
+  for (const dx of slopes) {
+    for (const dz of slopes) {
+      const geo = new Vector3(-dx, 1, -dz).normalize();
+      assert.ok(geo.y > 0, `the geometry normal must point up at slope ${dx},${dz}`);
+      for (const h0 of noises) {
+        for (const hx of noises) {
+          for (const hz of noises) {
+            for (const weight of weights) {
+              const tiltX = (h0 - hx) * tilt * weight;
+              const tiltZ = (h0 - hz) * tilt * weight;
+              const lit = new Vector3(geo.x + tiltX, geo.y, geo.z + tiltZ).normalize();
+              assert.ok(
+                Number.isFinite(lit.x) && Number.isFinite(lit.y) && Number.isFinite(lit.z),
+                `lit normal at ${dx},${dz},${h0},${hx},${hz},${weight}`,
+              );
+              assert.ok(Math.abs(lit.length() - 1) < 1e-12, 'the lit normal must be normalized');
+              assert.ok(lit.y > 0, `the lit normal must stay upward at ${dx},${dz},${weight}`);
+              if (weight === 0) {
+                assert.ok(
+                  Math.abs(lit.x - geo.x) < 1e-12 &&
+                    Math.abs(lit.y - geo.y) < 1e-12 &&
+                    Math.abs(lit.z - geo.z) < 1e-12,
+                  'a zero weight must leave the geometry normal untouched',
+                );
+              }
+              checked++;
+            }
+          }
+        }
+      }
+    }
+  }
+  assert.equal(checked, slopes.length ** 2 * noises.length ** 3 * weights.length);
+  // The fade is a real ramp over a declared distance band: full strength at the
+  // camera, gone by the far edge, and monotone in between.
+  const fade = /float grainWeight = 1\.0 - smoothstep\(([\d.]+), ([\d.]+), viewDistance\);/.exec(
+    terrainFragmentShader,
+  );
+  assert.notEqual(fade, null, 'the grain fade must be a distance ramp');
+  const nearEdge = Number(fade![1]);
+  const farEdge = Number(fade![2]);
+  assert.ok(farEdge > nearEdge && nearEdge >= terrainOrbitRadius, `fade ${nearEdge}..${farEdge}`);
+  assert.ok(
+    Math.abs(nearEdge - terrainOrbitRadius) < 200,
+    `the ramp starts at ${nearEdge} against the camera orbit ${terrainOrbitRadius}`,
+  );
+  const weight = (distance: number) => {
+    const t = Math.min(1, Math.max(0, (distance - nearEdge) / (farEdge - nearEdge)));
+    return 1 - t * t * (3 - 2 * t);
+  };
+  assert.equal(weight(0), 1, 'full grain at the camera');
+  assert.equal(weight(nearEdge), 1);
+  assert.equal(weight(farEdge), 0, 'no grain at the far edge');
+  assert.equal(weight(farEdge * 4), 0);
+  assert.ok(weight((nearEdge + farEdge) / 2) > 0.45 && weight((nearEdge + farEdge) / 2) < 0.55);
+  let previous = 1;
+  for (let distance = 0; distance <= farEdge * 2; distance += 50) {
+    const current = weight(distance);
+    assert.ok(current >= 0 && current <= 1, `weight ${current} at ${distance}`);
+    assert.ok(current <= previous + 1e-12, `the fade must not rise at ${distance}`);
+    previous = current;
+  }
+  // The water and the sky keep their own shading: the grain is terrain only.
+  assert.ok(!terrainVertexShader.includes('grainPos'), 'the vertex stage must not carry the grain');
+  for (const [label, source] of [
+    ['water', waterFragmentShader],
+    ['sky', skyFragmentShader],
+  ] as const) {
+    assert.ok(
+      !source.includes('grainPos') && !source.includes('normalLit'),
+      `${label} must not carry the grain`,
+    );
+  }
+});
+
+test('the sky horizon and the fog are one colour, wired through every material', () => {
+  // The field is finite, so the terrain runs out against the sky at the far
+  // edge. Matching the two colours is what makes that edge dissolve instead of
+  // drawing a line where the fogged ground stops. The scene owns the palette,
+  // so the check reads it out of the module source; it must be the same string,
+  // and both colours must actually reach the materials and the clear colour.
+  const colour = (key: string) => {
+    const match = new RegExp(`\\n  ${key}: '(#[0-9a-f]{6})',`).exec(sceneSource);
+    assert.notEqual(match, null, `the palette must declare ${key}`);
+    return match![1];
+  };
+  assert.equal(colour('horizon'), colour('fog'), 'the horizon band must be the fog colour exactly');
+  assert.ok(
+    sceneSource.includes('setClearColor(new Color(palette.fog), 1)'),
+    'the clear colour is the fog',
+  );
+  assert.ok(
+    sceneSource.includes('const fogColor = new Color(palette.fog)'),
+    'one fog colour for both materials',
+  );
+  for (const wiring of [
+    'uHorizonColor: { value: new Color(palette.horizon) }',
+    'uFogColor: { value: fogColor.clone() }',
+  ]) {
+    assert.equal(
+      sceneSource.split(wiring).length - 1,
+      2,
+      `${wiring} must reach both the sky/water and the fog uniforms`,
+    );
+  }
+  // The density is the shader's own constant, injected for both materials.
+  assert.ok(sceneSource.includes('const fogDensity = 1 / 4200;'));
+  assert.equal(sceneSource.split('uFogDensity: { value: fogDensity }').length - 1, 2);
+});
+
 test('the shader constants are the CPU height field constants', () => {
   // glsl.ts renders each of these from the TypeScript export, so reading the
   // numbers back out of the shader text is what proves the two sides agree.
   const shared: Array<[string, number]> = [
-    ['uPersistence', 0.5],
-    ['uLacunarity', 2.05],
+    ['uPersistence', terrainPersistence],
+    ['uLacunarity', terrainLacunarity],
     ['terrainFrequency', terrainFrequency],
     ['terrainWarp', terrainWarp],
     ['terrainHeightScale', terrainHeightScale],
@@ -444,6 +810,8 @@ test('the shader constants are the CPU height field constants', () => {
     ['terrainFlowWidth', terrainFlowWidth],
     ['terrainFlowMeander', terrainFlowMeander],
     ['terrainFlowMeanderScale', terrainFlowMeanderScale],
+    ['terrainFjordCore', terrainFjordCore],
+    ['terrainFjordBank', terrainFjordBank],
   ];
   for (const [label, source] of [
     ['terrain vertex', terrainVertexShader],
@@ -729,7 +1097,18 @@ test('the shaders the GPU receives carry the same shared height field', () => {
     };
     const bodies = new Set(withField.map(fieldBody));
     assert.equal(bodies.size, 1, 'the height field must not drift between stages');
-    assert.ok(bodies.values().next().value!.includes('fbm4(q) * 0.30 + 0.10'));
+    const body = bodies.values().next().value!;
+    // The floor terrace can never reach terrainHeightRef, so the bed stays under
+    // water however the valley blends; the mountains carry the fBM trend plus
+    // the crest-shaped ridge; and the fjord centre line is the same two fixed
+    // sine terms the CPU reference uses, since those coefficients live only here.
+    assert.ok(body.includes('base * 0.10 + 0.10'), 'the floor terrace');
+    assert.ok(body.includes('0.30 + base * 0.32 + ridge * 0.44'), 'the mountain blend');
+    assert.ok(body.includes('pow(terrainRidged3(q * 1.05 + vec2(31.4, 27.2)), 1.5)'), 'the ridge');
+    assert.ok(
+      body.includes('450.0 * sin(xz.y / 2200.0) + 200.0 * sin(xz.y / 4300.0 + 0.5)'),
+      'the fjord centre line',
+    );
     // The two shaders that do not sample it are the sky and the water surface
     // vertex stage, which is a flat quad.
     const without = stub.shaderSources.filter((source) => !source.includes(heightField));

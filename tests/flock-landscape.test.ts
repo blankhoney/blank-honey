@@ -1,19 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   BufferGeometry,
+  Color,
   DataTexture,
+  DirectionalLight,
   Group,
+  HemisphereLight,
   InstancedMesh,
   Light,
   Material,
   Mesh,
+  MeshLambertMaterial,
   ShaderMaterial,
   Texture,
+  Vector3,
   WebGLRenderTarget,
 } from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
-import { createFlockLandscape } from '../src/client/flock-landscape';
+import { createFlockLandscape, landscapeFogColor } from '../src/client/flock-landscape';
 import { reflectionLayer } from '../src/client/flock-water';
 
 // CPU-only contracts: shader compilation, actual draw calls and GPU release are browser checks.
@@ -285,4 +291,99 @@ test('disposing one landscape does not dispose or freeze another instance', () =
     first.dispose();
     second.dispose();
   }
+});
+
+test('the landscape carries the silver-grey mist palette on its real materials and lights', () => {
+  assert.equal(landscapeFogColor, '#bfc9c3');
+  for (const light of [false, true]) {
+    const landscape = createFlockLandscape(light);
+    try {
+      const name = light ? 'light' : 'full';
+      const meshes: Mesh[] = [];
+      const lights: Light[] = [];
+      landscape.root.traverse((object) => {
+        if (object instanceof Mesh) meshes.push(object);
+        if (object instanceof Light) lights.push(object);
+      });
+      const sky = meshes.find((mesh) => mesh.name === 'flock-sky');
+      assert.ok(sky?.material instanceof ShaderMaterial, `${name} sky`);
+      const skyUniforms = sky.material.uniforms;
+      assert.equal((skyUniforms.zenith.value as Color).getHexString(), '91a4aa');
+      assert.equal((skyUniforms.horizon.value as Color).getHexString(), 'dddcd0');
+      const sunDirection = skyUniforms.sunDirection.value as Vector3;
+      assert.deepEqual(sunDirection.toArray(), new Vector3(-0.18, 0.12, -1).normalize().toArray());
+      // Shader-only constants: the warm glow and the disc stay dim and colourless.
+      assert.ok(sky.material.fragmentShader.includes('vec3(0.18, 0.14, 0.10) * pow(sun, 18.0)'));
+      assert.ok(sky.material.fragmentShader.includes('vec3(1.15, 1.08, 0.94)'));
+      assert.ok(sky.material.fragmentShader.includes('smoothstep(0.99982, 0.99995, sun)'));
+
+      const hemisphere = lights.find((entry) => entry instanceof HemisphereLight);
+      assert.ok(hemisphere instanceof HemisphereLight, `${name} ambient`);
+      assert.equal(hemisphere.color.getHexString(), 'dbe2de');
+      assert.equal(hemisphere.groundColor.getHexString(), '646f66');
+      assert.equal(hemisphere.intensity, 1.75);
+      const sun = lights.find((entry) => entry instanceof DirectionalLight);
+      assert.ok(sun instanceof DirectionalLight, `${name} sun`);
+      assert.equal(sun.color.getHexString(), 'f8ead4');
+      assert.equal(sun.intensity, 1.7);
+      assert.deepEqual(sun.position.toArray(), [-3000, 4500, -5000]);
+
+      const trees = meshes.find((mesh) => mesh.name === 'flock-trees');
+      assert.ok(trees instanceof InstancedMesh, `${name} trees`);
+      const colour = trees.geometry.getAttribute('color');
+      const expected = ['#635b4f', '#344a40', '#536459'].map((hex) => new Color(hex));
+      const found = new Set<string>();
+      for (let index = 0; index < colour.count; index++) {
+        found.add(
+          `${colour.getX(index).toFixed(6)}|${colour.getY(index).toFixed(6)}|${colour.getZ(index).toFixed(6)}`,
+        );
+      }
+      assert.deepEqual(
+        [...found].sort(),
+        expected
+          .map((entry) => `${entry.r.toFixed(6)}|${entry.g.toFixed(6)}|${entry.b.toFixed(6)}`)
+          .sort(),
+      );
+      const rocks = meshes.find((mesh) => mesh.name === 'flock-rocks');
+      assert.ok(rocks, `${name} rocks`);
+      const rockMaterial = rocks.material as MeshLambertMaterial;
+      assert.equal(rockMaterial.color.getHexString(), '78827a');
+
+      const resources = inspect(landscape.root);
+      assert.equal((resources.mistMaterial.uniforms.color.value as Color).getHexString(), 'd8ded6');
+      assert.ok(resources.mistMaterial.fragmentShader.includes('edge * density * 0.32'));
+    } finally {
+      landscape.dispose();
+    }
+  }
+});
+
+test('the scenic sources keep the approved palette and drop the old one', () => {
+  const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf8');
+  const landscape = read('../src/client/flock-landscape.ts');
+  const terrain = read('../src/client/flock-terrain.ts');
+  const water = read('../src/client/flock-water.ts');
+  for (const literal of [
+    "'#bfc9c3'",
+    "'#91a4aa'",
+    "'#dddcd0'",
+    "'#dbe2de'",
+    "'#646f66'",
+    "'#f8ead4'",
+    "'#635b4f'",
+    "'#344a40'",
+    "'#536459'",
+    "'#78827a'",
+    "'#d8ded6'",
+  ])
+    assert.ok(landscape.includes(literal), `flock-landscape.ts must keep ${literal}`);
+  assert.ok(landscape.includes("'#b7bfd0'") === false, 'the blue haze must be gone');
+  for (const literal of ["'#4c625c'", "'#808b8b'", "'#d2d9d4'"]) {
+    assert.ok(terrain.includes(literal), `flock-terrain.ts must keep ${literal}`);
+  }
+  for (const literal of ["'#3b575b'", "'#bfc9c3'"]) {
+    assert.ok(water.includes(literal), `flock-water.ts must keep ${literal}`);
+  }
+  assert.equal(water.split("'#3b575b'").length - 1, 2, 'both lake base colours must agree');
+  assert.ok(!water.includes("'#284d60'"), 'the old lake base colour must be gone');
 });

@@ -5,8 +5,8 @@ import { createFrameBudget } from '../flock-performance';
 
 export function birdBudget(light: boolean): FlockBudget {
   return light
-    ? { width: 16, fps: 20, maxDpr: 1, maxPixels: 700_000 }
-    : { width: 24, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 };
+    ? { width: 8, fps: 20, maxDpr: 1, maxPixels: 700_000 }
+    : { width: 12, fps: 30, maxDpr: 1.25, maxPixels: 1_800_000 };
 }
 
 type SceneLoader = () => Promise<{ createFlockScene: (budget: FlockBudget) => FlockScene }>;

@@ -1,7 +1,17 @@
-/* Each reference owns its composition; only navigation and personal content are shared. */
+/* Each reference owns its composition; only navigation and personal content are shared.
+   The nine shipped screens place one shared copy block from six per-variant variables
+   (--hero-ink / --hero-muted / --hero-line / --hero-copy-top / --hero-copy-left /
+   --hero-copy-width), so every title, description, saying, link and aria attribute stays in
+   the page markup and only the placement and the ink change between variants. */
 #hero {
   min-height: 640px;
+  padding: 32px clamp(24px, 5vw, 80px);
   --hero-ink: #f2f4f5;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 70%, transparent);
+  --hero-line: color-mix(in srgb, var(--hero-ink) 24%, transparent);
+  --hero-copy-top: 34%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 38%;
   color: var(--hero-ink);
   background: #000;
 }
@@ -15,440 +25,116 @@
   height: 100%;
   display: block;
 }
+
+/* ---------- Header: brand line, tagline, optional profile ---------------- */
 #hero .hero-top {
-  font-size: 13px;
-  letter-spacing: 0.12em;
+  z-index: 5;
+  align-items: center;
+  color: inherit;
+  font: 11px var(--mono);
+  letter-spacing: 0.14em;
 }
+#hero .hero-top-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+#hero .hero-top-links .hero-tagline {
+  font-family: var(--reader);
+  letter-spacing: 0.08em;
+}
+/* A quiet text entry: no pill, no fill, a hairline only while hovered or focused. */
+#hero .hero-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: inherit;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+#hero .hero-github:hover {
+  border-color: var(--hero-line);
+}
+#hero .hero-github:focus-visible {
+  border-color: var(--hero-line);
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+#hero .hero-github svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* ---------- Copy: one block, placed by the per-variant variables --------- */
 #hero .hero-copy {
   position: absolute;
-  top: 32%;
-  left: 8%;
-  right: 8%;
-  width: auto;
-  text-align: center;
+  top: var(--hero-copy-top);
+  left: var(--hero-copy-left);
+  width: var(--hero-copy-width);
+  text-align: left;
   pointer-events: none;
 }
 #hero .hero-copy h1 {
   font-family: var(--reader);
-  font-size: clamp(48px, 7.4vw, 124px);
-  line-height: 1.12;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  font-size: clamp(42px, 5.5vw, 84px);
+  line-height: 1.03;
+  letter-spacing: -0.045em;
   margin: 0;
 }
 #hero .hero-description {
-  font-size: clamp(14px, 1.4vw, 21px);
-  max-width: none;
-  margin: 34px auto 0;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.9;
+  max-width: 28rem;
+  margin: 26px 0 0;
+  color: var(--hero-muted);
 }
 #hero .saying {
-  font-size: 15px;
-  margin-top: 22px;
+  font-style: italic;
+  font-size: 14px;
+  margin: 24px 0 0;
+  color: var(--hero-muted);
 }
+/* The eyebrow is yantao's own label; every other screen opens on the title. */
+#hero .eyebrow {
+  display: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: inherit;
+}
+
+/* ---------- Bottom band: entry left, picker centred, source note right --- */
 #hero .hero-bottom {
+  left: clamp(24px, 5vw, 80px);
+  right: auto;
+  bottom: 34px;
   z-index: 5;
 }
 #hero .enter {
   color: inherit;
 }
-#hero .eyebrow {
-  display: none;
-}
-#hero .hero-index,
-#hero .hero-code-window {
-  display: none;
-}
-#hero[data-effect='io724'] h1 {
-  font-style: italic;
-  text-shadow: 0 0 45px #a5e6ee35;
-}
-#hero[data-effect='io724'] .hero-description {
-  letter-spacing: 0.18em;
-  opacity: 0.75;
-}
-#hero[data-effect='miniload'] .hero-copy {
-  top: 21%;
-}
-#hero[data-effect='miniload'] h1 {
-  font-family: var(--pixel);
-  font-size: clamp(60px, 10.6vw, 156px);
-  letter-spacing: 0.035em;
-}
-#hero[data-effect='miniload'] .saying {
-  display: none;
-}
-#hero[data-effect='isaca'] {
-  background: #e4e9ef;
-  color: #10151e;
-}
-#hero[data-effect='isaca'] .hero-copy {
-  top: 14%;
-}
-#hero[data-effect='isaca'] .hero-copy h1 {
-  font-size: clamp(32px, 4.1vw, 58px);
-}
-#hero[data-effect='isaca'] .hero-description {
-  margin-top: 10px;
-  font-size: 15px;
-}
-#hero[data-effect='isaca'] .saying {
-  display: none;
-}
-#hero[data-effect='isaca'] .hero-top {
-  visibility: hidden;
-}
-/* The name and tagline stay hidden here; only the GitHub entry returns. */
-#hero[data-effect='isaca'] .hero-github {
-  visibility: visible;
-}
-#hero[data-effect='isaca'] .hero-index {
-  display: block;
-  position: absolute;
-  inset: 25% 8% 13%;
-  perspective: 1400px;
-}
-.index-card {
-  position: absolute;
-  inset: 0 12% 10% 0;
-  border-radius: 28px;
-  padding: clamp(26px, 5vw, 64px);
-  background: #0c121b;
-  color: #edf0f5;
-  transform: translate(0, 0) scale(0.96);
-  transition:
-    transform 1.3s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 1.3s,
-    color 1.3s;
-  z-index: 0;
-  box-shadow: 0 20px 60px #17243b1c;
-}
-.index-card[data-front='true'] {
-  transform: translate(12%, 12%);
-  background: #f7f8fb;
-  color: #10151e;
-  z-index: 1;
-}
-.index-card h2 {
-  font: clamp(36px, 4.1vw, 62px)/1.05 var(--reader);
-  margin: 15px 0;
-}
-.index-card p {
-  font-size: 15px;
-  max-width: 360px;
-  line-height: 1.75;
-}
-.index-card > span {
-  font: 12px var(--mono);
-}
-.index-card a {
-  display: inline-block;
-  margin-top: 20px;
-  font-size: 15px;
-}
-#index-switch {
-  position: absolute;
-  z-index: 2;
-  right: 3%;
-  bottom: 3%;
-  padding: 12px 20px;
-  background: #e4e9ef;
-  color: #10151e;
-  border-radius: 24px;
-}
-#hero[data-effect='yantao'] {
-  background: #fff8ec;
-  color: #161818;
-  border: 6px solid #161818;
-}
-#hero[data-effect='yantao'] #hero-stage {
-  background:
-    radial-gradient(ellipse at 20% 20%, #efbcd94d, transparent 65%),
-    radial-gradient(ellipse at 80% 60%, #8fc7c744, transparent 65%);
-}
-#hero[data-effect='yantao'] .hero-copy {
-  top: 31%;
-  left: 5%;
-  right: 53%;
-  text-align: left;
-}
-#hero[data-effect='yantao'] .hero-copy h1 {
-  font-family: Arial, sans-serif;
-  font-weight: 900;
-  overflow-wrap: normal;
-}
-#hero[data-effect='yantao'] .hero-description {
-  font-size: 16px;
-}
-#hero[data-effect='yantao'] .eyebrow {
-  display: inline-block;
-  font: bold 16px var(--mono);
-  padding: 12px 18px;
-  background: #87c8c6;
-  border: 3px solid #161818;
-  transform: rotate(-2deg);
-  margin-bottom: 26px;
-}
-#hero[data-effect='yantao'] .hero-code-window {
-  display: block;
-  position: absolute;
-  top: 29%;
-  right: 5%;
-  width: 43%;
-  min-height: 330px;
-  background: #fff;
-  border: 5px solid #161818;
-  box-shadow: 9px 9px #161818;
-}
-.code-window-bar {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 18px;
-  border-bottom: 1px solid #c5ccd3;
-  background: #f5f7fa;
-}
-.code-window-bar i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #f45156;
-}
-.code-window-bar i:nth-child(2) {
-  background: #edc35d;
-}
-.code-window-bar i:nth-child(3) {
-  background: #81c7c4;
-}
-.code-window-bar span {
-  margin-left: auto;
-  font: 12px var(--mono);
-}
-.hero-code-window pre {
-  padding: 26px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: 15px/1.85 var(--mono);
-  color: #254567;
-  background: transparent;
-  margin: 0;
-}
-#hero[data-effect='yantao'] .enter {
-  background: #ffcf5f;
-  border: 3px solid #161818;
-  box-shadow: 5px 5px #161818;
-  padding: 10px 20px;
-}
-/* The lake and flock share one scene; only this variant gets the scenic poster and vignette. */
-#hero[data-effect='birds'] {
-  background: #07192f;
-  color: #f2f7ff;
-}
-#hero[data-effect='birds'] .flock-layer,
-#hero[data-effect='birds'] .flock-still {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-#hero[data-effect='birds'] .flock-layer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 39%, #15294140 0%, #1529411c 30%, transparent 62%),
-    linear-gradient(to bottom, #15294125, transparent 20%, transparent 76%, #102d4b80);
-}
-#hero[data-effect='birds'] .hero-copy {
-  top: 34%;
-  text-shadow: 0 2px 26px #07192f;
-}
-#hero[data-effect='birds'] .hero-copy h1 {
-  font-style: italic;
-}
-#hero[data-effect='birds'] .hero-description {
-  letter-spacing: 0.12em;
-}
-#hero[data-effect='birds'] .flock-still {
-  background:
-    linear-gradient(#829fbe 0%, #e7beb0 48%, #8fabbf 53%, #254c65 100%);
-}
-#hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
-  visibility: hidden;
-}
-#hero[data-reduced='true'] *,
-#hero[data-reduced='true'] *::before {
-  animation: none !important;
-  transition: none !important;
-}
-@media (max-width: 700px) {
-  #hero {
-    min-height: 700px;
-    padding: 28px 24px;
-  }
-  #hero .hero-copy {
-    top: 29%;
-    left: 7%;
-    right: 7%;
-  }
-  #hero .hero-top {
-    font-size: 11px;
-  }
-  #hero .hero-description {
-    font-size: 14px;
-  }
-  #hero[data-effect='isaca'] .hero-bottom {
-    top: 28px;
-    left: 24px;
-    right: auto;
-  }
-  #hero[data-effect='isaca'] .hero-index {
-    inset: 30% 4% 20%;
-  }
-  .index-card {
-    border-radius: 20px;
-    padding: 28px;
-  }
-  .index-card p {
-    font-size: 15px;
-  }
-  #hero[data-effect='yantao'] .hero-copy {
-    top: 21%;
-    left: 7%;
-    right: 7%;
-  }
-  #hero[data-effect='yantao'] .hero-description,
-  #hero[data-effect='yantao'] .saying {
-    display: none;
-  }
-  #hero[data-effect='yantao'] .eyebrow {
-    margin-bottom: 14px;
-  }
-  #hero[data-effect='yantao'] .hero-code-window {
-    top: 37%;
-    right: 8%;
-    width: 84%;
-    min-height: 260px;
-  }
-  .hero-code-window pre {
-    padding: 17px;
-    font-size: 12px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .index-card {
-    transition: none;
-  }
-}
-#hero[data-effect='miniload'] #hero-stage {
-  opacity: 0.86;
-  mask-image: linear-gradient(to bottom, #000 55%, #000b 85%, #0006);
-}
-.pixel-cloud-layer,
-.pixel-cloud-still,
-.pixel-cloud-surface {
-  position: absolute;
-  inset: 0;
-}
-.pixel-cloud-layer {
-  isolation: isolate;
-}
-.pixel-cloud-layer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 34%, #0009, #0005 27%, transparent 66%);
-}
-.pixel-cloud-still {
-  z-index: 0;
-  background:
-    radial-gradient(ellipse at 65% 55%, #3c4147, #101214 48%, #000 85%);
-}
-.pixel-cloud-surface {
-  z-index: 1;
-  visibility: hidden;
-}
-.pixel-cloud-surface canvas {
-  image-rendering: pixelated;
-}
-.pixel-cloud-layer[data-state='live'] .pixel-cloud-surface {
-  visibility: visible;
-}
-.pixel-cloud-layer[data-state='live'] .pixel-cloud-still {
-  visibility: hidden;
-}
-#hero[data-effect='miniload'] .hero-description {
-  font: clamp(14px, 1.4vw, 19px)/1.8 var(--mono);
-  color: #c2c5c9;
-}
-#hero .hero-top,
-#hero #effect-picker {
-  color: inherit;
-}
-#hero[data-effect='miniload'] .hero-copy h1 {
-  text-shadow: 0 3px 16px #000;
-}
-#hero .hero-description,
-#hero .saying,
-#hero #effect-label {
-  color: inherit;
-}
-#hero[data-effect='isaca'] .hero-description {
-  color: #647080;
-}
-#hero .eyebrow {
-  color: inherit;
-}
-#hero[data-effect='yantao'] .hero-copy h1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: clamp(28px, 3.7vw, 56px);
-  line-height: 1.3;
-}
-@media (max-width: 700px) {
-  #hero[data-effect='yantao'] .hero-copy h1 {
-    font-size: 25px;
-    -webkit-line-clamp: 2;
-  }
-}
-
-/* Darken only the background beneath the mouse, never the foreground title. */
-.pixel-cloud-shadow {
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  left: 0;
-  width: clamp(220px, 60vh, 560px);
-  aspect-ratio: 1;
-  background: radial-gradient(closest-side, #000 0%, #000d 24%, #0007 55%, transparent 100%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 280ms ease;
-}
-.pixel-cloud-shadow.visible {
-  opacity: 1;
-}
-
-/* Always-visible controls sit on the viewport centre, independent of the entry link. */
 #hero #effect-picker {
   position: absolute;
   left: 50%;
-  bottom: max(28px, env(safe-area-inset-bottom));
+  bottom: max(34px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 7px;
+  gap: 12px;
+  padding: 4px;
   max-width: none;
-  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
-  border-radius: 40px;
-  background: color-mix(in srgb, #000 65%, transparent);
-  color: #f2f4f5;
-  backdrop-filter: blur(14px);
+  border: 1px solid var(--hero-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--hero-ink) 8%, transparent);
+  color: inherit;
+  backdrop-filter: blur(12px);
   text-align: center;
 }
 #hero #effect-picker button {
@@ -457,10 +143,10 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: color-mix(in srgb, currentColor 9%, transparent);
+  background: color-mix(in srgb, var(--hero-ink) 14%, transparent);
 }
 #hero #effect-picker button:hover {
-  background: color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, var(--hero-ink) 26%, transparent);
 }
 #hero #effect-picker button:focus-visible {
   outline: 2px solid currentColor;
@@ -478,83 +164,18 @@
 #hero #effect-label {
   margin-top: 3px;
   font: 13px/1.5 var(--mono);
-}
-#hero[data-effect='isaca'] #effect-picker,
-#hero[data-effect='yantao'] #effect-picker {
-  background: #f5f6f0dc;
-  color: #17202c;
-}
-@media (max-width: 700px) {
-  #hero .hero-bottom {
-    top: 82px;
-    bottom: auto;
-    left: auto;
-    right: 24px;
-  }
-  #hero .hero-bottom .enter {
-    padding: 6px 0;
-    gap: 8px;
-    font-size: 13px;
-  }
-  #hero .hero-bottom .enter > span {
-    width: 30px;
-    height: 30px;
-    font-size: 20px;
-  }
-  #hero[data-effect='yantao'] .hero-bottom .enter {
-    padding: 3px 10px;
-  }
-}
-
-/* The header keeps its place: the tagline stays a tagline and the GitHub entry is optional. */
-#hero .hero-top {
-  z-index: 5;
-  align-items: center;
-}
-#hero .hero-top-links {
-  display: inline-flex;
-  align-items: center;
-  gap: 18px;
-}
-#hero .hero-top-links .hero-tagline {
-  font-family: var(--reader);
-  letter-spacing: 0.08em;
-}
-#hero .hero-github {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, currentColor 5%, transparent);
+  /* The shared sheet tints this label pale; every variant reads in its own ink instead. */
   color: inherit;
-  font-size: 12px;
-  letter-spacing: 0.02em;
 }
-#hero .hero-github:hover {
-  background: color-mix(in srgb, currentColor 12%, transparent);
-}
-#hero .hero-github:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 4px;
-}
-#hero .hero-github svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-}
-
-/* Keep the bottom band free for the source note. */
 #hero .hero-source-note {
   position: absolute;
-  left: 16px;
-  right: 16px;
-  bottom: max(14px, env(safe-area-inset-bottom));
+  right: clamp(24px, 5vw, 80px);
+  left: auto;
+  bottom: 34px;
   z-index: 5;
+  max-width: 260px;
   margin: 0;
-  text-align: center;
+  text-align: right;
   font: 12px/1.5 var(--mono);
   color: inherit;
 }
@@ -567,21 +188,101 @@
   outline: 2px solid currentColor;
   outline-offset: 3px;
 }
-#hero.has-hero-source #effect-picker {
-  bottom: max(54px, calc(env(safe-area-inset-bottom) + 40px));
+
+/* ---------- Panels: isaca's index cards, yantao's code window ------------ */
+#hero .hero-index,
+#hero .hero-code-window {
+  display: none;
 }
-@media (max-width: 700px) {
-  #hero .hero-tagline {
-    display: none;
-  }
-  #hero .hero-github {
-    font-size: 11px;
-    min-height: 44px;
-  }
+.index-card {
+  position: absolute;
+  inset: 0 12% 10% 0;
+  border-radius: 4px;
+  padding: clamp(26px, 4vw, 56px);
+  background: #27322f;
+  color: #f7f4ed;
+  transform: translate(0, 0) scale(0.96);
+  transition:
+    transform 1.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 1.3s,
+    color 1.3s;
+  z-index: 0;
+  box-shadow: 0 16px 45px #17243b12;
+}
+.index-card[data-front='true'] {
+  transform: translate(10%, 10%);
+  background: #f7f4ed;
+  color: #27322f;
+  z-index: 1;
+}
+.index-card h2 {
+  font: clamp(36px, 4.1vw, 62px)/1.05 var(--reader);
+  margin: 15px 0;
+}
+.index-card p {
+  font-size: 15px;
+  max-width: 360px;
+  line-height: 1.75;
+}
+.index-card > span {
+  font: 12px var(--mono);
+}
+/* The card link is a touch target like every other entry in the hero: the box grows to 44px and
+   its line is centred inside that box, so the target is tall without changing the text size. */
+.index-card a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 20px;
+  font-size: 15px;
+}
+#index-switch {
+  position: absolute;
+  z-index: 2;
+  right: 3%;
+  bottom: 3%;
+  padding: 12px 20px;
+  background: #f7f4ed;
+  color: #27322f;
+  border: 1px solid #c7cbc4;
+  border-radius: 4px;
+}
+.code-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e6e3da;
+  background: #f7f5ef;
+}
+.code-window-bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d3c4b6;
+}
+.code-window-bar i:nth-child(2) {
+  background: #d6ceb4;
+}
+.code-window-bar i:nth-child(3) {
+  background: #b6c6ba;
+}
+.code-window-bar span {
+  margin-left: auto;
+  font: 12px var(--mono);
+}
+.hero-code-window pre {
+  padding: 26px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 14px/1.9 var(--mono);
+  color: #2f4a3c;
+  background: transparent;
+  margin: 0;
 }
 
-/* ---------- Algorithm scenes (2026-09-22) ----------------------------------
-   One stage contract for blackhole / ocean / mandelbulb / reaction / terrain.
+/* ---------- Algorithm scenes (2026-09-23) --------------------------------
+   One stage contract for blackhole / ocean / reaction / terrain.
    The pure-CSS still paints immediately and the canvas stays hidden
    until the scene reports its first frame, so a reduced-motion or failed scene
    keeps the still instead of an empty stage. A scene may mark a canvas wrapper
@@ -616,7 +317,10 @@
 /* Black hole: gold accretion ring on the right half, copy keeps the left column. */
 #hero[data-effect='blackhole'] {
   background: #05060a;
-  color: #f6e6c2;
+  --hero-ink: #eee8dc;
+  --hero-copy-top: 34%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 32%;
 }
 #hero[data-effect='blackhole'] .algorithm-still {
   background:
@@ -625,7 +329,8 @@
     radial-gradient(ellipse 44% 13% at 64% 48%, #b8732033, #0000 72%), #05060a;
 }
 /* The live disk throws a hot highlight across the left half, where the copy column sits.
-   A horizontal scrim inside the stage layer dims that side of the scene, not the copy. */
+   This scrim dims that side inside the stage layer, never the copy: it opens on the left
+   edge at 30% and is fully transparent by the middle of the stage. */
 #hero[data-effect='blackhole'] .algorithm-layer::after {
   content: '';
   position: absolute;
@@ -633,140 +338,504 @@
   pointer-events: none;
   background: linear-gradient(
     90deg,
-    rgba(2, 4, 8, 0.88) 0%,
-    rgba(2, 4, 8, 0.72) 32%,
-    rgba(2, 4, 8, 0) 62%
+    rgba(2, 4, 8, 0.3) 0%,
+    rgba(2, 4, 8, 0.14) 26%,
+    rgba(2, 4, 8, 0) 50%
   );
 }
-#hero[data-effect='blackhole'] .hero-copy {
-  top: 32%;
-  right: 58%;
-  text-align: left;
-}
-#hero[data-effect='blackhole'] .hero-copy h1 {
-  font-size: clamp(30px, 3.8vw, 58px);
-}
 
-/* Ocean: deep blue water under a low sun, the centred copy keeps the sky band. */
+/* Ocean: a bright sky over deep water, and the ink follows that split. The root stays bright
+   because the source note's plate and the picker read it down on the water, while the header
+   and the copy sit in the pale sky and take a dark ink of their own - so the scene needs no
+   scrim over its own picture, only two ink sets. */
 #hero[data-effect='ocean'] {
-  background: #071c36;
-  color: #f7ecd6;
+  background: #0b1a20;
+  --hero-ink: #eef2ee;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 86%, transparent);
+  --hero-copy-top: 22%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 38%;
 }
+/* Everything above the waterline reads in the sky's own dark ink, at 86% of it for the
+   description where it crosses the waterline. Only these two blocks take it; the note and the
+   picker below keep the root's bright ink. */
+#hero[data-effect='ocean'] .hero-top,
+#hero[data-effect='ocean'] .hero-copy {
+  --hero-ink: #213640;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 86%, transparent);
+  --hero-line: color-mix(in srgb, var(--hero-ink) 24%, transparent);
+  color: var(--hero-ink);
+}
+/* One pale sky band over one deep water band, with the horizon mist kept at the waterline. */
 #hero[data-effect='ocean'] .algorithm-still {
   background:
-    radial-gradient(circle 26px at 50% 52%, #fff0c8, #ffd68f66 60%, #0000),
-    radial-gradient(ellipse 40% 9% at 50% 52%, #ffd68f, #ff9a4a73 46%, #0000 76%),
-    linear-gradient(to bottom, #071c36 0 60%, #e8a566 60% 60.6%, #0a2b4a 60.6% 78%, #04121f 100%);
+    radial-gradient(ellipse 40% 9% at 58% 56%, #d3ddd926, #0000 74%),
+    linear-gradient(
+      to bottom,
+      #acbcc1 0%,
+      #ece9e1 42%,
+      #91aeb5 42.5%,
+      #244b60 72%,
+      #0b2030 100%
+    );
 }
-/* The horizon and the sun read nearly white, which the pale title and header cannot sit on.
-   This scrim darkens the top band inside the stage layer, so it dims the scene, not the copy. */
-#hero[data-effect='ocean'] .algorithm-layer::after {
+/* The source note lands on open water, where the pale mist can lift it off the lake. Only the
+   note itself takes a small dark plate - the stage, the scrim and the copy stay as they are,
+   so this is local contrast protection for one line, never a second pass over the screen. */
+#hero[data-effect='ocean'] .hero-source-note {
+  background: #0b1a20bf;
+  padding: 6px 10px;
+  border-radius: 2px;
+}
+
+/* Reaction: warm paper with a grey-green embossed field on the right half. The copy keeps the
+   left column in dark ink, so this screen needs no dimming pass over the scene at all; only the
+   description takes a stronger step of that ink, 80%, where it crosses the field's edge. */
+#hero[data-effect='reaction'] {
+  background: #f0ece3;
+  --hero-ink: #26322f;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 80%, transparent);
+  --hero-copy-top: 26%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 32%;
+}
+#hero[data-effect='reaction'] .algorithm-still {
+  background:
+    radial-gradient(circle at 72% 42%, #8fa39826, #0000 46%),
+    radial-gradient(circle at 62% 66%, #b9c4b91f, #0000 40%),
+    repeating-radial-gradient(circle at 70% 50%, #cfd6cd26 0 0.7%, #0000 0.7% 2.1%),
+    linear-gradient(120deg, #f5f2eb 0 46%, #e8e7de 46% 100%);
+}
+
+/* Terrain: a bright misty valley - pale sky, two soft ridges, a washed valley floor - so the
+   copy reads in dark ink and the scene needs only a short mist, never a pass over the picture. */
+#hero[data-effect='terrain'] {
+  background: #c8cfc8;
+  --hero-ink: #263630;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 84%, transparent);
+  --hero-copy-top: 14%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 38%;
+}
+/* Two ridge wedges drawn once each at their own size over one sky-to-valley wash, so no
+   repeating triangle tiles the horizon. */
+#hero[data-effect='terrain'] .algorithm-still {
+  background:
+    linear-gradient(145deg, transparent 49%, #8c9d97 50%) left bottom / 60% 50% no-repeat,
+    linear-gradient(215deg, transparent 49%, #62756f 50%) right bottom / 65% 60% no-repeat,
+    linear-gradient(to bottom, #d9dcd2, #8ea3a0 55%, #6c8584);
+}
+/* The scene is pale now, so the dark copy and the bottom band are the only things that need a
+   hand: one short mist from the left behind the title and one from the bottom behind the entry,
+   the picker and the source note. Both keep `position` and stay unhittable, and neither layer
+   covers the whole picture - the sky, the ridges and the valley floor stay untouched. */
+#hero[data-effect='terrain'] .algorithm-layer::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(3, 19, 31, 0.62) 0%,
-    rgba(3, 19, 31, 0.48) 42%,
-    rgba(3, 19, 31, 0.1) 72%,
-    rgba(3, 19, 31, 0.18) 100%
-  );
-}
-#hero[data-effect='ocean'] .hero-copy {
-  top: 22%;
+  background:
+    linear-gradient(to right, rgba(231, 226, 215, 0.36), transparent 48%),
+    linear-gradient(to top, rgba(231, 226, 215, 0.8), transparent 26%);
 }
 
-/* Mandelbulb: indigo structure with gold rings on the right, copy keeps the left column. */
-#hero[data-effect='mandelbulb'] {
-  background: #070a1c;
-  color: #f3e3bd;
-}
-#hero[data-effect='mandelbulb'] .algorithm-still {
+/* ---------- io724: the fluid-ink reference ---------------------------------
+   The dark stage and the left-hand copy are the shared default; the title keeps its slant.
+   The ground is a near-black with two faint ink pools, so a static or not-yet-ready stage is
+   still the reference's own colour; the live canvas paints its own ground on top of it. */
+#hero[data-effect='io724'] {
   background:
-    radial-gradient(circle at 64% 50%, #0000 0 26%, #070a1cd9 54%, #070a1c 100%),
-    repeating-radial-gradient(circle at 64% 50%, #d9a94e26 0 0.6%, #0000 0.6% 1.7%),
-    radial-gradient(circle at 64% 50%, #382a7a, #0b0f26 60%, #050710);
+    radial-gradient(ellipse at 80% 75%, #173e4359, transparent 42%),
+    radial-gradient(ellipse at 65% 90%, #6d49342e, transparent 40%),
+    #030707;
+  --hero-ink: #f2f4f5;
 }
-#hero[data-effect='mandelbulb'] .hero-copy {
-  top: 32%;
-  right: 58%;
-  text-align: left;
+#hero[data-effect='io724'] .hero-copy h1 {
+  font-style: italic;
 }
-#hero[data-effect='mandelbulb'] .hero-copy h1 {
-  font-size: clamp(30px, 3.8vw, 58px);
+/* The description reads at the shared muted step of the ink instead of a second dimming pass on
+   top of it, and wraps on balanced lines so the last word does not sit alone. */
+#hero[data-effect='io724'] .hero-description {
+  letter-spacing: 0.08em;
+  text-wrap: pretty;
 }
 
-/* Reaction: teal growth field with a pale gold bloom, dimmed behind the centred copy. */
-#hero[data-effect='reaction'] {
-  background: #04140f;
-  color: #edf2d6;
+/* ---------- miniload: the pixel cloud -------------------------------------- */
+#hero[data-effect='miniload'] {
+  background: #000;
+  --hero-ink: #f2f4f5;
+  --hero-copy-top: 25%;
+  --hero-copy-left: 0;
+  --hero-copy-width: 100%;
 }
-#hero[data-effect='reaction'] .algorithm-still {
-  background:
-    radial-gradient(circle at 32% 64%, #6fdcab3d, #0000 44%),
-    radial-gradient(circle at 70% 34%, #d9c37a30, #0000 40%),
-    repeating-conic-gradient(from 18deg at 54% 52%, #0b2c22 0deg 14deg, #061a15 14deg 28deg);
+#hero[data-effect='miniload'] .hero-copy {
+  text-align: center;
 }
-/* Copy scrim: a dark radial pass inside the stage layer that dims the growth field beneath the
-   centred title, over the still and the animated canvas alike. */
-#hero[data-effect='reaction'] .algorithm-layer::after {
+/* Scoped through the copy so the pixel scale outranks the shared narrow-screen title. */
+#hero[data-effect='miniload'] .hero-copy h1 {
+  font-family: var(--pixel);
+  font-size: clamp(52px, 7vw, 104px);
+  letter-spacing: 0.035em;
+  text-shadow: 0 3px 16px #000;
+}
+#hero[data-effect='miniload'] .hero-description {
+  font: clamp(14px, 1.4vw, 19px)/1.8 var(--mono);
+  margin: 26px auto 0;
+}
+#hero[data-effect='miniload'] .saying {
+  display: none;
+}
+#hero[data-effect='miniload'] #hero-stage {
+  opacity: 0.86;
+  mask-image: linear-gradient(to bottom, #000 55%, #000b 85%, #0006);
+}
+.pixel-cloud-layer,
+.pixel-cloud-still,
+.pixel-cloud-surface {
+  position: absolute;
+  inset: 0;
+}
+.pixel-cloud-layer {
+  isolation: isolate;
+}
+.pixel-cloud-layer::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 62% 32% at 50% 30%, #03110dc7, #03110db8 44%, #03110d00 78%);
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 34%, #0009, #0005 27%, transparent 66%);
 }
-
-/* Terrain: two misty ridges over a blue-green valley, the centred copy keeps the sky. */
-#hero[data-effect='terrain'] {
-  background: #08201f;
-  color: #e9f2ea;
-}
-#hero[data-effect='terrain'] .algorithm-still {
+.pixel-cloud-still {
+  z-index: 0;
   background:
-    linear-gradient(to bottom, #0000 38%, #7fd8c022 52%, #0000 70%),
-    linear-gradient(135deg, #0000 47%, #164549 47%) 0 52%/13% 27% repeat-x,
-    linear-gradient(135deg, #0000 47%, #0b2a2e 47%) 0 66%/8% 34% repeat-x,
-    linear-gradient(to bottom, #0a2731, #08201f 62%, #061513);
+    radial-gradient(ellipse at 65% 55%, #3c4147, #101214 48%, #000 85%);
+  /* The static fallback carries only the lower cloud band the live scene draws, so it keeps the
+     same clearance for the description and the bottom band instead of tiling the poster full-frame. */
+  mask-image: linear-gradient(to bottom, transparent 45%, #000 65%, #000 78%, transparent 90%);
 }
-#hero[data-effect='terrain'] .hero-copy {
-  top: 20%;
+.pixel-cloud-surface {
+  z-index: 1;
+  visibility: hidden;
+}
+.pixel-cloud-surface canvas {
+  image-rendering: pixelated;
+}
+.pixel-cloud-layer[data-state='live'] .pixel-cloud-surface {
+  visibility: visible;
+}
+.pixel-cloud-layer[data-state='live'] .pixel-cloud-still {
+  visibility: hidden;
+}
+/* Darken only the background beneath the mouse, never the foreground title. */
+.pixel-cloud-shadow {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: clamp(220px, 60vh, 560px);
+  aspect-ratio: 1;
+  background: radial-gradient(closest-side, #000 0%, #000d 24%, #0007 55%, transparent 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+.pixel-cloud-shadow.visible {
+  opacity: 1;
 }
 
+/* ---------- isaca: the two offset index cards ------------------------------ */
+#hero[data-effect='isaca'] {
+  background: #eeeae1;
+  --hero-ink: #26322f;
+  --hero-copy-top: 14%;
+  --hero-copy-left: 0;
+  --hero-copy-width: 100%;
+}
+#hero[data-effect='isaca'] .hero-copy {
+  text-align: center;
+}
+#hero[data-effect='isaca'] .hero-copy h1 {
+  font-size: clamp(36px, 4vw, 60px);
+}
+#hero[data-effect='isaca'] .hero-description {
+  margin: 10px auto 0;
+}
+#hero[data-effect='isaca'] .saying {
+  display: none;
+}
+/* The name and tagline stay hidden here; only the GitHub entry returns. */
+#hero[data-effect='isaca'] .hero-top {
+  visibility: hidden;
+}
+#hero[data-effect='isaca'] .hero-github {
+  visibility: visible;
+}
+#hero[data-effect='isaca'] .hero-index {
+  display: block;
+  position: absolute;
+  inset: 30% 12% 16%;
+  perspective: 1400px;
+}
+
+/* ---------- yantao: the code notebook ------------------------------------- */
+#hero[data-effect='yantao'] {
+  background: #efeee8;
+  --hero-ink: #161818;
+  --hero-copy-top: 30%;
+  --hero-copy-left: 7%;
+  --hero-copy-width: 36%;
+}
+#hero[data-effect='yantao'] .eyebrow {
+  display: inline-block;
+  margin-bottom: 26px;
+}
+#hero[data-effect='yantao'] .hero-copy h1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: clamp(28px, 3.7vw, 56px);
+  line-height: 1.3;
+  /* The title is a rotating headline, so its breaks are balanced instead of leaving the last
+     word of a 12-character line alone. */
+  text-wrap: balance;
+}
+#hero[data-effect='yantao'] .hero-code-window {
+  display: block;
+  position: absolute;
+  top: 30%;
+  right: 7%;
+  width: 43%;
+  min-height: 300px;
+  background: #fff;
+  border: 1px solid #c7cbc4;
+  border-radius: 4px;
+  box-shadow: 0 18px 44px #17243b14;
+}
+
+/* ---------- birds: the flock over the lake --------------------------------- */
+#hero[data-effect='birds'] {
+  background: #d6ddd4;
+  --hero-ink: #263630;
+  --hero-muted: color-mix(in srgb, var(--hero-ink) 84%, transparent);
+  --hero-copy-top: 17%;
+  --hero-copy-left: 8%;
+  --hero-copy-width: 84%;
+}
+#hero[data-effect='birds'] .hero-copy {
+  text-align: center;
+  /* The scene is a bright morning mist, so the copy reads on its own ink instead of a shadow. */
+  text-shadow: none;
+}
+#hero[data-effect='birds'] .hero-copy h1 {
+  font-style: italic;
+  font-size: clamp(40px, 4.8vw, 70px);
+}
+#hero[data-effect='birds'] .hero-description {
+  letter-spacing: 0.12em;
+  margin: 26px auto 0;
+}
+/* The lake and flock share one scene; only this variant gets the scenic poster and, over the
+   bright water, one pale mist from the bottom - the top of the lake keeps its own light. */
+#hero[data-effect='birds'] .flock-layer,
+#hero[data-effect='birds'] .flock-still {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+#hero[data-effect='birds'] .flock-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(232, 233, 223, 0.8), transparent 28%);
+}
+/* The poster keeps its own frame and gains only the muted palette of the new scene; the live
+   layer is left unfiltered so the birds keep their own colour. */
+#hero[data-effect='birds'] .flock-still {
+  background:
+    linear-gradient(#91a4aa 0%, #dddcd0 47%, #829591 55%, #3b575b 100%);
+  filter: saturate(0.55);
+}
+#hero[data-effect='birds'] .flock-layer[data-state='live'] .flock-still {
+  visibility: hidden;
+}
+
+/* ---------- Stillness contract -------------------------------------------- */
+#hero[data-reduced='true'] *,
+#hero[data-reduced='true'] *::before {
+  animation: none !important;
+  transition: none !important;
+}
 /* The stills are static; this guard also covers a future pseudo-element composition. */
 #hero[data-reduced='true'] *::after {
   animation: none !important;
   transition: none !important;
 }
+@media (prefers-reduced-motion: reduce) {
+  .index-card {
+    transition: none;
+  }
+}
 
-/* Narrow screens: every new scene centres the copy at 22% and caps the title at 48px,
-   so the header pill, the entry link and the picker never collide with it. */
-@media (max-width: 700px) {
-  #hero[data-effect='blackhole'] .hero-copy,
-  #hero[data-effect='ocean'] .hero-copy,
-  #hero[data-effect='mandelbulb'] .hero-copy,
-  #hero[data-effect='reaction'] .hero-copy,
-  #hero[data-effect='terrain'] .hero-copy {
-    top: 22%;
-    left: 7%;
-    right: 7%;
+/* ---------- Wide tablets and below: the source note takes its own line ----- */
+@media (max-width: 1100px) {
+  #hero .hero-source-note {
+    left: clamp(24px, 5vw, 80px);
+    right: clamp(24px, 5vw, 80px);
+    bottom: max(14px, env(safe-area-inset-bottom));
+    max-width: none;
     text-align: center;
   }
-  #hero[data-effect='blackhole'] .hero-copy h1,
-  #hero[data-effect='ocean'] .hero-copy h1,
-  #hero[data-effect='mandelbulb'] .hero-copy h1,
-  #hero[data-effect='reaction'] .hero-copy h1,
-  #hero[data-effect='terrain'] .hero-copy h1 {
-    font-size: clamp(32px, 8vw, 48px);
+  /* The picker steps up so the source line keeps the bottom band to itself. */
+  #hero.has-hero-source #effect-picker {
+    bottom: max(52px, calc(env(safe-area-inset-bottom) + 40px));
+  }
+}
+
+/* ---------- Phones: one narrow-screen geometry ---------------------------- */
+@media (max-width: 700px) {
+  #hero {
+    min-height: 700px;
+    padding: 24px;
+  }
+  /* Every variant centres the copy between two 24px gutters and drops to one top edge; the two
+     screens that own a column below the title (isaca's cards, yantao's code window) keep it. */
+  #hero[data-effect] {
+    --hero-copy-top: 21%;
+    --hero-copy-left: 24px;
+    --hero-copy-width: calc(100% - 48px);
+  }
+  #hero[data-effect='isaca'] {
+    --hero-copy-top: 14%;
+  }
+  #hero[data-effect='yantao'] {
+    --hero-copy-top: 19%;
+  }
+  /* birds is the one screen that keeps its higher top edge on a phone as well, floored at 142px
+     so the centred copy always clears the 44px entry row that owns 82px..126px up there. */
+  #hero[data-effect='birds'] {
+    --hero-copy-top: max(17%, 142px);
+  }
+  /* Its own wider title step carries the same selector, so the narrow scale is named here too. */
+  #hero[data-effect='birds'] .hero-copy h1 {
+    font-size: clamp(34px, 9vw, 48px);
+  }
+  #hero .hero-copy {
+    text-align: center;
+  }
+  #hero .hero-copy h1 {
+    font-size: clamp(34px, 9vw, 48px);
+  }
+  #hero .hero-description {
+    font-size: 14px;
+    margin: 26px auto 0;
+  }
+  #hero .hero-tagline {
+    display: none;
+  }
+  #hero .hero-github {
+    font-size: 11px;
+    min-height: 44px;
+  }
+  /* The entry link clears the 44px header entry below the 24px header gutter, and the row
+     itself is a 44px touch target. */
+  #hero .hero-bottom {
+    top: 82px;
+    right: 24px;
+    bottom: auto;
+    left: auto;
+  }
+  #hero .hero-bottom .enter {
+    min-height: 44px;
+    padding: 6px 0;
+    gap: 8px;
+    font-size: 13px;
+  }
+  /* Only on a phone does the entry row leave the water and move up into the bright sky, so the
+     ocean screen hands it the same dark ink as the header. The source note and the picker stay
+     down on the water, where the root's bright ink still carries them. */
+  #hero[data-effect='ocean'] .hero-bottom {
+    --hero-ink: #213640;
+    --hero-muted: color-mix(in srgb, var(--hero-ink) 86%, transparent);
+    --hero-line: color-mix(in srgb, var(--hero-ink) 24%, transparent);
+    color: var(--hero-ink);
+  }
+  #hero .hero-bottom .enter > span {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+  }
+  /* The phone band outranks the tablet's has-hero-source rule (which is more specific than this
+     default), so that combination is named here too: 60px of clearance above the 44px source row.
+     44px of it is the link row itself, the rest is the gap, so the two never meet with or
+     without a configured source entry. */
+  #hero #effect-picker,
+  #hero.has-hero-source #effect-picker {
+    bottom: max(60px, calc(env(safe-area-inset-bottom) + 56px));
+  }
+  #hero .hero-source-note {
+    bottom: max(4px, env(safe-area-inset-bottom));
+  }
+  /* The source line is a touch target on a phone: the link takes a full 44px row while the note
+     keeps one line, and the picker above it steps up to 60px so the two never meet. */
+  #hero .hero-source-note a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    vertical-align: middle;
+  }
+  /* The ocean plate wraps the single line instead of the whole note, so it adds no height. */
+  #hero[data-effect='ocean'] .hero-source-note {
+    padding: 0 8px;
   }
   /* Portrait stacks the copy over the disk, so the black hole scrim turns vertical and covers
      the upper band instead of the left column. */
   #hero[data-effect='blackhole'] .algorithm-layer::after {
     background: linear-gradient(
       to bottom,
-      rgba(2, 4, 8, 0.7) 0%,
-      rgba(2, 4, 8, 0.65) 40%,
-      rgba(2, 4, 8, 0) 60%
+      rgba(2, 4, 8, 0.3) 0%,
+      rgba(2, 4, 8, 0.18) 38%,
+      rgba(2, 4, 8, 0) 58%
     );
+  }
+  /* The cards rise by 4% on a phone, which lifts the front card's 44px link while the bottom
+     inset keeps the same floor of breathing room below the cards. */
+  #hero[data-effect='isaca'] .hero-index {
+    inset: 30% 7% 21%;
+  }
+  /* With the name hidden, the entry link shares the top row with the GitHub entry. */
+  #hero[data-effect='isaca'] .hero-bottom {
+    top: 24px;
+    left: 24px;
+    right: auto;
+  }
+  /* The notebook keeps room for the code window by dropping the description. */
+  #hero[data-effect='yantao'] .hero-description {
+    display: none;
+  }
+  #hero[data-effect='yantao'] .saying {
+    display: none;
+  }
+  #hero[data-effect='yantao'] .eyebrow {
+    margin-bottom: 14px;
+  }
+  #hero[data-effect='yantao'] .hero-copy h1 {
+    font-size: 25px;
+    -webkit-line-clamp: 2;
+  }
+  #hero[data-effect='yantao'] .hero-code-window {
+    top: 38%;
+    right: 7%;
+    width: 86%;
+    min-height: 240px;
+  }
+  /* The code keeps its own size and padding; only the leading tightens, so a panel carrying the
+     appended title comment ends above the picker instead of running under it on a narrow screen. */
+  .hero-code-window pre {
+    padding: 17px;
+    font-size: 12px;
+    line-height: 1.65;
   }
 }

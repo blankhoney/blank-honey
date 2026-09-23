@@ -11,18 +11,18 @@
 
 const f = Math.fround;
 
-/** World units per noise unit. One noise cell spans 1500 world units. */
-export const terrainFrequency = 1 / 1500;
+/** World units per noise unit. One noise cell spans 2300 world units. */
+export const terrainFrequency = 1 / 2300;
 export const terrainSeedX = 137.7;
 export const terrainSeedZ = 419.2;
 /** Domain warp strength of the 4-octave fBM pair that bends the sample point. */
-export const terrainWarp = 0.85;
+export const terrainWarp = 0.4;
 /** Upstream NOISE_GLSL defaults, injected into the vendored fbm/ridgedFBM. */
-export const terrainPersistence = 0.5;
-export const terrainLacunarity = 2.05;
+export const terrainPersistence = 0.43;
+export const terrainLacunarity = 2.03;
 /** h01 -> world units. Water sits at `terrainWaterLevel`, h01 `terrainHeightRef`. */
-export const terrainHeightScale = 1700;
-export const terrainHeightRef = 0.26;
+export const terrainHeightScale = 1500;
+export const terrainHeightRef = 0.28;
 export const terrainWaterLevel = 0;
 /** Half extent of the innermost LOD layer; the outer rings nest outward. */
 export const terrainViewHalf = 1000;
@@ -31,6 +31,13 @@ export const terrainFlowDirection = 0.7;
 export const terrainFlowWidth = 0.5;
 export const terrainFlowMeander = 1.7;
 export const terrainFlowMeanderScale = 0.3;
+/**
+ * Half width of the fjord that carries the valley across the whole field: the
+ * valley keeps its full strength within `terrainFjordCore` of the centre line
+ * and the banks have climbed back to ordinary terrain by `terrainFjordBank`.
+ */
+export const terrainFjordCore = 380;
+export const terrainFjordBank = 1250;
 
 /** Safe world-space bounds of the height field, used for frustum bounds. */
 export const terrainHeightCeiling = 2000;
@@ -149,9 +156,21 @@ function channel(dx: number, dz: number) {
 }
 
 /**
+ * World-space centre line of the fjord, in world XZ: the big sweep and the
+ * second bend are fixed sine terms with no seed and no noise, so the channel
+ * stays readable at any distance instead of dissolving into the noise field.
+ * The 450-unit sweep uses a 2200-unit z scale per radian; the 200-unit bend
+ * uses a 4300-unit scale, and the 0.5 phase puts the crossing near the
+ * viewing area. Every step is frounded like the GLSL expression it mirrors.
+ */
+function fjordCentre(z: number) {
+  return f(f(450 * Math.sin(f(z / 2200))) + f(200 * Math.sin(f(f(z / 4300) + 0.5))));
+}
+
+/**
  * Continuous valley mask: 0 on mountain chains, 1 on the lake floor. It is the
- * strongest of the meandering channel, a broad low basin, and the view basin
- * that keeps the fixed viewing area under water level.
+ * strongest of the meandering channel, a broad low basin, the view basin that
+ * keeps the innermost layer under water level, and the fjord.
  */
 export function terrainValley(x: number, z: number) {
   const p = noiseDomain(x, z);
@@ -162,8 +181,10 @@ export function terrainValley(x: number, z: number) {
     f(terrainViewHalf * 1.45),
     f(Math.sqrt(f(f(x * x) + f(z * z)))),
   );
-  const blended = clamp(f(f(flow * 0.85) + f(basin * 0.7)), 0, 1);
-  return clamp(Math.max(blended, f(f(1 - open) * 0.99)), 0, 1);
+  const blended = clamp(f(f(flow * 0.35) + f(basin * 0.25)), 0, 1);
+  const across = f(Math.abs(f(x - fjordCentre(z))));
+  const fjord = f(1 - smoothstep(terrainFjordCore, terrainFjordBank, across));
+  return clamp(Math.max(blended, Math.max(f(fjord * 0.99), f(f(1 - open) * 0.99))), 0, 1);
 }
 
 /** Domain-warped 4-octave fBM and 3-octave ridged chains blended by the valley. */
@@ -173,9 +194,19 @@ export function terrainHeight01(x: number, z: number) {
   const warpZ = fbm4(f(p.x + 87.2), f(p.z + 9.1));
   const qx = f(p.x + f(f(warpX - 0.5) * terrainWarp));
   const qz = f(p.z + f(f(warpZ - 0.5) * terrainWarp));
-  const floor = f(f(fbm4(qx, qz) * 0.3) + 0.1);
-  const ridge = f(Math.pow(ridged3(f(f(qx * 1.7) + 31.4), f(f(qz * 1.7) + 27.2)), 1.2));
-  const mountains = f(0.35 + f(ridge * 0.95));
+  const base = fbm4(qx, qz);
+  // The lake bed is a shallow terrace of the same warped field — at most a
+  // tenth of it plus a tenth. That ceiling stays under `terrainHeightRef`, so
+  // the bed never bulges above water level however the valley is blended.
+  const floor = f(f(base * 0.1) + 0.1);
+  // Ridged chains carry the mountains; the 31.4/27.2 offset is the original
+  // phase, so only the frequency and the crest shaping are new. The 1.5
+  // exponent pulls the mid slopes down toward the crests, so the chains read as
+  // peaks rather than as sawtooth ramps.
+  const ridge = f(Math.pow(ridged3(f(f(qx * 1.05) + 31.4), f(f(qz * 1.05) + 27.2)), 1.5));
+  // The broad fBM term sets the large trend, the ridge term the peaks, so the
+  // mountains read as one continuous chain rather than isolated spikes.
+  const mountains = f(0.3 + f(base * 0.32) + f(ridge * 0.44));
   return mix(mountains, floor, terrainValley(x, z));
 }
 
